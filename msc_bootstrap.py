@@ -3,6 +3,7 @@ import subprocess
 import json
 import simplejson
 import sys
+import operator
 from msc_utils import *
 
 first_exodus_bootstrap_block=249498
@@ -37,34 +38,23 @@ def main():
             bonus=max((tx_sec_before_deadline+0.0)/(3600*24*7*10.0)*100,0)
             dacoins=str('{:.0f}'.format(int(value)*(100+bonus)))
             json_tx=get_tx(tx_hash)
-            used_outputs=[]
-            outputs_sum=0
-            # to divide the dacoins between the addresses, we check how much contributed each
+            # give dacoins to highest contributing address.
+            output_dict={} # dict to collect outputs per address
             for i in json_tx['inputs']:
                 prev_tx_hash=i['previous_output'].split(':')[0]
                 prev_tx_output_index=i['previous_output'].split(':')[1]
                 json_prev_tx=get_tx(prev_tx_hash)
                 output_value=json_prev_tx['outputs'][int(prev_tx_output_index)]['value']
-                # calculate sum of outputs
-                outputs_sum += output_value
-                used_outputs.append((i['address'],str(output_value)))
-            amount_of_outputs=len(used_outputs)
-            output_number=1
-            accomulated_outputs=0
+                if output_dict.has_key(i['address']):
+                    output_dict[i['address']]+=output_value
+                else:
+                    output_dict[i['address']]=output_value
+            # the winning address is the one with highest contributions
+            address=max(output_dict.iteritems(), key=operator.itemgetter(1))[0]
             # output info about the tx generally
             output_per_tx(output_format, block, tx_hash, value, dacoins)
-            for outputs in used_outputs:
-                address=outputs[0]
-                output_value=int(outputs[1])
-                if output_number == amount_of_outputs:
-                    # to make sure the sum is as expected and avoid rounding errors
-                    output_value=outputs_sum-accomulated_outputs
-                else:
-                    output_value=int(outputs[1])
-                    accomulated_outputs+=output_value
-                    output_number+=1
-                # output per address - each one gets its proportional share
-                output_per_address(output_format, address, output_value, dacoins, outputs_sum)
+            # output per address
+            output_per_address(output_format, address, dacoins)
 
 
 if __name__ == "__main__":

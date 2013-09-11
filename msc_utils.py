@@ -49,7 +49,7 @@ def get_tx(tx_hash):
     json_tx=get_json_tx(raw_tx)
     try:
         parsed_json_tx=simplejson.JSONDecoder().decode(json_tx)
-    except JSONDecodeError:
+    except simplejson.JSONDecodeError:
         error('error parsing json_tx: '+str(json_tx))
     return parsed_json_tx
 
@@ -64,7 +64,7 @@ def get_history(addr):
     json_history=get_json_history(addr)
     try:
         parsed_json_history=simplejson.JSONDecoder().decode(json_history)
-    except JSONDecodeError:
+    except simplejson.JSONDecodeError:
         error('error parsing json_history')
     return parsed_json_history
 
@@ -84,10 +84,8 @@ def output_per_tx(output_format, block, tx_hash, value, dacoins):
     else:
         pass
 # output_format is 'story' for long description of 'csv' for a short one
-def output_per_address(output_format, address, output_value, dacoins, outputs_sum):
-    formatted_dacoins=str('{:.0f}'.format((output_value+0.0)*int(dacoins)/outputs_sum))
+def output_per_address(output_format, address, dacoins):
     if output_format == 'story':
-        print str(address) + ' sent ' + str(output_value) + \
-            ' satoshi and got ' + formatted_dacoins + ' dacoin'
+        print str(address) + ' got ' + dacoins + ' dacoin'
     else:
-        print str(address) + ',' + formatted_dacoins
+        print str(address) + ',' + dacoins
