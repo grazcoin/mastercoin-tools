@@ -6,10 +6,6 @@ import sys
 import operator
 from msc_utils import *
 
-first_exodus_bootstrap_block=249498
-last_exodus_bootstrap_block=255365
-exodus_bootstrap_deadline=1377993600
-
 def main():
 
     # full story format or just csv
@@ -18,7 +14,7 @@ def main():
         if sys.argv[1]=='story':
             output_format='story' # a.k.a long format
     # get all tx of exodus address
-    history=get_history("1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P")
+    history=get_history(exodus_address)
     # sort
     history.sort(key=output_height)
     # parse result checking for exodus bootstrap entries
