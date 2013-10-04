@@ -1,0 +1,16 @@
+To redeem the Escrow transaction:
+=================================
+
+sx mktx change.tx -i 298a6af50089184f7b434c700f83f390d5dfdd5dac10b39b95f99036a5c66df7:1 -o 182osbPxCo88oaSX4ReJwUr9uAcchmJVaL:4490000
+PREVOUT_SCRIPT_DECODED=`sx fetch-transaction 298a6af50089184f7b434c700f83f390d5dfdd5dac10b39b95f99036a5c66df7 | sx showtx -j | grep script | grep checkmultisig | awk -F '\"' '{ print $4 }'`
+PREVOUT_SCRIPT=$(sx rawscript $PREVOUT_SCRIPT_DECODED)
+SIGNATURE=$(cat private.key | sx sign-input change.tx 0 $PREVOUT_SCRIPT)
+sx rawscript zero [ $SIGNATURE ] | sx set-input change.tx 0 > signed.tx
+sx broadcast-tx signed.tx
+
+To Escrow:
+https://blockchain.info/tx/298a6af50089184f7b434c700f83f390d5dfdd5dac10b39b95f99036a5c66df7
+
+From Escrow:
+https://blockchain.info/tx/a5f3245c7dccfc33173cfbeb581e17fc0085f67ef7e7809fd6a77ed11b43c37c
+
