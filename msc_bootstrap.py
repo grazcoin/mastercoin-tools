@@ -4,6 +4,7 @@ import json
 import simplejson
 import sys
 import operator
+import time
 from msc_utils import *
 
 def main():
@@ -29,7 +30,11 @@ def main():
 
         # interesting addresses are only those within exodus bootstrap blocks
         if int(block) >= first_exodus_bootstrap_block and int(block) <= last_exodus_bootstrap_block:
-            tx_sec_before_deadline=exodus_bootstrap_deadline-get_block_timestamp(int(block))
+            block_timestamp=get_block_timestamp(int(block))
+            try:
+            	tx_sec_before_deadline=exodus_bootstrap_deadline-block_timestamp
+            except TypeError:
+            	error('bad block timestamp')
             # bonus is 10% for a week
             bonus=max((tx_sec_before_deadline+0.0)/(3600*24*7*10.0)*100,0)
             dacoins=str('{:.0f}'.format(int(value)*(100+bonus)))
@@ -48,9 +53,19 @@ def main():
             # the winning address is the one with highest contributions
             address=max(output_dict.iteritems(), key=operator.itemgetter(1))[0]
             # output info about the tx generally
-            output_per_tx(output_format, block, tx_hash, value, dacoins)
-            # output per address
-            output_per_address(output_format, address, dacoins)
+            parsed=bootstrap_dict_per_tx(block, tx_hash, address, value, dacoins)
+            parsed['method']='exodus'
+            parsed['tx_time']=time.strftime('%a, %d %b %Y %H:%M:%S +0000', time.localtime(block_timestamp))
+            try:
+            	filename='tx/'+parsed['tx_hash']+'.json'
+                try:
+                    f=open(filename, 'w')
+                    json.dump(parsed, f)
+                    f.close()
+                except OSError:
+                    info("dump to file error for "+tx_hash)
+            except IndexError:
+            	info("cannot parse 'tx_hash' in "+tx_hash)
 
 
 if __name__ == "__main__":

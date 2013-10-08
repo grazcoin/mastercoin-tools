@@ -42,6 +42,7 @@ def run_command(command, input_str=None, ignore_stderr=False):
             return p.communicate()
 
 def get_block_timestamp(height):
+    print height
     raw_block, err = run_command("sx fetch-block-header "+str(height))
     if err != None:
         return err
@@ -184,19 +185,9 @@ def debug(debug_mode, msg):
             pass
         print '[D] '+func_name+': '+str(msg)
 
-# output_format is 'story' for long description of 'csv' for a short one
-def output_per_tx(output_format, block, tx_hash, value, dacoins):
-    if output_format == 'story':
-        print 'block ' + str(block) + ' tx hash ' + str(tx_hash) + \
-                ' value ' +str(value) + ' -> ' + str(dacoins) + ' dacoins'
-    else:
-        pass
-# output_format is 'story' for long description of 'csv' for a short one
-def output_per_address(output_format, address, dacoins):
-    if output_format == 'story':
-        print str(address) + ' got ' + dacoins + ' dacoin'
-    else:
-        print str(address) + ',' + dacoins
+def bootstrap_dict_per_tx(block, tx_hash, address, value, dacoins):
+    tx_dict={"block": str(block), "tx_hash": tx_hash, "to_address": address, "from_address": "exodus", "exodus": True, "tx_method_str": "exodus", "orig_value":value ,"dacoins": dacoins, "tx_type_str": "exodus"}
+    return tx_dict
 
 def b58encode(v):
   """ encode v, which is a string of bytes, to base58.
@@ -317,7 +308,7 @@ def parse_simple_basic(tx, tx_hash='unknown'):
         # all outputs has to be the same (except for change)
         if len(different_outputs_values) > 2:
             info('invalid mastercoin tx (different output values) '+tx_hash)
-            return None
+            return {'valid':False, 'tx_hash':tx_hash}
 
         # If there is an ambiguous sequence (i.e. 3,4,4), or perfect sequence (i.e. 3,4,5),
         # then the transaction is invalid!

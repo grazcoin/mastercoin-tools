@@ -4,6 +4,7 @@ import json
 import simplejson
 import sys
 import operator
+import time
 from optparse import OptionParser
 from msc_utils import *
 
@@ -82,6 +83,7 @@ def main():
             info("not implemented tx with multiple 1EXoDus outputs: "+tx_hash)
             continue
         num_of_outputs=len(outputs_list)
+        block_timestamp=get_block_timestamp(int(block))
 
         # check if basic or multisig
         is_basic=True
@@ -93,12 +95,34 @@ def main():
 
         if is_basic: # basic option - not multisig
             if num_of_outputs > 2: # for reference, data, marker
-                info(parse_simple_basic(raw_tx, tx_hash))
+                parsed=parse_simple_basic(raw_tx, tx_hash)
+                parsed['method']='basic'
+                parsed['block']=str(block)
+                parsed['tx_time']=time.strftime('%a, %d %b %Y %H:%M:%S +0000',time.localtime(block_timestamp))
+                try:
+                    filename='tx/'+parsed['tx_hash']+'.json'
+                    f=open(filename, 'w')
+                    json.dump(parsed, f)
+                    f.close()
+                except IndexError, OSError:
+                    info("json dump failed for "+tx_hash)
+                    pass
             else: # num_of_outputs <= 2 and not multisig
                 debug(d,'not parsing basic tx with less than 3 outputs '+tx_hash)
         else: # multisig
             if num_of_outputs == 2: # simple version of multisig
-                info(parse_multisig_simple(raw_tx))
+                parse=parse_multisig_simple(raw_tx)
+                parsed['method']='multisig'
+                parsed['block']=str(block)
+                parsed['tx_time']=time.strftime('%a, %d %b %Y %H:%M:%S +0000',time.localtime(block_timestamp))
+                try:
+                    filename='tx/'+parsed['tx_hash']+'.json'
+                    f=open(filename, 'w')
+                    json.dump(parsed, f)
+                    f.close()
+                except IndexError, OSError:
+                    info("json dump failed for "+tx_hash)
+                    pass
             else:
                 if num_of_outputs > 2: # multisig long
                     info(parse_multisig_long(raw_tx))
