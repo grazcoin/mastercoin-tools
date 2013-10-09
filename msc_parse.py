@@ -106,7 +106,8 @@ def main():
                 parsed['method']='basic'
                 parsed['block']=str(block)
                 parsed['index']=str(index)
-                parsed['invalid']=False
+                if not parsed.has_key('invalid'):
+                    parsed['invalid']=False
                 parsed['tx_time']=time.strftime('%a, %d %b %Y %H:%M:%S +0000',time.localtime(block_timestamp))
                 try:
                     filename='tx/'+parsed['tx_hash']+'.json'
@@ -122,22 +123,23 @@ def main():
                 debug(d,'not parsing basic tx with less than 3 outputs '+tx_hash)
         else: # multisig
             if num_of_outputs == 2: # simple version of multisig
-                parse=parse_multisig_simple(raw_tx)
+                parsed=parse_multisig_simple(raw_tx, tx_hash)
                 parsed['method']='multisig'
                 parsed['block']=str(block)
                 parsed['index']=str(index)
-                parsed['invalid']=False
+                if not parsed.has_key('invalid'):
+                    parsed['invalid']=False
                 parsed['tx_time']=time.strftime('%a, %d %b %Y %H:%M:%S +0000',time.localtime(block_timestamp))
-                try:
-                    filename='tx/'+parsed['tx_hash']+'.json'
-                    f=open(filename, 'w')
-                    f.write('[')
-                    json.dump(parsed, f)
-                    f.write(']\n')
-                    f.close()
-                except IndexError, OSError:
-                    info("json dump failed for "+tx_hash)
-                    pass
+                #try:
+                filename='tx/'+parsed['tx_hash']+'.json'
+                f=open(filename, 'w')
+                f.write('[')
+                json.dump(parsed, f)
+                f.write(']\n')
+                f.close()
+                #except OSError:
+                #    info("json dump failed for "+tx_hash)
+                #    pass
             else:
                 if num_of_outputs > 2: # multisig long
                     info(parse_multisig_long(raw_tx))

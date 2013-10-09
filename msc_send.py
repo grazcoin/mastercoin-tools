@@ -35,8 +35,8 @@ def main():
     tx_method=options.tx_method
     currency_id=options.currency_id
     formatted_currency_id='{:08x}'.format(currency_id)
-    amount=int(float(options.amount)*100000000+0.5)
-    fee=int(float(options.fee)*100000000)
+    amount=to_satoshi(options.amount)
+    fee=from_satoshi(options.fee)
     recipient_address=options.recipient_address
     from_address=options.from_address
     priv_key=options.priv_key
@@ -149,7 +149,7 @@ def main():
         f.write(signed_tx)
         f.close()
         info('validating tx: '+validate_tx('signed_tx.tx'))
-        info('SIGNED tx ('+tx_method+') of '+str("{0:.8f}".format(amount/100000000.0))+\
+        info('SIGNED tx ('+tx_method+') of '+from_satoshi(amount)+\
             ' '+currency_str+' to '+ recipient_address+' signed by '+from_address+'\n'+signed_tx)
         parse_test(signed_tx)
         if host_port != None:
@@ -173,7 +173,7 @@ def main():
             else:
                 info('please send using "sx broadcast-tx signed_tx.tx"')
     else:
-        info('UNSIGNED tx ('+tx_method+') of '+str("{0:.8f}".format(amount/100000000.0))+\
+        info('UNSIGNED tx ('+tx_method+') of '+from_satoshi(amount)+\
             ' '+currency_str+' to '+ recipient_address+' ready for signing by '+from_address+'\n'+tx)
         parse_test(tx)
         info('please sign with '+from_address+' and send using "sx sendtx FILENAME [HOST] [PORT]"')

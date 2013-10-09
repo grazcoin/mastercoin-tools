@@ -199,8 +199,14 @@ def debug(debug_mode, msg):
         print '[D] '+func_name+': '+str(msg)
 
 def bootstrap_dict_per_tx(block, tx_hash, address, value, dacoins):
-    tx_dict={"block": str(block), "tx_hash": tx_hash, "currency_str": "Mastercoin and Test Mastercoin", "to_address": address, "from_address": "exodus", "exodus": True, "tx_method_str": "exodus", "orig_value":value ,"formatted_amount": str("{0:.8f}".format(int(dacoins)/100000000.0)), "tx_type_str": "exodus"}
+    tx_dict={"block": str(block), "tx_hash": tx_hash, "currency_str": "Mastercoin and Test Mastercoin", "to_address": address, "from_address": "exodus", "exodus": True, "tx_method_str": "exodus", "orig_value":value ,"formatted_amount": from_satoshi(dacoins), "tx_type_str": "exodus"}
     return tx_dict
+
+def to_satoshi(value):
+    return int(float(value)*100000000+0.5)
+
+def from_satoshi(value):
+    return str("{0:.8f}".format(int(value)/100000000.0))
 
 def b58encode(v):
   """ encode v, which is a string of bytes, to base58.
@@ -321,7 +327,7 @@ def parse_simple_basic(tx, tx_hash='unknown'):
         # all outputs has to be the same (except for change)
         if len(different_outputs_values) > 2:
             info('invalid mastercoin tx (different output values) '+tx_hash)
-            return {'valid':False, 'tx_hash':tx_hash}
+            return {'invalid':True, 'tx_hash':tx_hash}
 
         # If there is an ambiguous sequence (i.e. 3,4,4), or perfect sequence (i.e. 3,4,5),
         # then the transaction is invalid!
@@ -354,7 +360,7 @@ def parse_simple_basic(tx, tx_hash='unknown'):
     except KeyError, IndexError:
         info('invalid mastercoin tx '+tx_hash)
 
-def parse_multisig_simple(tx):
+def parse_multisig_simple(tx, tx_hash='unknown'):
     parsed_json_tx=get_json_tx(tx)
     script=parsed_json_tx['outputs'][1]['script']
     fields=script.split('[ ')
@@ -365,12 +371,13 @@ def parse_multisig_simple(tx):
     data_dict=parse_data_script(data_script)
     if len(data_dict) >= 6: # at least 6 basic fields got parse
         parse_dict=data_dict
-        parse_dict['changeAddress'] = get_addr_from_key(change_address_pub)
-        parse_dict['recipientAddress'] = b58encode(recipientHex.decode('hex_codec'))
+        parse_dict['tx_hash']=tx_hash
+        parse_dict['from_address'] = get_addr_from_key(change_address_pub)
+        parse_dict['to_address'] = b58encode(recipientHex.decode('hex_codec'))
         parse_dict['formatted_amount'] = str("{0:.8f}".format(int(data_dict['amount'],16)/100000000.0))
-        parse_dict['currency_type_str'] = get_currency_type_from_dict(data_dict['currencyId'])
-        parse_dict['transaction_type_str'] = get_transaction_type_from_dict(data_dict['transactionType'])
-        parse_dict['transaction_method_str'] = 'multisig_simple'
+        parse_dict['currency_str'] = get_currency_type_from_dict(data_dict['currencyId'])
+        parse_dict['tx_type_str'] = get_transaction_type_from_dict(data_dict['transactionType'])
+        parse_dict['tx_method_str'] = 'multisig simple'
         return parse_dict
     else:
         error('Bad parsing of data script '+data_script.encode('hex_codec'))
