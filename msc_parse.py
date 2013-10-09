@@ -16,10 +16,13 @@ def main():
                         help="turn debug mode on")
     parser.add_option("-t", "--transaction",dest='single_tx',default=None,
                         help="hash of a specific tx to parse")
+    parser.add_option("-s", "--start-block",dest='starting_block_height',default=None,
+                        help="start the parsing at a higher block height")
 
     (options, args) = parser.parse_args()
     d=options.debug_mode
     single_tx=options.single_tx
+    starting_block_height=options.starting_block_height
 
     if single_tx == None:
         # get all tx of exodus address
@@ -51,6 +54,11 @@ def main():
     # go over transaction from all history of 1EXoDus address
     for tx_dict in history:
         value=tx_dict['value']
+        if starting_block_height != None:
+            current_block=tx_dict['output_height']
+            if int(current_block)<int(starting_block_height):
+                debug(d,'skip block '+str(current_block)+' since starting at '+str(starting_block_height))
+                continue
         try:
             tx_hash=tx_dict['output'].split(':')[0]
             tx_output_index=tx_dict['output'].split(':')[1]
