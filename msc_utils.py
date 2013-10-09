@@ -79,6 +79,19 @@ def get_tx(tx_hash):
     raw_tx=get_raw_tx(tx_hash)
     return get_json_tx(raw_tx, tx_hash)
 
+def get_tx_index(tx_hash):
+    out, err = run_command("sx fetch-transaction-index "+tx_hash)
+    if err != None:
+        error(err)
+    else:
+        try:
+            s=out.split()
+            height=s[1]
+            index=s[3]
+            return(height,index)
+        except IndexError:
+            return (-1,-1)
+
 def get_json_history(addr):
     out, err = run_command("sx history -j "+addr)
     if err != None:
@@ -186,7 +199,7 @@ def debug(debug_mode, msg):
         print '[D] '+func_name+': '+str(msg)
 
 def bootstrap_dict_per_tx(block, tx_hash, address, value, dacoins):
-    tx_dict={"block": str(block), "tx_hash": tx_hash, "to_address": address, "from_address": "exodus", "exodus": True, "tx_method_str": "exodus", "orig_value":value ,"dacoins": dacoins, "tx_type_str": "exodus"}
+    tx_dict={"block": str(block), "tx_hash": tx_hash, "currency_str": "Mastercoin and Test Mastercoin", "to_address": address, "from_address": "exodus", "exodus": True, "tx_method_str": "exodus", "orig_value":value ,"formatted_amount": str("{0:.8f}".format(int(dacoins)/100000000.0)), "tx_type_str": "exodus"}
     return tx_dict
 
 def b58encode(v):

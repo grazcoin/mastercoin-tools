@@ -53,14 +53,20 @@ def main():
             # the winning address is the one with highest contributions
             address=max(output_dict.iteritems(), key=operator.itemgetter(1))[0]
             # output info about the tx generally
+            (block,index)=get_tx_index(tx_hash)
             parsed=bootstrap_dict_per_tx(block, tx_hash, address, value, dacoins)
+            parsed['block']=block
+            parsed['index']=index
             parsed['method']='exodus'
+            parsed['invalid']=False
             parsed['tx_time']=time.strftime('%a, %d %b %Y %H:%M:%S +0000', time.localtime(block_timestamp))
             try:
             	filename='tx/'+parsed['tx_hash']+'.json'
                 try:
                     f=open(filename, 'w')
+                    f.write('[')
                     json.dump(parsed, f)
+                    f.write(']\n')
                     f.close()
                 except OSError:
                     info("dump to file error for "+tx_hash)

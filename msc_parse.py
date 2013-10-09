@@ -50,7 +50,6 @@ def main():
 
     # go over transaction from all history of 1EXoDus address
     for tx_dict in history:
-        block=tx_dict['output_height']
         value=tx_dict['value']
         try:
             tx_hash=tx_dict['output'].split(':')[0]
@@ -59,7 +58,7 @@ def main():
             error("Cannot parse tx_dict:" + str(tx_dict))
         raw_tx=get_raw_tx(tx_hash)
         json_tx=get_json_tx(raw_tx, tx_hash)
-
+	(block,index)=get_tx_index(tx_hash)
         # examine the outputs
         outputs_list=json_tx['outputs']
         # if we're here, then 1EXoDus is within the outputs. Remove it, but ...
@@ -98,11 +97,15 @@ def main():
                 parsed=parse_simple_basic(raw_tx, tx_hash)
                 parsed['method']='basic'
                 parsed['block']=str(block)
+                parsed['index']=str(index)
+                parsed['invalid']=False
                 parsed['tx_time']=time.strftime('%a, %d %b %Y %H:%M:%S +0000',time.localtime(block_timestamp))
                 try:
                     filename='tx/'+parsed['tx_hash']+'.json'
                     f=open(filename, 'w')
+                    f.write('[')
                     json.dump(parsed, f)
+                    f.write(']\n')
                     f.close()
                 except IndexError, OSError:
                     info("json dump failed for "+tx_hash)
@@ -114,11 +117,15 @@ def main():
                 parse=parse_multisig_simple(raw_tx)
                 parsed['method']='multisig'
                 parsed['block']=str(block)
+                parsed['index']=str(index)
+                parsed['invalid']=False
                 parsed['tx_time']=time.strftime('%a, %d %b %Y %H:%M:%S +0000',time.localtime(block_timestamp))
                 try:
                     filename='tx/'+parsed['tx_hash']+'.json'
                     f=open(filename, 'w')
+                    f.write('[')
                     json.dump(parsed, f)
+                    f.write(']\n')
                     f.close()
                 except IndexError, OSError:
                     info("json dump failed for "+tx_hash)
