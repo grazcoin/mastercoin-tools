@@ -119,9 +119,9 @@ def main():
                 except:
                     pass
                 try:
-                    f=open(filename, 'w')
                     if orig_json != None: # it was an exodus tx
                         if len(orig_json)==1:
+                            f=open(filename, 'w')
                             new_json=[orig_json[0],parsed]
                             json.dump(new_json, f)
                             f.write('\n')
@@ -129,6 +129,7 @@ def main():
                         else:
                             info('basic tx is already present on exodus on '+tx_hash)
                     else:
+                        f=open(filename, 'w')
                         f.write('[')
                         json.dump(parsed, f)
                         f.write(']\n')
