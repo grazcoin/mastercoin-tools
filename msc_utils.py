@@ -5,6 +5,8 @@ import simplejson
 import math
 import hashlib
 import inspect
+import time
+import git
 
 __b58chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 __b58base = len(__b58chars)
@@ -483,3 +485,28 @@ def broadcast_tx(filename):
         info('broadcasted')
         return None
 
+def format_time_from_struct(st):
+    return time.strftime('%a, %d %b %Y %H:%M:%S +0000',st)
+
+def format_time_from_epoch(epoch):
+    return format_time_from_struct(time.localtime(int(epoch)))
+
+def get_git_details(directory="~/mastercoin-tools"):
+    repo = git.Repo(directory)
+    assert repo.bare == False
+    head_commit=repo.head.commit
+    return(head_commit.hexsha,format_time_from_epoch(head_commit.authored_date))
+
+
+def get_github_line():
+    git_details=get_git_details()
+    hexsha=git_details[0]
+    commit_time=git_details[1]
+    url='https://github.com/grazcoin/mastercoin-tools/commit/'+hexsha
+    return 'Code: commit <a href='+url+'>'+hexsha[:8]+'...</a> from '+commit_time
+
+def get_now():
+    return format_time_from_struct(time.gmtime())
+
+def get_done_line():
+    return 'Last parsed: '+get_now()

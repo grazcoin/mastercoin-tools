@@ -108,7 +108,7 @@ def main():
                 parsed['index']=str(index)
                 if not parsed.has_key('invalid'):
                     parsed['invalid']=False
-                parsed['tx_time']=time.strftime('%a, %d %b %Y %H:%M:%S +0000',time.localtime(block_timestamp))
+                parsed['tx_time']=format_time_from_epoch(block_timestamp)
                 try:
                     filename='tx/'+parsed['tx_hash']+'.json'
                     f=open(filename, 'w')
@@ -129,7 +129,7 @@ def main():
                 parsed['index']=str(index)
                 if not parsed.has_key('invalid'):
                     parsed['invalid']=False
-                parsed['tx_time']=time.strftime('%a, %d %b %Y %H:%M:%S +0000',time.localtime(block_timestamp))
+                parsed['tx_time']=format_time_from_epoch(block_timestamp)
                 #try:
                 filename='tx/'+parsed['tx_hash']+'.json'
                 f=open(filename, 'w')
@@ -145,6 +145,12 @@ def main():
                     info(parse_multisig_long(raw_tx))
                 else: # invalid
                     info('multisig with a single output tx found: '+tx_hash)
+    f=open('VERSION_TAG','w')
+    f.write(get_github_line())
+    f.write('\n')
+    f.write(get_done_line())
+    f.write('\n')
+    f.close()
 
 if __name__ == "__main__":
     main()

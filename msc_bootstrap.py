@@ -59,7 +59,7 @@ def main():
             parsed['index']=index
             parsed['method']='exodus'
             parsed['invalid']=False
-            parsed['tx_time']=time.strftime('%a, %d %b %Y %H:%M:%S +0000', time.localtime(block_timestamp))
+            parsed['tx_time']=format_time_from_epoch(block_timestamp)
             try:
             	filename='tx/'+parsed['tx_hash']+'.json'
                 try:
