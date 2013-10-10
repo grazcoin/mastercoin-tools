@@ -109,16 +109,32 @@ def main():
                 if not parsed.has_key('invalid'):
                     parsed['invalid']=False
                 parsed['tx_time']=format_time_from_epoch(block_timestamp)
+                filename='tx/'+parsed['tx_hash']+'.json'
+                orig_json=None
                 try:
-                    filename='tx/'+parsed['tx_hash']+'.json'
+                    # does this tx exist? (from bootstrap)
+                    f=open(filename, 'r')
+                    orig_json=json.load(f)
+                    f.close()
+                except:
+                    pass
+                try:
                     f=open(filename, 'w')
-                    f.write('[')
-                    json.dump(parsed, f)
-                    f.write(']\n')
+                    if orig_json != None: # it was an exodus tx
+                        if len(orig_json)==1:
+                            new_json=[orig_json[0],parsed]
+                            json.dump(new_json, f)
+                            f.write('\n')
+                            info('basic tx was also exodus on '+tx_hash)
+                        else:
+                            info('basic tx is already present on exodus on '+tx_hash)
+                    else:
+                        f.write('[')
+                        json.dump(parsed, f)
+                        f.write(']\n')
                     f.close()
                 except IndexError, OSError:
                     info("json dump failed for "+tx_hash)
-                    pass
             else: # num_of_outputs <= 2 and not multisig
                 debug(d,'not parsing basic tx with less than 3 outputs '+tx_hash)
         else: # multisig
@@ -130,16 +146,16 @@ def main():
                 if not parsed.has_key('invalid'):
                     parsed['invalid']=False
                 parsed['tx_time']=format_time_from_epoch(block_timestamp)
-                #try:
                 filename='tx/'+parsed['tx_hash']+'.json'
-                f=open(filename, 'w')
-                f.write('[')
-                json.dump(parsed, f)
-                f.write(']\n')
-                f.close()
-                #except OSError:
-                #    info("json dump failed for "+tx_hash)
-                #    pass
+                try:
+                    f=open(filename, 'w')
+                    f.write('[')
+                    json.dump(parsed, f)
+                    f.write(']\n')
+                    f.close()
+                except OSError:
+                    info("json dump failed for "+tx_hash)
+                    pass
             else:
                 if num_of_outputs > 2: # multisig long
                     info(parse_multisig_long(raw_tx))
