@@ -495,7 +495,25 @@ def get_git_details(directory="~/mastercoin-tools"):
     repo = git.Repo(directory)
     assert repo.bare == False
     head_commit=repo.head.commit
-    return(head_commit.hexsha,format_time_from_epoch(head_commit.authored_date))
+    timestamp=time.strftime('%Y%m%d',time.localtime(int(head_commit.authored_date)))
+    return(head_commit.hexsha,timestamp)
+
+def archive_repo(directory="~/mastercoin-tools"):
+    (commit_hexsha, timestamp)=get_git_details()
+    assert repo.bare == False
+    archive_name='www/downloads/mastercoin-tools-src-'+commit_hexsha[:8]+'-'+timestamp+'.tar'
+    repo = git.Repo(directory)
+    repo.archive(open(archive_name,'w'))
+
+def archive_parsed_data(directory="~/mastercoin-tools"):
+    (commit_hexsha, timestamp)=get_git_details()
+    archive_name='www/downloads/mastercoin-tools-parse-snapshot-'+commit_hexsha[:8]+'-'+timestamp+'.tar.gz'
+    path_to_archive='www/revision.json www/tx www/addr www/general/'
+    out, err = run_command("tar cz "+path_to_archive+" -f "+archive_name)
+    if err != None:
+        return err
+    else:
+        return out
 
 def get_now():
     return format_time_from_struct(time.gmtime())

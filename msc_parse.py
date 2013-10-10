@@ -18,11 +18,14 @@ def main():
                         help="hash of a specific tx to parse")
     parser.add_option("-s", "--start-block",dest='starting_block_height',default=None,
                         help="start the parsing at a higher block height")
+    parser.add_option("-a", "--archive-parsed-data", action="store_true",dest='archive', default=False,
+                        help="archive the parsed data of tx addr and general for others to download")
 
     (options, args) = parser.parse_args()
     d=options.debug_mode
     single_tx=options.single_tx
     starting_block_height=options.starting_block_height
+    archive=options.archive
 
     if single_tx == None:
         # get all tx of exodus address
@@ -166,6 +169,9 @@ def main():
     f=open('www/revision.json','w')
     json.dump(rev, f)
     f.close()
+
+    if archive:
+        archive_parsed_data()
 
 if __name__ == "__main__":
     main()
