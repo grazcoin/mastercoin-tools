@@ -32,6 +32,10 @@ def main():
         if filename.endswith('.json'):
             f=open('tx/'+filename)
 	    tx_list.append(json.load(f)[0])
+            try: # for basic which is also exodus
+	        tx_list.append(json.load(f)[1])
+            except:
+                pass
             f.close()
     # sort according to time
     sorted_tx_list = sorted(tx_list, key=lambda k: (k['block'],k['index'])) 
@@ -133,9 +137,13 @@ def main():
         addr_dict_api={}
         addr_dict_api['address']=addr
         addr_dict_api['received_transactions']=addr_dict[addr][0][3]
+        addr_dict_api['received_transactions'].reverse()
         addr_dict_api['test_received_transactions']=addr_dict[addr][1][3]
+        addr_dict_api['test_received_transactions'].reverse()
         addr_dict_api['sent_transactions']=addr_dict[addr][0][4]
+        addr_dict_api['sent_transactions'].reverse()
         addr_dict_api['test_sent_transactions']=addr_dict[addr][0][4]
+        addr_dict_api['test_sent_transactions'].reverse()
         addr_dict_api['total_received']=from_satoshi(addr_dict[addr][0][1])
         addr_dict_api['test_total_received']=from_satoshi(addr_dict[addr][1][1])
         addr_dict_api['total_sent']=from_satoshi(addr_dict[addr][0][2])
@@ -143,6 +151,7 @@ def main():
         addr_dict_api['balance']=from_satoshi(addr_dict[addr][0][0])
         addr_dict_api['test_balance']=from_satoshi(addr_dict[addr][1][0])
         addr_dict_api['exodus_transactions']=addr_dict[addr][0][5]
+        addr_dict_api['exodus_transactions'].reverse()
         addr_dict_api['total_exodus']=from_satoshi(addr_dict[addr][2][0])
 	
         filename='addr/'+addr+'.json'
