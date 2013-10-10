@@ -497,16 +497,16 @@ def get_git_details(directory="~/mastercoin-tools"):
     head_commit=repo.head.commit
     return(head_commit.hexsha,format_time_from_epoch(head_commit.authored_date))
 
-
-def get_github_line():
-    git_details=get_git_details()
-    hexsha=git_details[0]
-    commit_time=git_details[1]
-    url='https://github.com/grazcoin/mastercoin-tools/commit/'+hexsha
-    return 'Code: commit <a href='+url+'>'+hexsha[:8]+'...</a> from '+commit_time
-
 def get_now():
     return format_time_from_struct(time.gmtime())
 
-def get_done_line():
-    return 'Last parsed: '+get_now()
+def get_revision_dict():
+    rev={}
+    git_details=get_git_details()
+    hexsha=git_details[0]
+    commit_time=git_details[1]
+    rev['commit_hexsha']=hexsha
+    rev['commit_time']=commit_time
+    rev['url']='https://github.com/grazcoin/mastercoin-tools/commit/'+hexsha
+    rev['last_parsed']=get_now()
+    return rev

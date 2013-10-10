@@ -145,11 +145,9 @@ def main():
                     info(parse_multisig_long(raw_tx))
                 else: # invalid
                     info('multisig with a single output tx found: '+tx_hash)
-    f=open('VERSION_TAG','w')
-    f.write(get_github_line())
-    f.write('\n')
-    f.write(get_done_line())
-    f.write('\n')
+    rev=get_revision_dict()
+    f=open('www/revision.json','w')
+    json.dump(rev, f)
     f.close()
 
 if __name__ == "__main__":

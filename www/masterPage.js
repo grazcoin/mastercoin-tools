@@ -2,11 +2,10 @@
 function NavigationController($scope, $http) {
     $scope.values = {};
 
-    $scope.footer = "FOOTER";
     var myURLParams = BTCUtils.getQueryStringArgs();
     var title = myURLParams['title'].toString();
     $scope.title = title;
-
+    $scope.footer = "FOOTER";
     $scope.getNavData = function () {
 
         $scope.values = {};
@@ -18,6 +17,13 @@ function NavigationController($scope, $http) {
 		
 	console.log($scope.values);
 
+        // Make the http request and process the result
+        $http.get('revision.json', {}).success(function (data, status, headers, config) {
+            $scope.revision=data;
+            var line = "Last blockchain scan: "+data['last_parsed']+" using revision "+  
+            data['commit_hexsha']+" ("+data['commit_time']+")."
+	    $scope.footer=line;
+        });
     }
 }
 
