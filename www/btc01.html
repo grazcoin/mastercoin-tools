@@ -4,6 +4,7 @@
     <title>Masterchain</title>
     <script src="js/jquery-1.10.1.min.js"></script>
     <script src="js/angular.js"></script>
+    <script src="btcutils.js"></script>
     <script src="js/truncate.js"></script>
     <script src="masterPage.js"></script>
     <script src="btc01.js"></script>
@@ -33,18 +34,16 @@
 								<tr>
 									<th>Transaction ID</th>
 									<th>Receiving address</th>
-									<th>Currency ID</th>
 									<th>Amount</th>
 									<th>Block time</th>
 								</tr>
 							</thead>
 							<tbody>
 								<tr ng-repeat="trans in transactions">
-                					<td><a href='/tx/{{trans.tx_id}}.json' target="_blank">{{trans.tx_id | characters:10}}</a></td>
-                					<td><a href='/addresses/{{trans.receiving_address}}' target="_blank">{{trans.receiving_address}}</a></td>
-                					<td>{{trans.currency_id}}</td>
-                					<td>{{trans.amount}}</td>
-					                <td>{{trans.tx_date}}</td>
+                					<td><a href='Transaction.html?tx={{trans.tx_hash}}' target="_blank">{{trans.tx_hash | characters:10}}</a></td>
+                					<td><a href='Address.html?addr={{trans.to_address}}' target="_blank">{{trans.to_address}}</a></td>
+                					<td>{{trans.formatted_amount}}</td>
+					                <td>{{trans.tx_time}}</td>
 								</tr>
 							</tbody>
 						</table>

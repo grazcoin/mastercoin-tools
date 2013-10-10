@@ -36,6 +36,10 @@ def main():
     # sort according to time
     sorted_tx_list = sorted(tx_list, key=lambda k: (k['block'],k['index'])) 
 
+    # prepare lists for mastercoin and test
+    sorted_mastercoin_tx_list=[]
+    sorted_test_mastercoin_tx_list=[]
+
     # create address dict and update balance of valid tx
     addr_dict={}
     for t in sorted_tx_list:
@@ -70,6 +74,9 @@ def main():
                         addr_dict[exodus_address][0][5].append(t)    # incoming msc
                         addr_dict[exodus_address][1][5].append(t)    # incoming test msc
                         addr_dict[exodus_address][2][0]+=0           # no accounting for exodus 10% due to purchase
+                    # tx belongs to mastercoin and test mastercoin
+                    sorted_mastercoin_tx_list.append(t) 
+                    sorted_test_mastercoin_tx_list.append(t) 
                 else:
                     # normal transfer
                     if not addr_dict.has_key(from_addr):
@@ -109,15 +116,18 @@ def main():
                                 addr_dict[from_addr][0][0]-=amount_transfer # msc
                                 addr_dict[from_addr][0][2]+=amount_transfer # msc total sent
                                 addr_dict[from_addr][0][4].append(t)        # incoming msc
+                                # update msc list
+                                sorted_mastercoin_tx_list.append(t) 
                             else:                                    
                                 addr_dict[from_addr][1][0]-=amount_transfer # test msc
                                 addr_dict[from_addr][1][2]+=amount_transfer # test msc total sent
                                 addr_dict[from_addr][1][4].append(t)        # incoming test msc
+                                # update test msc list
+                                sorted_test_mastercoin_tx_list.append(t) 
         except OSError:
             info('error on tx '+t['tx_hash'])
 
     # create file for each address
-    #print addr_dict
 
     for addr in addr_dict.keys():
         addr_dict_api={}
@@ -138,6 +148,22 @@ def main():
         filename='addr/'+addr+'.json'
         f=open(filename, 'w')
         json.dump(addr_dict_api, f)
+        f.close()
+
+    # create files for msc and files for test_msc
+    chunk=10
+    sorted_mastercoin_tx_list.reverse()
+    sorted_test_mastercoin_tx_list.reverse()
+
+    for i in range(len(sorted_mastercoin_tx_list)/chunk):
+    	filename='general/msc_tx_'+'{0:04}'.format(i)+'.json'
+        f=open(filename, 'w')
+        json.dump(sorted_mastercoin_tx_list[i*chunk:(i+1)*chunk], f)
+        f.close()
+    for i in range(len(sorted_test_mastercoin_tx_list)/chunk):
+        filename='general/test_msc_tx_'+'{0:04}'.format(i)+'.json'
+        f=open(filename, 'w')
+        json.dump(sorted_test_mastercoin_tx_list[i*chunk:(i+1)*chunk], f)
         f.close()
 
 if __name__ == "__main__":

@@ -11,7 +11,7 @@ function BTCController($scope, $http) {
 
         // Make the http request and process the result
 	    $http.get(
-	   'transactions.json',
+	   'general/msc_tx_0000.json',
 		 {
 		   
 		 }).success(function (data, status, headers, config) {
