@@ -1,0 +1,21 @@
+﻿.addressController {
+    width: 100%;
+    /*display:block;*/
+}
+
+.balanceInformation {
+    float: left;
+    width: 47%;
+}
+
+.otherInformation {
+    float: left;
+    width: 47%;
+    /*margin-left:5px;*/
+}
+
+.fullWidthTable table {
+    width: 95%;
+}
+
+

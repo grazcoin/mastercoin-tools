@@ -1,0 +1,129 @@
+<!doctype html>
+<html ng-app="myApp">
+<head>
+    <title>Transactions</title>
+
+	<!-- BASE HREF SHOULD BE CHANGED -->
+	<base href="/" target="_blank">
+
+    <script src="js/jquery-1.10.1.min.js"></script>
+    <script src="js/angular.js"></script>
+    <script src="btcutils.js"></script>
+    <script src="masterPage.js"></script>
+    <script src="transaction.js"></script>
+    <script src="js/truncate.js"></script>
+    <script>
+    var myApp = angular.module('myApp', ['truncate']);
+    </script>
+    <link rel="stylesheet" href="css/masterPage.css">
+    <link href="css/tableStyle.css" rel="stylesheet" />
+    <link href="css/transaction.css" rel="stylesheet" />
+</head>
+<body>
+    <div ng-controller="NavigationController" ng-init="getNavData()">
+
+        <header>
+            {{title}}
+        </header>
+        <hr />
+
+        <div class="container">
+            <div class="no-fixed">
+                <div class="inner">
+
+                   <div class="transactionContainer" ng-controller="TransactionController" ng-init="getTransactionData()">
+
+                           <table class="basicInformation">
+                               <caption>Basic Information</caption>
+                               <tbody>
+                                   <tr>
+                                       <td>Transaction ID</td>
+                                       <td><a ng-href="Transaction.html?tx={{transactionInformation.tx_hash}}">{{transactionInformation.tx_hash|characters:30}}</a></td>
+                                   </tr>
+                                   <tr>
+                                       <td>From</td>
+                                       <td><a ng-href="Address.html?addr={{transactionInformation.from_address}}">{{transactionInformation.from_address}}</a></td>
+                                   </tr>
+                                   <tr>
+                                       <td>To</td>
+									  <td><a ng-href="Address.html?addr={{transactionInformation.to_address}}">{{transactionInformation.to_address}}</a></td>
+                                   </tr>
+                                   <tr>
+                                       <td>Amount</td>
+                                       <td>{{transactionInformation.formatted_amount}}</td>
+                                   </tr>
+                                   <tr>
+                                       <td>Currency</td>
+                                       <td>{{transactionInformation.currency_str}}</td>
+                                       </td>
+                                   </tr>
+                               </tbody>
+                           </table>
+
+                           <table class="information">
+                               <caption>Information</caption>
+                               <tbody>
+                                   <tr>
+                                       <td>Transaction type</td>
+                                       <td>{{transactionInformation.tx_type_str}}</td>
+                                   </tr>
+                                   <tr>
+                                       <td>Included in block</td>
+                                       <td>{{transactionInformation.block}}</td>
+                                   </tr>
+                                   <tr>
+                                       <td>Index in block</td>
+                                       <td>{{transactionInformation.index}}</td>
+                                   </tr>
+                                   <tr>
+                                       <td>Block time</td>
+                                       <td>{{transactionInformation.tx_time}}</td>
+                                   </tr>
+                                   <tr>
+                                       <td>Valid</td>
+                                       <td class="{{transactionInformation.invalid}}ValidState"></td>
+                                   </tr>
+                                   <tr>
+                                       <td>Transaction method</td>
+                                       <td>{{transactionInformation.tx_method_str}}</td>
+                                   </tr>
+                               </tbody>
+                           </table>
+
+                   </div>
+                    <div class="clear"></div>
+                </div>
+            </div>
+
+            <nav class="fixed">
+                <div class="navItems" ng-repeat="val in values"
+                    ng-style="{'background': val.trend2}">
+                    <div>
+                        <div class="navItem trend ">
+                            <img ng-src="img/{{val.trend}}Icon.png" />
+                        </div>
+                        <div class="navItem">
+                            {{val.name}}
+                        </div>
+                    </div>
+                    <div style="clear: both;"></div>
+                    <div>
+                        <div class="navItem">{{val.currency}}</div>
+                        <div class="navItem">{{val.name2}}</div>
+                    </div>
+                    <div style="clear: both;"></div>
+                </div>
+
+            </nav>
+
+            <div class="clear"></div>
+        </div>
+
+
+        <hr />
+        <footer>
+            {{footer}}
+        </footer>
+    </div>
+</body>
+</html>

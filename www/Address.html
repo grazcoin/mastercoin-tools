@@ -1,0 +1,187 @@
+<!doctype html>
+<html ng-app="myApp">
+<head>
+    <title>Address information</title>
+	<!-- BASE HREF SHOULD BE CHANGED -->
+	<base href="/" target="_blank">
+
+    <script src="js/jquery-1.10.1.min.js"></script>
+    <script src="js/angular.js"></script>
+    <script src="btcutils.js"></script>
+    <script src="js/truncate.js"></script>
+    <script>var myApp = angular.module('myApp', ['truncate']);</script>
+    <script src="masterPage.js"></script>
+    <script src="address.js"></script>
+    <link rel="stylesheet" href="css/masterPage.css">
+    <link href="css/tableStyle.css" rel="stylesheet" />
+    <link href="css/address.css" rel="stylesheet" />
+</head>
+<body>
+    <div ng-controller="NavigationController" ng-init="getNavData()">
+
+        <header>
+            {{title}}
+        </header>
+        <hr />
+
+        <div class="container">
+            <div class="no-fixed">
+                <div class="inner" ng-controller="AdressController" ng-init="getAddressData()">
+
+                    <div class="addressController">
+                        <table class="balanceInformation">
+                            <caption>Balance Information</caption>
+                            <tbody>
+                                <tr>
+                                    <td>Final balance</td>
+                                    <td>{{addressInformation.balance}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Bought via Exodus</td>
+                                    <!-- 1 is for Mastercoin and 2 is for Test Mastercoint-->
+                                    <td>{{addressInformation.total_exodus}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Payments received</td>
+                                    <td>{{addressInformation.total_received}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Payments sent</td>
+                                    <td>{{addressInformation.total_sent}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <table class="otherInformation">
+                            <caption>Other Information</caption>
+
+                            <tbody>
+                                <tr>
+                                    <td>Currency</td>
+                                    <td>Mastercoin</td>
+                                </tr>
+                                <tr>
+                                    <td>Exodus transactions</td>
+                                    <td>{{addressInformation.exodus_transactions.length}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Incoming transactions</td>
+                                    <td>{{addressInformation.received_transactions.length}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Outgoing transactions</td>
+                                    <td>{{addressInformation.sent_transactions.length}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <!-- </div>-->
+                        <div class="clear fullWidthTable">
+                            <table>
+                                <caption>Exodus transactions ({{addressInformation.exodus_transactions.length}})</caption>
+                                <thead>
+                                    <tr>
+                                        <th>Transaction ID</th>
+                                        <th>Amount</th>
+                                        <th>Bonus</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="exodus in addressInformation.exodus_transactions">
+											<td><a ng-href="Transaction.html?tx={{exodus.tx_hash}}">{{exodus.tx_hash | characters:10}}</a></td>
+                                        <td>{{exodus.formatted_amount}}</td>
+                                        <td>{{exodus.bonus_amount_included}}</td>
+                                        <td>{{exodus.tx_time}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="fullWidthTable">
+                            <table>
+                                <caption>Received transactions ({{addressInformation.received_transactions.length}})</caption>
+                                <thead>
+                                    <tr>
+                                        <th>Transaction ID</th>
+                                        <th>Receiving address</th>
+                                        <th>Source address</th>
+                                        <th>Amount</th>
+                                        <th>Block time</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="received in addressInformation.received_transactions">
+										<td><a ng-href="Transaction.html?tx={{received.tx_hash}}">{{received.tx_hash | characters:10}}</a></td>
+										<td><a ng-href="Address.html?addr={{received.to_address}}">{{received.to_address}}</a></td>
+										 <td><a ng-href="Address.html?addr={{received.from_address}}">{{received.from_address}}</a></td>
+                                        <td>{{received.formatted_amount}}</td>
+                                        <td>{{received.tx_time}}</td>
+					<td class="{{received.invalid}}ValidState"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!--SENT TRANSACTIONS-->
+                        <div class="fullWidthTable">
+                            <table>
+                                <caption>Sent transactions ({{addressInformation.sent_transactions.length}})</caption>
+                                <thead>
+                                    <tr>
+                                        <th>Transaction ID</th>
+                                        <th>Receiving address</th>
+                                        <th>Source address</th>
+                                        <th>Amount</th>
+                                        <th>Block time</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="sent in addressInformation.sent_transactions">
+										<td><a ng-href="Transaction.html?tx={{sent.tx_hash}}">{{sent.tx_hash | characters:10}}</a></td>
+										<td><a ng-href="Address.html?addr={{sent.to_address}}">{{sent.to_address}}</a></td>
+										<td><a ng-href="Address.html?addr={{sent.from_address}}">{{sent.from_address}}</a></td>
+                                        <td>{{sent.formatted_amount}}</td>
+                                        <td>{{sent.tx_time}}</td>
+					<td class="{{sent.invalid}}ValidState"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            <nav class="fixed">
+                <div class="navItems" ng-repeat="val in values"
+                    ng-style="{'background': val.trend2}">
+                    <div>
+                        <div class="navItem trend ">
+                            <img ng-src="img/{{val.trend}}Icon.png" />
+                        </div>
+                        <div class="navItem">
+                            {{val.name}}
+                        </div>
+                    </div>
+                    <div style="clear: both;"></div>
+                    <div>
+                        <div class="navItem">{{val.name2}}</div>
+                    </div>
+                    <div style="clear: both;"></div>
+                </div>
+
+            </nav>
+
+            <div class="clear"></div>
+        </div>
+
+
+        <hr />
+        <footer>
+            {{footer}}
+        </footer>
+    </div>
+</body>
+</html>

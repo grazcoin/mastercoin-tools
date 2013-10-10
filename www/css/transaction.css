@@ -1,0 +1,20 @@
+﻿.transactionContainer{
+    width:100%;
+    /*display:block;*/
+}
+
+.basicInformation{
+    
+    float:left;
+    width:47%;
+
+}
+
+.information {
+   
+     float:left;
+    width:47%;
+    /*margin-left:5px;*/
+}
+
+

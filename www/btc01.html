@@ -1,0 +1,87 @@
+<!doctype html>
+<html ng-app="myApp">
+<head>
+    <title>Masterchain</title>
+    <script src="js/jquery-1.10.1.min.js"></script>
+    <script src="js/angular.js"></script>
+    <script src="js/truncate.js"></script>
+    <script src="masterPage.js"></script>
+    <script src="btc01.js"></script>
+    <script>
+    var myApp = angular.module('myApp', ['truncate']);
+    </script>
+	  <link rel="stylesheet" href="css/masterPage.css">
+    <link rel="stylesheet" href="css/btc01.css">
+</head>
+<body>
+    <div ng-controller="NavigationController" ng-init="getNavData()">
+
+        <header>
+            {{title}}
+        </header>
+        <hr />
+
+          <!--MAIN-->
+
+        <div class="container">
+            <div class="no-fixed">
+                <div class="inner">
+					<div ng-controller="BTCController" ng-init="getData()">
+						<table style="width:97%;">
+							<caption>{{caption}}</caption>
+							<thead>
+								<tr>
+									<th>Transaction ID</th>
+									<th>Receiving address</th>
+									<th>Currency ID</th>
+									<th>Amount</th>
+									<th>Block time</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr ng-repeat="trans in transactions">
+                					<td><a href='/tx/{{trans.tx_id}}.json' target="_blank">{{trans.tx_id | characters:10}}</a></td>
+                					<td><a href='/addresses/{{trans.receiving_address}}' target="_blank">{{trans.receiving_address}}</a></td>
+                					<td>{{trans.currency_id}}</td>
+                					<td>{{trans.amount}}</td>
+					                <td>{{trans.tx_date}}</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+                </div>
+            </div>
+
+            <nav class="fixed">
+                <div class="navItems" ng-repeat="val in values"
+                    ng-style="{'background': val.trend2}">
+                    <div>
+                        <div class="navItem trend ">
+                            <img ng-src="img/{{val.trend}}Icon.png"/>
+                        </div>
+                        <div class="navItem">
+                            {{val.name}}
+                        </div>
+                    </div>
+                    <div style="clear: both;"></div>
+                    <div>
+                        <div class="navItem">{{val.currency}}</div>
+                        <div class="navItem">{{val.name2}}</div>
+                    </div>
+                    <div style="clear: both;"></div>
+                </div>
+
+            </nav>
+
+
+       <div class="clear"></div>
+    </div>
+
+
+    <hr />
+    <footer>
+        {{footer}}
+    </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,28 @@
+[{
+"name":"Mastercoin",
+"trend":"down",
+"currency":"MSC",
+"name2":"",
+"trend2":"rgb(13,157,51)"
+},
+{
+"name":"Test MSC",
+"trend":"up",
+"currency":"TMSC",
+"name2":"demo",
+"trend2":"rgb(128,13,13)"
+},
+{
+"name":"Goldcoin",
+"trend":"flat",
+"currency":"AUX",
+"name2":"Oz Gold",
+"trend2":"grey"
+},
+{
+"name":"MC Shares",
+"trend":"flat",
+"currency":"MCS",
+"name2":"",
+"trend2":"grey"
+}]
