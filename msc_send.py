@@ -36,7 +36,7 @@ def main():
     currency_id=options.currency_id
     formatted_currency_id='{:08x}'.format(currency_id)
     amount=to_satoshi(options.amount)
-    fee=from_satoshi(options.fee)
+    fee=to_satoshi(options.fee)
     recipient_address=options.recipient_address
     from_address=options.from_address
     priv_key=options.priv_key
