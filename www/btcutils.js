@@ -22,6 +22,7 @@ BTCUtils.getQueryStringArgs = function () {
 	args['title']='Masterchain data'
 	args['tx']='sample_tx'
 	args['addr']='sample_addr'
+	args['currency']='MSC'
 	//assign each item onto the args object
 	for (i=0; i < len; i++){
 		item = items[i].split("=");

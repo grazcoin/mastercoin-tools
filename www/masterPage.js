@@ -4,7 +4,9 @@ function NavigationController($scope, $http) {
 
     var myURLParams = BTCUtils.getQueryStringArgs();
     var title = myURLParams['title'].toString();
+    var currency = myURLParams['currency'].toString();
     $scope.title = title;
+    $scope.currency = currency;
     $scope.footer = "FOOTER";
     $scope.getNavData = function () {
 
