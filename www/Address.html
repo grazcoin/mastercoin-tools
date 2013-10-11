@@ -110,7 +110,6 @@
                                     <tr>
                                         <th>Transaction ID</th>
                                         <th>Amount</th>
-                                        <th>Bonus</th>
                                         <th>Date</th>
                                     </tr>
                                 </thead>
@@ -118,7 +117,6 @@
                                     <tr ng-repeat="exodus in addressInformation.exodus_transactions">
 											<td><a ng-href="Transaction.html?tx={{exodus.tx_hash}}">{{exodus.tx_hash | characters:10}}</a></td>
                                         <td>{{exodus.formatted_amount}}</td>
-                                        <td>{{exodus.bonus_amount_included}}</td>
                                         <td>{{exodus.tx_time}}</td>
                                     </tr>
                                 </tbody>
