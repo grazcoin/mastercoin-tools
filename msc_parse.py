@@ -17,15 +17,33 @@ def main():
     parser.add_option("-t", "--transaction",dest='single_tx',default=None,
                         help="hash of a specific tx to parse")
     parser.add_option("-s", "--start-block",dest='starting_block_height',default=None,
-                        help="start the parsing at a higher block height")
+                        help="start the parsing at a specific block height (default is last)")
     parser.add_option("-a", "--archive-parsed-data", action="store_true",dest='archive', default=False,
                         help="archive the parsed data of tx addr and general for others to download")
 
     (options, args) = parser.parse_args()
     d=options.debug_mode
     single_tx=options.single_tx
-    starting_block_height=options.starting_block_height
+    requested_block_height=options.starting_block_height
+    if requested_block_height == None:
+        # try to get last block parsed
+        try:
+            try:
+                f=open('www/revision.json')
+                prev_revision_dict=json.load(f)
+                f.close()
+            except OSError:
+                info('www/revision.json does not exist. start parsing from block 0')
+                prev_revision_dict={'last_block':0}
+            starting_block_height=prev_revision_dict['last_block']
+        except KeyError:
+            starting_block_height=0
+            info('www/revision.json does not have last_block entry')
+    else:
+        starting_block_height=requested_block_height
     archive=options.archive
+
+    info('starting parsing at block '+str(starting_block_height))
 
     if single_tx == None:
         # get all tx of exodus address
@@ -55,6 +73,7 @@ def main():
         history.append(t1)
 
     # go over transaction from all history of 1EXoDus address
+    last_block=0
     for tx_dict in history:
         value=tx_dict['value']
         if starting_block_height != None:
@@ -70,6 +89,8 @@ def main():
         raw_tx=get_raw_tx(tx_hash)
         json_tx=get_json_tx(raw_tx, tx_hash)
 	(block,index)=get_tx_index(tx_hash)
+        if last_block < int(block):
+            last_block = int(block)
         # examine the outputs
         outputs_list=json_tx['outputs']
         # if we're here, then 1EXoDus is within the outputs. Remove it, but ...
@@ -165,7 +186,7 @@ def main():
                     info(parse_multisig_long(raw_tx))
                 else: # invalid
                     info('multisig with a single output tx found: '+tx_hash)
-    rev=get_revision_dict()
+    rev=get_revision_dict(last_block)
     f=open('www/revision.json','w')
     json.dump(rev, f)
     f.close()

@@ -485,17 +485,20 @@ def broadcast_tx(filename):
         info('broadcasted')
         return None
 
-def format_time_from_struct(st):
-    return time.strftime('%a, %d %b %Y %H:%M:%S +0000',st)
+def format_time_from_struct(st, short=False):
+    if short:
+        return time.strftime('%Y%m%d',st)
+    else:
+        return time.strftime('%d %b %Y %H:%M:%S GMT',st)
 
-def format_time_from_epoch(epoch):
-    return format_time_from_struct(time.localtime(int(epoch)))
+def format_time_from_epoch(epoch, short=False):
+    return format_time_from_struct(time.localtime(int(epoch)), short)
 
 def get_git_details(directory="~/mastercoin-tools"):
     repo = git.Repo(directory)
     assert repo.bare == False
     head_commit=repo.head.commit
-    timestamp=time.strftime('%Y%m%d',time.localtime(int(head_commit.authored_date)))
+    timestamp=format_time_from_epoch(int(head_commit.authored_date), True)
     return(head_commit.hexsha,timestamp)
 
 def archive_repo(directory="~/mastercoin-tools"):
@@ -518,7 +521,10 @@ def archive_parsed_data(directory="~/mastercoin-tools"):
 def get_now():
     return format_time_from_struct(time.gmtime())
 
-def get_revision_dict():
+def get_today():
+    return format_time_from_struct(time.gmtime(), True)
+
+def get_revision_dict(last_block):
     rev={}
     git_details=get_git_details()
     hexsha=git_details[0]
@@ -527,4 +533,5 @@ def get_revision_dict():
     rev['commit_time']=commit_time
     rev['url']='https://github.com/grazcoin/mastercoin-tools/commit/'+hexsha
     rev['last_parsed']=get_now()
+    rev['last_block']=last_block
     return rev

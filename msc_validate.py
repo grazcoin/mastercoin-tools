@@ -31,6 +31,7 @@ def main():
     for filename in tx_files:
         if filename.endswith('.json'):
             f=open('tx/'+filename)
+            debug(d, filename)
 	    tx_list.append(json.load(f)[0])
             try: # for basic which is also exodus
 	        tx_list.append(json.load(f)[1])
@@ -86,6 +87,15 @@ def main():
                     if not addr_dict.has_key(from_addr):
                         info('try to pay from non existing address at '+tx_hash)
                         # mark tx as invalid and continue
+                        f=open('tx/'+tx_hash+'.json','r')
+                        tmp_dict=json.load(f)[0]
+                        f.close()
+                        tmp_dict['invalid']=True
+                        f=open('tx/'+tx_hash+'.json','w')
+                        f.write('[')
+                        json.dump(tmp_dict,f)
+                        f.write(']\n')
+                        f.close()
                     else:
                         if currency=='Mastercoin':
                             c=0
@@ -93,12 +103,19 @@ def main():
                             if currency=='Test Mastercoin':
                                 c=1
                             else:
-                                info('unknown currency '+currency)
+                                info('unknown currency '+currency+ ' in tx '+tx_hash)
                                 continue
                         balance_from=addr_dict[from_addr][c][0]
                         if amount_transfer > int(balance_from):
                             info('balance of '+currency+' is too low on '+tx_hash)
                             # mark tx as invalid and continue
+                            f=open('tx/'+tx_hash+'.json','r')
+                            tmp_dict=json.load(f)[0]
+                            f.close()
+                            tmp_dict['invalid']=True
+                            f=open('tx/'+tx_hash+'.json','w')
+                            json.dump(tmp_dict,f)
+                            f.close()
                         else:
                             # update to_addr
                             if not addr_dict.has_key(to_addr):
@@ -165,12 +182,12 @@ def main():
     sorted_test_mastercoin_tx_list.reverse()
 
     for i in range(len(sorted_mastercoin_tx_list)/chunk):
-    	filename='general/msc_tx_'+'{0:04}'.format(i)+'.json'
+    	filename='general/MSC_'+'{0:04}'.format(i)+'.json'
         f=open(filename, 'w')
         json.dump(sorted_mastercoin_tx_list[i*chunk:(i+1)*chunk], f)
         f.close()
     for i in range(len(sorted_test_mastercoin_tx_list)/chunk):
-        filename='general/test_msc_tx_'+'{0:04}'.format(i)+'.json'
+        filename='general/TMSC_'+'{0:04}'.format(i)+'.json'
         f=open(filename, 'w')
         json.dump(sorted_test_mastercoin_tx_list[i*chunk:(i+1)*chunk], f)
         f.close()
