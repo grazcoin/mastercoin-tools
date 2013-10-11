@@ -504,13 +504,13 @@ def get_git_details(directory="~/mastercoin-tools"):
 def archive_repo(directory="~/mastercoin-tools"):
     (commit_hexsha, timestamp)=get_git_details()
     assert repo.bare == False
-    archive_name='www/downloads/mastercoin-tools-src-'+commit_hexsha[:8]+'-'+timestamp+'.tar'
+    archive_name='www/downloads/mastercoin-tools-src-'+timestamp+'-'+commit_hexsha[:8]+'-'+timestamp+'.tar'
     repo = git.Repo(directory)
     repo.archive(open(archive_name,'w'))
 
 def archive_parsed_data(directory="~/mastercoin-tools"):
     (commit_hexsha, timestamp)=get_git_details()
-    archive_name='www/downloads/mastercoin-tools-parse-snapshot-'+commit_hexsha[:8]+'-'+timestamp+'.tar.gz'
+    archive_name='www/downloads/mastercoin-tools-parse-snapshot-'+timestamp+'-'+commit_hexsha[:8]+'.tar.gz'
     path_to_archive='www/revision.json www/tx www/addr www/general/'
     out, err = run_command("tar cz "+path_to_archive+" -f "+archive_name)
     if err != None:
