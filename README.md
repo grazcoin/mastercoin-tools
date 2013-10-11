@@ -13,14 +13,41 @@ https://github.com/spesmilo/sx/commits?author=grazcoin
 
 
 ## Aim of this package ##
-* Live update - direct "realtime" interaction with the bitcoin network (using sx monitor).
+* Live update - direct "realtime" interaction with the bitcoin network (using sx).
 * Light node - run without a need for a database.
 * Alternative code base - use libbitcoin instead of "satoshi client".
+* Sample cool and mobile friendly web UI
+* Offline usage option
 * Send transaction directly (not "Advisor")
+* Support for offline wallets
+* Generate parsed data snapshots for download
+* API (json)
 
 ## Let's see something ##
 
-### Recently suggested ###
+### Already implemented ###
+
+* Cool web UI. Mobile phones and Tablets friendly. http://masterchain.info
+* Seperation per currency/asset (with future support for price trend on distributed market)
+* Fully distributed
+ * Local installation/Offline/Static usage - just download and use - see https://raw.github.com/grazcoin/mastercoin-tools/master/INSTALL
+ * Easy update of a new installation (no need for a database):
+  * Using download snapshot of latest parsed data from http://masterchain.info/downloads/ or
+  * Run update directly from a remote bitcoin node (obelisk) using https://github.com/grazcoin/mastercoin-tools/blob/master/msc_parse.py
+* Parse mastercoin tx by listening to 1ExoDus tx streams and validate balances.
+* Simple send script that interracts directly with the bitcoin network (obelisk server).
+ * Basic mode (original paper) and simple multisig (see below) are supported.
+* Built in API:
+ * Transactions: http://masterchain.info/tx/$TX_ID.json
+ * Addresses: http://masterchain.info/addr/$ADDR.json
+ * Latest transactions: http://masterchain.info/general/$CURRENCY_$PAGE_NUMBER.json
+* Exodus 10% bonus calculated at http://masterchain.info/Address.html?addr=exodus
+
+### Next steps ###
+
+* Add support for multiple assets and distributed exchange.
+
+### Mastercoin improvement proposal (MIP1) ###
 ```
 simple multisig:
 
@@ -35,26 +62,40 @@ output 2:   all the change to BIP11 1-of-2:
 
 ### Example transaction ###
 
+On the blockchain:
 https://blockchain.info/tx/aa64fd6088532156a37670e6cbd175c74bb101f1406517613a1a0ae6bc02fb02
 
-
-
-### Already implemented ###
-
-* A list of mastercoins per address.
-* Parse mastercoin tx for the stream of coming tx on 1EXoDus address. Simple send in the basic mode (original paper) as well as suggested "simple multisig" are supported.
-* Simple send script that interracts directly with the bitcoin network. Basic and simple multisig are supported.
-
-
-### Next steps ###
-
-* Accounting validator - checks that enough funds are available for each tx. Insufficient funds would mean invalid tx.
-
-* Web interface example.
-
+On Masterchain:
+http://masterchain.info/Transaction.html?tx=aa64fd6088532156a37670e6cbd175c74bb101f1406517613a1a0ae6bc02fb02
 
 
 ### Usage examples ###
+```
+$ python msc_parse.py -h
+Usage: msc_parse.py [options]
+
+Options:
+  -h, --help            show this help message and exit
+  -d, --debug           turn debug mode on
+  -t SINGLE_TX, --transaction=SINGLE_TX
+                        hash of a specific tx to parse
+  -s STARTING_BLOCK_HEIGHT, --start-block=STARTING_BLOCK_HEIGHT
+                        start the parsing at a specific block height (default
+                        is last)
+  -a, --archive-parsed-data
+                        archive the parsed data of tx addr and general for
+                        others to download
+```
+
+```
+$ python msc_validate.py -h
+Usage: msc_validate.py [options]
+
+Options:
+  -h, --help   show this help message and exit
+  -d, --debug  turn debug mode on
+```
+
 ```
 $ python msc_send.py -h
 Usage: msc_send.py [options]
@@ -82,6 +123,7 @@ Options:
     -b, --broadcast-tx    broadcast tx to bitcoin network
     -d, --debug           turn debug mode on
 ```
+
 ```
 $ python msc_send.py --transaction-method=multisig --currency-id=2 --amount=0.00000003 --recipient=17RVTF3vJzsuaGh7a94DFkg4msJ7FcBYgX --key-prompt --fee=0.005000000
 [I] main: Using settings: {'broadcast': False, 'recipient_address': '17RVTF3vJzsuaGh7a94DFkg4msJ7FcBYgX', 'fee': '0.005000000', 'from_address': 'UNKNOWN', 'key_prompt': True, 'host_port': None, 'currency_id': 2, 'amount': '0.00000003', 'debug_mode': False, 'priv_key': None, 'tx_method': 'multisig'}
@@ -142,7 +184,8 @@ Notes for redeeming the Escrow tx, are in NOTES.
 enjoy!
 
 BTC/Mastercoins Tips Jar:
-182osbPxCo88oaSX4ReJwUr9uAcchmJVaL
+* https://blockchain.info/address/182osbPxCo88oaSX4ReJwUr9uAcchmJVaL
+* http://masterchain.info/Address.html?addr=182osbPxCo88oaSX4ReJwUr9uAcchmJVaL&currency=MSC
 
 
 
