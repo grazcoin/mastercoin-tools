@@ -80,7 +80,7 @@ function AdressController($scope, $http) {
 
         // parse addr from url parameters
 	var myURLParams = BTCUtils.getQueryStringArgs();
-	var file = '/addr/' + myURLParams['addr'] + '.json';	
+	var file = 'addr/' + myURLParams['addr'] + '.json';	
 	var currencyName = myURLParams['currency'];
         if (currencyName == 'MSC') {
            currencyNumber = 0;
