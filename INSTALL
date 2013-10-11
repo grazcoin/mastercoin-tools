@@ -1,0 +1,50 @@
+To install a static snapshot
+============================
+git clone https://github.com/grazcoin/mastercoin-tools.git
+cd mastercoin-tools
+# download/wget the latest snapshot from http://masterchain.info/downloads/
+tar xfz mastercoin-tools-parse-snapshot-*.tar.gz
+cd www
+firefox index.html
+
+
+To update static snapshot
+=========================
+cd mastercoin-tools
+git pull
+rm mastercoin-tools-parse-snapshot-*.tar.gz
+# download/wget the latest snapshot from http://masterchain.info/downloads/
+tar xfz mastercoin-tools-parse-snapshot-*.tar.gz
+cd www
+firefox index.html
+
+
+Really install
+==============
+Instructions are for Ubuntu 13.04 and newer
+
+install packages:
+sudo apt-get install git python-simplejson python-git
+(maybe more)
+
+install sx:
+http://sx.dyne.org/install-sx.sh
+
+git clone https://github.com/grazcoin/mastercoin-tools
+
+update ~/.sx.cfg with an obelisk server details
+# ~/.sx.cfg Sample file.
+service = "tcp://masterchain.info:9091"
+(firewall port will be open per request for specific IP)
+
+cd mastercoin-tools
+mkdir -p tx addr general
+# to update with latest transactions:
+python msc_parse.py
+# validate and update addresses balance:
+python msc_validate.py
+# copy the results to www directory
+cp --no-clobber tx/* www/tx/
+cp --no-clobber addr/* www/addr/
+cp --no-clobber general/* www/general/
+
