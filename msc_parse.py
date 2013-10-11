@@ -29,10 +29,10 @@ def main():
         # try to get last block parsed
         try:
             try:
-                f=open('www/revision.json')
+                f=open('www/revision.json', 'r')
                 prev_revision_dict=json.load(f)
                 f.close()
-            except OSError:
+            except IOError:
                 info('www/revision.json does not exist. start parsing from block 0')
                 prev_revision_dict={'last_block':0}
             starting_block_height=prev_revision_dict['last_block']
@@ -132,7 +132,7 @@ def main():
                 parsed['index']=str(index)
                 if not parsed.has_key('invalid'):
                     parsed['invalid']=False
-                parsed['tx_time']=format_time_from_epoch(block_timestamp)
+                parsed['tx_time']=str(block_timestamp)+'000'
                 filename='tx/'+parsed['tx_hash']+'.json'
                 orig_json=None
                 try:
@@ -170,7 +170,7 @@ def main():
                 parsed['index']=str(index)
                 if not parsed.has_key('invalid'):
                     parsed['invalid']=False
-                parsed['tx_time']=format_time_from_epoch(block_timestamp)
+                parsed['tx_time']=str(block_timestamp)+'000'
                 filename='tx/'+parsed['tx_hash']+'.json'
                 try:
                     f=open(filename, 'w')

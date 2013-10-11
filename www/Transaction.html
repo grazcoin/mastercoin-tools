@@ -42,7 +42,7 @@
             </button>
             
             <a class="navbar-brand" href="#"><img src="img/logo.png" alt="mastercoin"></a>
-            <a class="navbar-title navbar-brand" href="#">Infocoin</a>
+            <a class="navbar-title navbar-brand" href="#">Transaction Info</a>
           </div>
           <div class="navbar-collapse collapse">
             <ul class="nav navbar-nav navbar-right">
@@ -103,7 +103,7 @@
                                    </tr>
                                    <tr>
                                        <td>Block time</td>
-                                       <td>{{transactionInformation.tx_time}}</td>
+                                       <td>{{transactionInformation.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
                                    </tr>
                                    <tr>
                                        <td>Valid</td>

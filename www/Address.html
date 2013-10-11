@@ -40,7 +40,7 @@
             </button>
             
             <a class="navbar-brand" href="#"><img src="img/logo.png" alt="mastercoin"></a>
-            <a class="navbar-title navbar-brand" href="#">Infocoin</a>
+            <a class="navbar-title navbar-brand" href="#">Address Info</a>
           </div>
           <div class="navbar-collapse collapse">
             <ul class="nav navbar-nav navbar-right">
@@ -117,7 +117,7 @@
                                     <tr ng-repeat="exodus in addressInformation.exodus_transactions">
 											<td><a ng-href="Transaction.html?tx={{exodus.tx_hash}}">{{exodus.tx_hash | characters:10}}</a></td>
                                         <td>{{exodus.formatted_amount}}</td>
-                                        <td>{{exodus.tx_time}}</td>
+                                        <td>{{exodus.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -141,7 +141,7 @@
 										<td><a ng-href="Address.html?addr={{received.to_address}}">{{received.to_address}}</a></td>
 										 <td><a ng-href="Address.html?addr={{received.from_address}}">{{received.from_address}}</a></td>
                                         <td>{{received.formatted_amount}}</td>
-                                        <td>{{received.tx_time}}</td>
+                                        <td>{{received.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
 					<td class="{{received.invalid}}ValidState"></td>
                                     </tr>
                                 </tbody>
@@ -168,7 +168,7 @@
 										<td><a ng-href="Address.html?addr={{sent.to_address}}">{{sent.to_address}}</a></td>
 										<td><a ng-href="Address.html?addr={{sent.from_address}}">{{sent.from_address}}</a></td>
                                         <td>{{sent.formatted_amount}}</td>
-                                        <td>{{sent.tx_time}}</td>
+                                        <td>{{sent.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
 					<td class="{{sent.invalid}}ValidState"></td>
                                     </tr>
                                 </tbody>
