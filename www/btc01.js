@@ -7,11 +7,11 @@ function BTCController($scope, $http) {
     $scope.getData = function () {
         // Clear scope members
         $scope.transactions = {};
-        $scope.caption = '';
+        $scope.caption = 'Latest Mastercoin transactions';
 
         // Make the http request and process the result
 	    $http.get(
-	   'general/msc_tx_0000.json',
+	   'general/MSC_0000.json',
 		 {
 		   
 		 }).success(function (data, status, headers, config) {
