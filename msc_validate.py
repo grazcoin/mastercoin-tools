@@ -61,7 +61,7 @@ def main():
                     if not addr_dict.has_key(to_addr):
                                              #msc balance    #received   #sent   #in  #out #exodus
                         addr_dict[to_addr]=([amount_transfer,0,          0,      [],  [],  [t]],
-                        #test msc balance         #received  #sent   #in  #out #exodus # exodus purchase
+                                #test msc balance #received  #sent   #in  #out #exodus # exodus purchase
 				[amount_transfer, 0,         0,      [],  [],  [t]],   [amount_transfer])
                     else:
                         addr_dict[to_addr][0][0]+=amount_transfer # msc
@@ -70,12 +70,12 @@ def main():
                         addr_dict[to_addr][1][5].append(t)        # incoming test msc
                         addr_dict[to_addr][2][0]+=amount_transfer # exodus purchase
                     # exodus bonus - 10% for exodus (available slowly during the years)
+                    ten_percent=int((amount_transfer+0.0)/10+0.5)
                     if not addr_dict.has_key(exodus_address):
-                        ten_percent=(amount_transfer+5)/10
                         addr_dict[exodus_address]=([ten_percent,0,0,[],[],[t]],[ten_percent,0,0,[],[],[t]],[0])
                     else:
-                        addr_dict[exodus_address][0][0]+=ten_percent # msc
-                        addr_dict[exodus_address][1][0]+=ten_percent # test msc
+                        addr_dict[exodus_address][0][0]+=ten_percent # 10% bonus msc for exodus
+                        addr_dict[exodus_address][1][0]+=ten_percent # 10% bonus test msc for exodus
                         addr_dict[exodus_address][0][5].append(t)    # incoming msc
                         addr_dict[exodus_address][1][5].append(t)    # incoming test msc
                         addr_dict[exodus_address][2][0]+=0           # no accounting for exodus 10% due to purchase
@@ -119,7 +119,7 @@ def main():
                         else:
                             # update to_addr
                             if not addr_dict.has_key(to_addr):
-                                if c==0:                #msc          #int #out  #test msc #in #out
+                                if c==0:                #msc balance     #revieved  #sent #in #out #ex #test balance #in #out
                                     addr_dict[to_addr]=([amount_transfer,amount_transfer,0,[t],[],[]],[0,0,0,[],[],[]],[0])
                                 else:
                                     addr_dict[to_addr]=([0,0,0,[],[],[]],[amount_transfer,amount_transfer,0,[t],[],[]],[0])
@@ -136,13 +136,13 @@ def main():
                             if c==0:
                                 addr_dict[from_addr][0][0]-=amount_transfer # msc
                                 addr_dict[from_addr][0][2]+=amount_transfer # msc total sent
-                                addr_dict[from_addr][0][4].append(t)        # incoming msc
+                                addr_dict[from_addr][0][4].append(t)        # outgoing msc
                                 # update msc list
                                 sorted_mastercoin_tx_list.append(t) 
                             else:                                    
                                 addr_dict[from_addr][1][0]-=amount_transfer # test msc
                                 addr_dict[from_addr][1][2]+=amount_transfer # test msc total sent
-                                addr_dict[from_addr][1][4].append(t)        # incoming test msc
+                                addr_dict[from_addr][1][4].append(t)        # outgoing test msc
                                 # update test msc list
                                 sorted_test_mastercoin_tx_list.append(t) 
         except OSError:
