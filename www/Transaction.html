@@ -63,15 +63,15 @@
                                <tbody>
                                    <tr>
                                        <td>Transaction ID</td>
-                                       <td><a ng-href="Transaction.html?tx={{transactionInformation.tx_hash}}">{{transactionInformation.tx_hash|characters:30}}</a></td>
+                                       <td><a ng-href="Transaction.html?tx={{transactionInformation.tx_hash}}&currency={{currency}}">{{transactionInformation.tx_hash|characters:30}}</a></td>
                                    </tr>
                                    <tr>
                                        <td>From</td>
-                                       <td><a ng-href="Address.html?addr={{transactionInformation.from_address}}">{{transactionInformation.from_address}}</a></td>
+                                       <td><a ng-href="Address.html?addr={{transactionInformation.from_address}}&currency={{currency}}">{{transactionInformation.from_address}}</a></td>
                                    </tr>
                                    <tr>
                                        <td>To</td>
-									  <td><a ng-href="Address.html?addr={{transactionInformation.to_address}}">{{transactionInformation.to_address}}</a></td>
+									  <td><a ng-href="Address.html?addr={{transactionInformation.to_address}}&currency={{currency}}">{{transactionInformation.to_address}}</a></td>
                                    </tr>
                                    <tr>
                                        <td>Amount</td>

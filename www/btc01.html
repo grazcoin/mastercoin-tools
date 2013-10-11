@@ -68,8 +68,8 @@
 							</thead>
 							<tbody>
 								<tr ng-repeat="trans in transactions">
-                					<td><a href='Transaction.html?tx={{trans.tx_hash}}'>{{trans.tx_hash | characters:10}}</a></td>
-                					<td><a href='Address.html?addr={{trans.to_address}}'>{{trans.to_address}}</a></td>
+                					<td><a href='Transaction.html?tx={{trans.tx_hash}}&currency={{currency}}'>{{trans.tx_hash | characters:10}}</a></td>
+                					<td><a href='Address.html?addr={{trans.to_address}}&currency={{currency}}'>{{trans.to_address}}</a></td>
                 					<td>{{trans.formatted_amount}}</td>
 					                <td>{{trans.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
 								</tr>

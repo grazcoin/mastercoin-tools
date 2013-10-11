@@ -87,7 +87,7 @@
                             <tbody>
                                 <tr>
                                     <td>Currency</td>
-                                    <td>Mastercoin</td>
+                                    <td>{{currency}}</td>
                                 </tr>
                                 <tr>
                                     <td>Exodus transactions</td>
@@ -118,7 +118,7 @@
                                 </thead>
                                 <tbody>
                                     <tr ng-repeat="exodus in addressInformation.exodus_transactions">
-											<td><a ng-href="Transaction.html?tx={{exodus.tx_hash}}">{{exodus.tx_hash | characters:10}}</a></td>
+											<td><a ng-href="Transaction.html?tx={{exodus.tx_hash}}&currency={{currency}}">{{exodus.tx_hash | characters:10}}</a></td>
                                         <td>{{exodus.formatted_amount}}</td>
                                         <td>{{exodus.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
                                     </tr>
@@ -142,9 +142,9 @@
                                 </thead>
                                 <tbody>
                                     <tr ng-repeat="received in addressInformation.received_transactions">
-										<td><a ng-href="Transaction.html?tx={{received.tx_hash}}">{{received.tx_hash | characters:10}}</a></td>
-										<td><a ng-href="Address.html?addr={{received.to_address}}">{{received.to_address}}</a></td>
-										 <td><a ng-href="Address.html?addr={{received.from_address}}">{{received.from_address}}</a></td>
+										<td><a ng-href="Transaction.html?tx={{received.tx_hash}}&currency={{currency}}">{{received.tx_hash | characters:10}}</a></td>
+										<td><a ng-href="Address.html?addr={{received.to_address}}&currency={{currency}}">{{received.to_address}}</a></td>
+										 <td><a ng-href="Address.html?addr={{received.from_address}}&currency={{currency}}">{{received.from_address}}</a></td>
                                         <td>{{received.formatted_amount}}</td>
                                         <td>{{received.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
 					<td class="{{received.invalid}}ValidState"></td>
@@ -171,9 +171,9 @@
                                 </thead>
                                 <tbody>
                                     <tr ng-repeat="sent in addressInformation.sent_transactions">
-										<td><a ng-href="Transaction.html?tx={{sent.tx_hash}}">{{sent.tx_hash | characters:10}}</a></td>
-										<td><a ng-href="Address.html?addr={{sent.to_address}}">{{sent.to_address}}</a></td>
-										<td><a ng-href="Address.html?addr={{sent.from_address}}">{{sent.from_address}}</a></td>
+										<td><a ng-href="Transaction.html?tx={{sent.tx_hash}}&currency={{currency}}">{{sent.tx_hash | characters:10}}</a></td>
+										<td><a ng-href="Address.html?addr={{sent.to_address}}&currency={{currency}}">{{sent.to_address}}</a></td>
+										<td><a ng-href="Address.html?addr={{sent.from_address}}&currency={{currency}}">{{sent.from_address}}</a></td>
                                         <td>{{sent.formatted_amount}}</td>
                                         <td>{{sent.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
 					<td class="{{sent.invalid}}ValidState"></td>

@@ -81,9 +81,16 @@ function AdressController($scope, $http) {
         // parse addr from url parameters
 	var myURLParams = BTCUtils.getQueryStringArgs();
 	var file = '/addr/' + myURLParams['addr'] + '.json';	
+	var currencyName = myURLParams['currency'];
+        if (currencyName == 'MSC') {
+           currencyNumber = 0;
+        }	
+        if (currencyName == 'TMSC') {
+           currencyNumber = 1;
+        }	
         // Make the http request and process the result
         $http.get(file, {}).success(function (data, status, headers, config) {
-            $scope.addressInformation = data;
+            $scope.addressInformation = data[currencyNumber];
         });
     }
 }

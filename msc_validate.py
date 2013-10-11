@@ -153,24 +153,19 @@ def main():
     for addr in addr_dict.keys():
         addr_dict_api={}
         addr_dict_api['address']=addr
-        addr_dict_api['received_transactions']=addr_dict[addr][0][3]
-        addr_dict_api['received_transactions'].reverse()
-        addr_dict_api['test_received_transactions']=addr_dict[addr][1][3]
-        addr_dict_api['test_received_transactions'].reverse()
-        addr_dict_api['sent_transactions']=addr_dict[addr][0][4]
-        addr_dict_api['sent_transactions'].reverse()
-        addr_dict_api['test_sent_transactions']=addr_dict[addr][0][4]
-        addr_dict_api['test_sent_transactions'].reverse()
-        addr_dict_api['total_received']=from_satoshi(addr_dict[addr][0][1])
-        addr_dict_api['test_total_received']=from_satoshi(addr_dict[addr][1][1])
-        addr_dict_api['total_sent']=from_satoshi(addr_dict[addr][0][2])
-        addr_dict_api['test_total_sent']=from_satoshi(addr_dict[addr][1][2])
-        addr_dict_api['balance']=from_satoshi(addr_dict[addr][0][0])
-        addr_dict_api['test_balance']=from_satoshi(addr_dict[addr][1][0])
-        addr_dict_api['exodus_transactions']=addr_dict[addr][0][5]
-        addr_dict_api['exodus_transactions'].reverse()
-        addr_dict_api['total_exodus']=from_satoshi(addr_dict[addr][2][0])
-	
+        for i in [0,1]:
+            sub_dict={}
+            sub_dict['received_transactions']=addr_dict[addr][i][3]
+            sub_dict['received_transactions'].reverse()
+            sub_dict['sent_transactions']=addr_dict[addr][i][4]
+            sub_dict['sent_transactions'].reverse()
+            sub_dict['total_received']=from_satoshi(addr_dict[addr][i][1])
+            sub_dict['total_sent']=from_satoshi(addr_dict[addr][i][2])
+            sub_dict['balance']=from_satoshi(addr_dict[addr][i][0])
+            sub_dict['exodus_transactions']=addr_dict[addr][i][5]
+            sub_dict['exodus_transactions'].reverse()
+            sub_dict['total_exodus']=from_satoshi(addr_dict[addr][2][0])
+            addr_dict_api[i]=sub_dict
         filename='addr/'+addr+'.json'
         f=open(filename, 'w')
         json.dump(addr_dict_api, f)
