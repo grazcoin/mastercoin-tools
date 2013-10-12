@@ -10,7 +10,7 @@ function BTCController($scope, $http) {
         $scope.caption = 'Latest Mastercoin transactions';
 	// parse currency from url parameters
 	var myURLParams = BTCUtils.getQueryStringArgs();
-	var file =  'general/' + myURLParams['currency'] + '_0000.json';
+	var file =  'general/' + myURLParams['currency'] + '_'+myURLParams['page']+'.json';
         // Make the http request and process the result
 	    $http.get(
 	   file,

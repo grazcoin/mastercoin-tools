@@ -23,6 +23,7 @@ BTCUtils.getQueryStringArgs = function () {
 	args['tx']='sample_tx'
 	args['addr']='sample_addr'
 	args['currency']='MSC'
+	args['page']='0000'
 	//assign each item onto the args object
 	for (i=0; i < len; i++){
 		item = items[i].split("=");
