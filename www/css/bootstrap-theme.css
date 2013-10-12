@@ -132,3 +132,27 @@ td.test{
     .trueValidState::after {
         content: "Invalid";
     }
+    
+a.panel-link{
+  text-decoration: none;
+  color:#333333;
+}
+
+a.panel-link:hover .panel-heading{
+  background:#dddddd;
+}
+a.panel-link:hover .panel-body{
+  background: #999999;
+  color:white;
+}
+a.panel-link:hover .panel{
+  border:1px solid #bbbbbb;
+}
+a.panel-link .panel.selected .panel-heading,
+a.panel-link .panel.selected .panel-body{
+  background: #f9dd56;
+}
+
+a.panel-link .panel.selected {
+  border:1px solid #f9bc56;
+}

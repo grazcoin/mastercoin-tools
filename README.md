@@ -47,7 +47,7 @@ https://github.com/spesmilo/sx/commits?author=grazcoin
 
 * Add support for multiple assets and distributed exchange.
 
-### Mastercoin improvement proposal (MIP1) ###
+### Mastercoin Improvement Proposal (MIP1) ###
 ```
 simple multisig:
 
@@ -69,7 +69,7 @@ On Masterchain:
 http://masterchain.info/Transaction.html?tx=aa64fd6088532156a37670e6cbd175c74bb101f1406517613a1a0ae6bc02fb02
 
 
-### Usage examples ###
+### Parsing usage examples ###
 ```
 $ python msc_parse.py -h
 Usage: msc_parse.py [options]
@@ -88,6 +88,15 @@ Options:
 ```
 
 ```
+$ python msc_parse.py -t aa64fd6088532156a37670e6cbd175c74bb101f1406517613a1a0ae6bc02fb02
+[I] main: {'currency_type_str': 'Mastercoin', 'transaction_type_str': 'Simple send', 'currencyId': '00000001', 'transaction_method_str': 'multisig_simple', 'recipientAddress': '17RVTF3vJzsuaGh7a94DFkg4msJ7FcBYgX', 'padding': '000000', 'amount': '0000000002faf080', 'changeAddress': '182osbPxCo88oaSX4ReJwUr9uAcchmJVaL', 'formatted_amount': '0.50000000', 'baseCoin': '00', 'dataSequenceNum': '45', 'transactionType': '00000000'}
+$
+$ python msc_parse.py -t 298a6af50089184f7b434c700f83f390d5dfdd5dac10b39b95f99036a5c66df7
+[I] main: {'currency_type_str': 'Test Mastercoin', 'transaction_type_str': 'Simple send', 'currencyId': '00000002', 'transaction_method_str': 'multisig_simple', 'recipientAddress': '17RVTF3vJzsuaGh7a94DFkg4msJ7FcBYgX', 'padding': '000000', 'amount': '0000000000000003', 'changeAddress': '182osbPxCo88oaSX4ReJwUr9uAcchmJVaL', 'formatted_amount': '0.00000003', 'baseCoin': '00', 'dataSequenceNum': '45', 'transactionType': '00000000'}
+$
+```
+
+```
 $ python msc_validate.py -h
 Usage: msc_validate.py [options]
 
@@ -96,6 +105,7 @@ Options:
   -d, --debug  turn debug mode on
 ```
 
+### Sending usage examples ###
 ```
 $ python msc_send.py -h
 Usage: msc_send.py [options]
@@ -140,27 +150,8 @@ Added output sending 4494000 Satoshis to 1 [ 041f204911ec19cb5b7b10dd87ccf6a5255
 [I] main: please send using "sx broadcast-tx signed_tx.tx"
 ```
 
-```
-msc_parse.py parses simple multisig and basic simple send.
-$ python msc_parse.py -h
-Usage: msc_parse.py [options]
 
-Options:
-  -h, --help            show this help message and exit
-  -d, --debug           turn debug mode on
-  -t SINGLE_TX, --transaction=SINGLE_TX
-                        hash of a specific tx to parse
-```
-
-```
-$ python msc_parse.py -t aa64fd6088532156a37670e6cbd175c74bb101f1406517613a1a0ae6bc02fb02
-[I] main: {'currency_type_str': 'Mastercoin', 'transaction_type_str': 'Simple send', 'currencyId': '00000001', 'transaction_method_str': 'multisig_simple', 'recipientAddress': '17RVTF3vJzsuaGh7a94DFkg4msJ7FcBYgX', 'padding': '000000', 'amount': '0000000002faf080', 'changeAddress': '182osbPxCo88oaSX4ReJwUr9uAcchmJVaL', 'formatted_amount': '0.50000000', 'baseCoin': '00', 'dataSequenceNum': '45', 'transactionType': '00000000'}
-$
-$ python msc_parse.py -t 298a6af50089184f7b434c700f83f390d5dfdd5dac10b39b95f99036a5c66df7
-[I] main: {'currency_type_str': 'Test Mastercoin', 'transaction_type_str': 'Simple send', 'currencyId': '00000002', 'transaction_method_str': 'multisig_simple', 'recipientAddress': '17RVTF3vJzsuaGh7a94DFkg4msJ7FcBYgX', 'padding': '000000', 'amount': '0000000000000003', 'changeAddress': '182osbPxCo88oaSX4ReJwUr9uAcchmJVaL', 'formatted_amount': '0.00000003', 'baseCoin': '00', 'dataSequenceNum': '45', 'transactionType': '00000000'}
-$
-```
-
+### Bootstrap related examples ###
 To get all mastercoins sells during exodus bootstrap in csv format:
 ```
 python msc_bootstrap.py > outputs/bootstrap.log
@@ -175,7 +166,6 @@ To get the whole bootstrap story (for fun and debug), check:
 ```
 python msc_bootstrap.py story > outputs/bootstrap_story.log
 ```
-
 
 The outputs of those scripts are available under outputs directory. 
 Notes for redeeming the Escrow tx, are in NOTES.

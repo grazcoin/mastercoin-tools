@@ -7,14 +7,18 @@ function NavigationController($scope, $http) {
     var currency = myURLParams['currency'].toString();
     $scope.title = title;
     $scope.currency = currency;
-    $scope.footer = "FOOTER";
     $scope.getNavData = function () {
 
         $scope.values = {};
         // Make the http request and process the result
         $http.get('values.json', {}).success(function (data, status, headers, config) {
-
-            $scope.values = data;
+           $scope.values = data;
+	   angular.forEach($scope.values, function(value, key){
+	    if (value.currency==$scope.currency)
+		$scope.values[key].selected="selected";
+	    else
+		$scope.values[key].selected="";
+	  });
         });
 
     }
