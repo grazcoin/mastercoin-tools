@@ -7,7 +7,7 @@
     <meta name="author" content="">
     <link rel="shortcut icon" href="ico/favicon.png">
     <title>Address information</title>
-	
+
 
     <!-- Bootstrap core CSS -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
@@ -38,23 +38,23 @@
               <span class="icon-bar"></span>
               <span class="icon-bar"></span>
             </button>
-            
+
             <a class="navbar-brand" href="/"><img src="img/logo.png" alt="mastercoin"></a>
             <a class="navbar-title navbar-brand" href="#">Address Info: {{currency}}</a>
           </div>
           <div class="navbar-collapse collapse">
             <ul class="nav navbar-nav navbar-right">
               <li><a href="/">Home</a></li>
-              <li><a href="Send.html">Send</a></li>
+              <li><a href="Send.html" class="c-visible-xs">Send</a></li>
               <li><a href="Download.html">Download</a></li>
-              <li><a href="API.html">API</a></li>
+              <li><a href="API.html" class="c-visible-xs">API</a></li>
               <li><a href="License.html">License</a></li>
               <li><a href="About.html">About</a></li>
             </ul>
           </div>
         </div>
       </div>
-  
+
       <div class="container page-container">
         <div class="row">
           <div class="no-fixed col-sm-9 col-sm-push-3 col-md-10 col-md-push-2">
@@ -157,7 +157,7 @@
                             </table>
                         </div>
 				      </div>
-    
+
 				      <div class="row">
                         <!--SENT TRANSACTIONS-->
 								<div class="col-md-12">
@@ -209,13 +209,14 @@
         </div>
       </div> <!-- /container -->
     </div>
-    
+
         <div id="push"></div>
     </div>
-    <div id="footer">
-      <div class="container">
-        <p class="muted credit">&copy; Masterchain Grazcoin Grimentz 2013.</p>
-      </div>
+    <div id="footer" ng-controller="RevisionController" ng-init="getData()">
+	      <div class="container">
+	      	<p class="revision">{{footer}}</p>
+	        <p class="muted credit">&copy; Masterchain Grazcoin Grimentz 2013.</p>
+	      </div>
     </div>
 </body>
 </html>

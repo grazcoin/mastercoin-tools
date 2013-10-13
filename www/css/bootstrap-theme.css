@@ -27,6 +27,30 @@ body {
   
 }
 
+@media (min-width: 768px) and (max-width: 991px) {
+	.c-visible-xs {
+		display:none !important;
+	}
+}
+
+/*
+@media (max-width: 1000px)
+.navbar > .container .navbar-brand {
+margin-right: -1000px;
+}
+
+@media screen and (max-width: 991px) {
+    body { padding-top: 40px; }
+}
+
+@media screen and (max-width: 768px) {
+    body { padding-top: 0px; }
+}
+
+@media screen and (max-width: 510px) {
+    body { padding-top: 40px; }
+}
+*/
 /* Wrapper for page content to push down footer */
 #wrap {
   min-height: 100%;
@@ -52,7 +76,6 @@ body {
 @media (max-width: 767px) {
   #footer {
     margin-left: -20px;
-    margin-right: -20px;
     padding-left: 20px;
     padding-right: 20px;
   }
@@ -67,8 +90,18 @@ body {
 /* Not required for template or sticky footer method. */
 
 .container .credit {
-  margin: 20px 0;
+  margin: 10px 0;
 }
+
+.container .credit-static {
+  margin: 20px 0 !important;
+}
+
+.revision {
+  margin: 5px 0;
+  font-size: 70%;
+}
+
 code {
   font-size: 80%;
 }
