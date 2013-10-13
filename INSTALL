@@ -34,8 +34,7 @@ git clone https://github.com/grazcoin/mastercoin-tools
 
 update ~/.sx.cfg with an obelisk server details
 # ~/.sx.cfg Sample file.
-service = "tcp://masterchain.info:9091"
-(firewall port will be open per request for specific IP)
+service = "tcp://162.243.29.201:9091"
 
 cd mastercoin-tools
 mkdir -p tx addr general
