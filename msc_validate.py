@@ -49,7 +49,7 @@ def main():
     addr_dict={}
     for t in sorted_tx_list:
         try:
-            if t['invalid']!=True:
+            if t['invalid']==False:
                 to_addr=t['to_address']
                 from_addr=t['from_address']
                 amount_transfer=to_satoshi(t['formatted_amount'])
@@ -90,7 +90,7 @@ def main():
                         f=open('tx/'+tx_hash+'.json','r')
                         tmp_dict=json.load(f)[0]
                         f.close()
-                        tmp_dict['invalid']=True
+                        tmp_dict['invalid']=(True,'pay from a non existing address')
                         f=open('tx/'+tx_hash+'.json','w')
                         f.write('[')
                         json.dump(tmp_dict,f)
@@ -112,7 +112,7 @@ def main():
                             f=open('tx/'+tx_hash+'.json','r')
                             tmp_dict=json.load(f)[0]
                             f.close()
-                            tmp_dict['invalid']=True
+                            tmp_dict['invalid']=(True,'balance too low')
                             f=open('tx/'+tx_hash+'.json','w')
                             json.dump(tmp_dict,f)
                             f.close()

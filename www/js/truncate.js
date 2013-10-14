@@ -51,5 +51,16 @@ angular.module('truncate', [])
             }
 
         };
+    })
+    .filter('truefalsesearch', function () {
+            return function (text) {
+            	if (isNaN(text)) return true;
+            	var strTxt = text.toString();
+                if (0 <= strTxt.search('true'))
+                	return true;
+                else
+                	return false;
+    
+            };
     });
 

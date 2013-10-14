@@ -322,6 +322,7 @@ def parse_simple_basic(tx, tx_hash='unknown'):
             seq_list.append(int(seq,16))
         reference=None
         data=None
+        seq_start_index=-1
 
         # validation of basic simple send transaction according to:
         # https://bitcointalk.org/index.php?topic=265488.msg3190175#msg3190175
@@ -329,21 +330,41 @@ def parse_simple_basic(tx, tx_hash='unknown'):
         # all outputs has to be the same (except for change)
         if len(different_outputs_values) > 2:
             info('invalid mastercoin tx (different output values) '+tx_hash)
-            return {'invalid':True, 'tx_hash':tx_hash}
-
-        # If there is an ambiguous sequence (i.e. 3,4,4), or perfect sequence (i.e. 3,4,5),
-        # then the transaction is invalid!
-
-        # if broken sequence (i.e. 3,4,8), then the odd-man-out is the change address
-
-        # verify that all follow (n+1) mod 256 dataSequenceNum rule
-        # verify not more than 255 data
+            return {'invalid':(True,'different output values'), 'tx_hash':tx_hash}
 
         # currently support only the simple send (a single data packet)
+        # if broken sequence (i.e. 3,4,8), then the odd-man-out is the change address
         for s in seq_list:
             if (s+1)%256 == int(seq_list[(seq_list.index(s)+1)%len(seq_list)]):
+                seq_start_index=seq_list.index(s)
                 data=outputs_list_no_exodus[seq_list.index(s)]
                 reference=outputs_list_no_exodus[(seq_list.index(s)+1)%len(seq_list)]
+
+        # no change case:
+        if(len(seq_list)==2):
+            diff=abs(seq_list[0]-seq_list[1])
+            if diff != 1 and diff != 255:
+                info('invalid mastercoin tx (non following 2 seq numbers '+str(seq_list)+') '+tx_hash)
+                return {'invalid':(True,'non following 2 seq numbers '+str(seq_list)), 'tx_hash':tx_hash}
+
+        if(len(seq_list)==3):
+            info(seq_list)
+            info((seq_list[seq_start_index]+1)%256)
+            info((seq_list[(seq_start_index+1)%3])%256)
+            info((seq_list[(seq_start_index-1)%3]+1)%256)
+            info((seq_list[seq_start_index])%256)
+            # If there is a perfect sequence (i.e. 3,4,5), mark invalid
+            if (seq_list[seq_start_index]+1)%256==(seq_list[(seq_start_index+1)%3])%256 and \
+                (seq_list[(seq_start_index-1)%3]+1)%256==(seq_list[seq_start_index])%256:
+                info('invalid mastercoin tx (perfect sequence '+str(seq_list)+') '+tx_hash)
+                return {'invalid':(True,'perfect sequence '+str(seq_list)), 'tx_hash':tx_hash}
+
+            # If there is an ambiguous sequence (i.e. 3,4,4), mark invalid
+            if seq_list[seq_start_index]==seq_list[(seq_start_index+2)%3] or \
+                seq_list[(seq_start_index+1)%3]==seq_list[(seq_start_index+2)%3] or \
+                seq_list[(seq_start_index)]==seq_list[(seq_start_index+1)%3]:
+                info('invalid mastercoin tx (ambiguous sequence '+str(seq_list)+') '+tx_hash)
+                return {'invalid':(True,'ambiguous sequence '+str(seq_list)), 'tx_hash':tx_hash}
 
         to_address=reference['address']
         data_script=data['script'].split()[3].zfill(42)
@@ -361,6 +382,7 @@ def parse_simple_basic(tx, tx_hash='unknown'):
             return parse_dict
     except KeyError, IndexError:
         info('invalid mastercoin tx '+tx_hash)
+        return {'invalid':(True,'bad parsing'), 'tx_hash':tx_hash}
 
 def parse_multisig_simple(tx, tx_hash='unknown'):
     parsed_json_tx=get_json_tx(tx)
