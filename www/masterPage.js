@@ -26,16 +26,13 @@ function NavigationController($scope, $http) {
 }
 
 function RevisionController($scope, $http) {
-    $scope.footer = '';
+    $scope.revision = {};
     
     $scope.getData = function () {
         
         // Revision - Make the http request and process the result
 	$http.get('revision.json', {}).success(function (data, status, headers, config) {
 	    $scope.revision=data;
-	    var line = "Last sync: "+data['last_parsed']+" using revision "+  
-	    data['commit_hexsha']+" ("+data['commit_time']+")."
-	    $scope.footer=line;
         });
 
     }
