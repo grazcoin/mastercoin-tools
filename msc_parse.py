@@ -165,6 +165,9 @@ def main():
         else: # multisig
             if num_of_outputs == 2: # simple version of multisig
                 parsed=parse_multisig_simple(raw_tx, tx_hash)
+                if len(parsed) == 0:
+                    # disabled
+                    continue
                 parsed['method']='multisig'
                 parsed['block']=str(block)
                 parsed['index']=str(index)
@@ -183,7 +186,26 @@ def main():
                     pass
             else:
                 if num_of_outputs > 2: # multisig long
-                    info(parse_multisig_long(raw_tx))
+                    parsed=parse_multisig_long(raw_tx, tx_hash)
+                    if len(parsed) == 0:
+                        # disabled
+                        continue
+                    parsed['method']='multisig_long'
+                    parsed['block']=str(block)
+                    parsed['index']=str(index)
+                    if not parsed.has_key('invalid'):
+                        parsed['invalid']=False
+                    parsed['tx_time']=str(block_timestamp)+'000'
+                    filename='tx/'+parsed['tx_hash']+'.json'
+                    try:
+                        f=open(filename, 'w')
+                        f.write('[')
+                        json.dump(parsed, f)
+                        f.write(']\n')
+                        f.close()
+                    except OSError:
+                        info("json dump failed for "+tx_hash)
+                        pass
                 else: # invalid
                     info('multisig with a single output tx found: '+tx_hash)
     rev=get_revision_dict(last_block)

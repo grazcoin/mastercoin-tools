@@ -17,6 +17,7 @@ last_exodus_bootstrap_block=255365
 exodus_bootstrap_deadline=1377993600
 currency_type_dict={'00000001':'Mastercoin','00000002':'Test Mastercoin'}
 transaction_type_dict={'00000000':'Simple send'}
+multisig_simple_disabled=True
 dust_limit=5430
 
 def run_command(command, input_str=None, ignore_stderr=False):
@@ -348,11 +349,6 @@ def parse_simple_basic(tx, tx_hash='unknown'):
                 return {'invalid':(True,'non following 2 seq numbers '+str(seq_list)), 'tx_hash':tx_hash}
 
         if(len(seq_list)==3):
-            info(seq_list)
-            info((seq_list[seq_start_index]+1)%256)
-            info((seq_list[(seq_start_index+1)%3])%256)
-            info((seq_list[(seq_start_index-1)%3]+1)%256)
-            info((seq_list[seq_start_index])%256)
             # If there is a perfect sequence (i.e. 3,4,5), mark invalid
             if (seq_list[seq_start_index]+1)%256==(seq_list[(seq_start_index+1)%3])%256 and \
                 (seq_list[(seq_start_index-1)%3]+1)%256==(seq_list[seq_start_index])%256:
@@ -385,6 +381,9 @@ def parse_simple_basic(tx, tx_hash='unknown'):
         return {'invalid':(True,'bad parsing'), 'tx_hash':tx_hash}
 
 def parse_multisig_simple(tx, tx_hash='unknown'):
+    if multisig_simple_disabled:
+        info('multisig simple is disabled: '+tx_hash)
+        return{}
     parsed_json_tx=get_json_tx(tx)
     script=parsed_json_tx['outputs'][1]['script']
     fields=script.split('[ ')
@@ -407,8 +406,54 @@ def parse_multisig_simple(tx, tx_hash='unknown'):
         error('Bad parsing of data script '+data_script.encode('hex_codec'))
         return {}
 
-def parse_multisig_long(tx):
-    info('not implemented')
+def parse_multisig_long(tx, tx_hash='unknown'):
+    parsed_json_tx=get_json_tx(tx)
+    parse_dict={}
+    all_outputs=parsed_json_tx['outputs']
+    (outputs_list_no_exodus, outputs_to_exodus, different_outputs_values)=examine_outputs(all_outputs, tx_hash)
+    tx_dust=outputs_to_exodus[0]['value']
+    dust_outputs=different_outputs_values[tx_dust]
+    to_address='unknown'
+    for o in dust_outputs: # assume the only other dust is to recipient
+        if o['address']!=exodus_address:
+            to_address=o['address']
+            continue
+    for o in outputs_list_no_exodus:
+        if o['address']==None: # This should be the multisig
+            script=o['script']
+            # verify that it is a multisig
+            if not script.endswith('checkmultisig'):
+                error('Bad multisig data script '+script)
+                return parse_dict
+            fields=script.split('[ ')
+            data_script=fields[2].split(' ]')[0]
+            data_dict=parse_data_script(data_script)
+            if len(data_dict) >= 6: # at least 6 basic fields got parse
+                parse_dict=data_dict
+                parse_dict['tx_hash']=tx_hash
+                parse_dict['formatted_amount'] = str("{0:.8f}".format(int(data_dict['amount'],16)/100000000.0))
+                parse_dict['currency_str'] = get_currency_type_from_dict(data_dict['currencyId'])
+                parse_dict['tx_type_str'] = get_transaction_type_from_dict(data_dict['transactionType'])
+                parse_dict['tx_method_str'] = 'multisig long'
+        else: # not the multisig output
+            # the output with dust
+            parse_dict['to_address']=o['address']
+
+    if parse_dict == {}:
+        error('Bad parsing of multisig_long: '+tx_hash)
+
+    input_addr=''
+    for i in parsed_json_tx['inputs']:
+        if input_addr == '':
+            input_addr=i['address']
+        else:
+            if i['address'] != input_addr:
+                error('Bad multiple inputs on: '+tx_hash)
+                return parse_dict
+    parse_dict['from_address']=input_addr
+    parse_dict['to_address']=to_address
+                
+    return parse_dict
 
 def examine_outputs(outputs_list, tx_hash='unknown'):
         # if we're here, then 1EXoDus is within the outputs. Remove it, but ...
@@ -422,9 +467,9 @@ def examine_outputs(outputs_list, tx_hash='unknown'):
                 outputs_to_exodus.append(o)
             output_value=o['value']
             if different_outputs_values.has_key(output_value):
-                different_outputs_values[output_value]+=1
+                different_outputs_values[output_value].append(o)
             else:
-                different_outputs_values[output_value]=1
+                different_outputs_values[output_value]=[o]
         # take care if multiple 1EXoDus exist (for the case that someone sends msc
         # to 1EXoDus, or have 1EXoDus as change address)
         if len(outputs_to_exodus) != 1:
