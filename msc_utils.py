@@ -8,6 +8,12 @@ import inspect
 import time
 import git
 
+from ecdsa import curves, ecdsa
+# taken from https://github.com/warner/python-ecdsa
+from pycoin import encoding
+# taken from https://github.com/richardkiss/pycoin
+
+
 __b58chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 __b58base = len(__b58chars)
 
@@ -272,6 +278,9 @@ def bc_address_to_hash_160(addr):
     vh160_with_checksum=b58decode(addr, 25)
     return vh160_with_checksum[1:-4]
 
+def get_sha256(string):
+    return hashlib.sha256(string).hexdigest()
+
 def is_script_output(output):
     # check that the script looks like:
     # 1 [ hex ] ...
@@ -406,7 +415,7 @@ def parse_multisig_simple(tx, tx_hash='unknown'):
         error('Bad parsing of data script '+data_script.encode('hex_codec'))
         return {}
 
-def parse_multisig_long(tx, tx_hash='unknown'):
+def parse_multisig(tx, tx_hash='unknown'):
     parsed_json_tx=get_json_tx(tx)
     parse_dict={}
     all_outputs=parsed_json_tx['outputs']
@@ -427,20 +436,22 @@ def parse_multisig_long(tx, tx_hash='unknown'):
                 return parse_dict
             fields=script.split('[ ')
             data_script=fields[2].split(' ]')[0]
-            data_dict=parse_data_script(data_script)
+            obfus_str=get_sha256(to_address)[:62]
+            dataHex_deobfuscated=get_string_xor(data_script[2:-2],obfus_str).zfill(64)+'00'
+            data_dict=parse_data_script(dataHex_deobfuscated)
             if len(data_dict) >= 6: # at least 6 basic fields got parse
                 parse_dict=data_dict
                 parse_dict['tx_hash']=tx_hash
                 parse_dict['formatted_amount'] = str("{0:.8f}".format(int(data_dict['amount'],16)/100000000.0))
                 parse_dict['currency_str'] = get_currency_type_from_dict(data_dict['currencyId'])
                 parse_dict['tx_type_str'] = get_transaction_type_from_dict(data_dict['transactionType'])
-                parse_dict['tx_method_str'] = 'multisig long'
+                parse_dict['tx_method_str'] = 'multisig'
         else: # not the multisig output
             # the output with dust
             parse_dict['to_address']=o['address']
 
     if parse_dict == {}:
-        error('Bad parsing of multisig_long: '+tx_hash)
+        error('Bad parsing of multisig: '+tx_hash)
 
     input_addr=''
     for i in parsed_json_tx['inputs']:
@@ -476,7 +487,7 @@ def examine_outputs(outputs_list, tx_hash='unknown'):
             error("not implemented tx with multiple 1EXoDus outputs: "+tx_hash)
         return (outputs_list_no_exodus, outputs_to_exodus, different_outputs_values)
 
-def get_tx_method(tx, tx_hash='unknown'): # multisig_simple, multisig_long, multisig_invalid, basic
+def get_tx_method(tx, tx_hash='unknown'): # multisig_simple, multisig, multisig_invalid, basic
         json_tx=get_json_tx(tx)
         outputs_list=json_tx['outputs']
         (outputs_list_no_exodus, outputs_to_exodus, different_outputs_values)=examine_outputs(outputs_list, tx_hash)
@@ -490,7 +501,7 @@ def get_tx_method(tx, tx_hash='unknown'): # multisig_simple, multisig_long, mult
                     return 'multisig_simple'
                 else:
                     if num_of_outputs > 2:
-                        return 'multisig_long'
+                        return 'multisig'
                     else:
                         return 'multisig_invalid'
         # all the rest, which includes exodus and invalids are considered as basic
@@ -602,3 +613,30 @@ def get_revision_dict(last_block):
     rev['last_parsed']=get_now()
     rev['last_block']=last_block
     return rev
+
+def is_pubkey_valid(pubkey):
+    sec=encoding.binascii.unhexlify(pubkey)
+    public_pair=encoding.sec_to_public_pair(sec)
+    return curves.ecdsa.point_is_valid(ecdsa.generator_secp256k1, public_pair[0], public_pair[1])
+
+def get_compressed_pubkey_format(pubkey):
+    public_pair=encoding.sec_to_public_pair(encoding.binascii.unhexlify(pubkey))
+    return encoding.binascii.hexlify(encoding.public_pair_to_sec(public_pair))
+
+def get_address_of_pubkey(pubkey):
+    public_pair=encoding.sec_to_public_pair(encoding.binascii.unhexlify(pubkey))
+    return encoding.public_pair_to_bitcoin_address(public_pair)
+
+def get_nearby_valid_pubkey(pubkey):
+    valid_pubkey=pubkey
+    l=len(pubkey)
+    while not is_pubkey_valid(valid_pubkey):
+        info("trying "+valid_pubkey)
+        next=hex(int(valid_pubkey, 16)+1).strip('L').split('0x')[1]
+        valid_pubkey = next.zfill(l)
+    info("valid  "+valid_pubkey)
+    return valid_pubkey
+
+def get_string_xor(s1,s2):
+    result = int(s1, 16) ^ int(s2, 16)
+    return '{:x}'.format(result)

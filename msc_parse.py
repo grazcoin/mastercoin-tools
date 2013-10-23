@@ -185,12 +185,12 @@ def main():
                     info("json dump failed for "+tx_hash)
                     pass
             else:
-                if num_of_outputs > 2: # multisig long
-                    parsed=parse_multisig_long(raw_tx, tx_hash)
+                if num_of_outputs > 2: # multisig
+                    parsed=parse_multisig(raw_tx, tx_hash)
                     if len(parsed) == 0:
                         # disabled
                         continue
-                    parsed['method']='multisig_long'
+                    parsed['method']='multisig'
                     parsed['block']=str(block)
                     parsed['index']=str(index)
                     if not parsed.has_key('invalid'):

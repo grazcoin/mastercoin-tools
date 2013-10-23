@@ -2,6 +2,7 @@ from optparse import OptionParser
 import sys
 import msc_utils
 import getpass
+import random
 from msc_utils import *
 
 d=False # debug_mode
@@ -70,24 +71,28 @@ def main():
     change_address_pub=from_address_pub
     changeAddress=from_address
 
-    recipientBytes = b58decode(recipient_address, 25);
-    recipientSequenceNum = ord(recipientBytes[1])
-    dataSequenceNum = recipientSequenceNum - 1
-    if dataSequenceNum < 0:
-        dataSequenceNum = dataSequenceNum + 256
-    dataHex = '{:02x}'.format(0) + '{:02x}'.format(dataSequenceNum) + \
-            '{:08x}'.format(tx_type) + '{:08x}'.format(currency_id) + \
-            '{:016x}'.format(amount) + '{:06x}'.format(0)
-    dataBytes = dataHex.decode('hex_codec')
-    dataAddress = hash_160_to_bc_address(dataBytes[1:21])
+
 
     # get utxo required for the tx
 
     if tx_method == "basic":
         required_value=3*dust_limit
+        recipientBytes = b58decode(recipient_address, 25);
+        recipientSequenceNum = ord(recipientBytes[1])
+        dataSequenceNum = recipientSequenceNum - 1
+        if dataSequenceNum < 0:
+            dataSequenceNum = dataSequenceNum + 256
     else:
         # multisig
-        required_value=2*dust_limit
+        required_value=4*dust_limit
+        dataSequenceNum=1
+
+    dataHex = '{:02x}'.format(0) + '{:02x}'.format(dataSequenceNum) + \
+            '{:08x}'.format(tx_type) + '{:08x}'.format(currency_id) + \
+            '{:016x}'.format(amount) + '{:06x}'.format(0)
+
+    dataBytes = dataHex.decode('hex_codec')
+    dataAddress = hash_160_to_bc_address(dataBytes[1:21])
 
     utxo_all=get_utxo(from_address, required_value+fee)
     utxo_split=utxo_all.split()
@@ -112,14 +117,30 @@ def main():
             error ('negative change value')
         inputs_outputs+=' -o '+exodus_address+':'+str(dust_limit) + \
                         ' -o '+recipient_address+':'+str(dust_limit) + \
-                        ' -o '+dataAddress+':'+str(dust_limit) + \
-                        ' -o '+changeAddress+':'+str(change_value)
+                        ' -o '+dataAddress+':'+str(dust_limit)
+        if change_value >= dust_limit:
+            inputs_outputs+=' -o '+changeAddress+':'+str(change_value)
+        else:
+            # under dust limit leave all remaining as fees
+            pass
     else:
         # simple send - multisig
-        # embedding rawscript "1 [ change_address_pub recepientHex+dataHex+padding ] 2 checkmultisig"
-        recipientHex=recipientBytes.encode('hex_codec')
-        padded_recipientHex_and_dataHex=recipientHex+dataHex+''.zfill(130-50-42)
-        script_str='1 [ '+change_address_pub+' ] [ '+padded_recipientHex_and_dataHex+' ] 2 checkmultisig'
+        # dust to exodus
+        # dust to recipient
+        # double dust to rawscript "1 [ change_address_compressed_pub ] [ dataHex_obfuscated ] 2 checkmultisig"
+        # change to change
+        change_value=inputs_total_value-4*dust_limit-fee
+        change_address_compressed_pub=get_compressed_pubkey_format(get_pubkey_with_instructions(changeAddress))
+        obfus_str=get_sha256(recipient_address)[:62]
+        padded_dataHex=dataHex[2:]+''.zfill(len(change_address_compressed_pub)-len(dataHex))[2:]
+        dataHex_obfuscated=get_string_xor(padded_dataHex,obfus_str)
+        random_byte=hex(random.randrange(0,255)).strip('0x').zfill(2)
+        hacked_dataHex_obfuscated='02'+dataHex_obfuscated+random_byte
+        debug(d, 'plain dataHex: --'+padded_dataHex+'--')
+        debug(d, 'obfus dataHex: '+hacked_dataHex_obfuscated)
+        valid_dataHex_obfuscated=get_nearby_valid_pubkey(hacked_dataHex_obfuscated)
+        debug(d, 'valid dataHex: '+valid_dataHex_obfuscated)
+        script_str='1 [ '+change_address_compressed_pub+' ] [ '+valid_dataHex_obfuscated+' ] 2 checkmultisig'
         debug(d,'change address is '+changeAddress)
         debug(d,'receipent is '+recipient_address)
         debug(d,'total inputs value is '+str(inputs_total_value))
@@ -127,11 +148,18 @@ def main():
         debug(d,'dust limit is '+str(dust_limit))
         debug(d,'BIP11 script is '+script_str)
         dataScript=rawscript(script_str)
-        change_value=inputs_total_value-dust_limit-fee
+        change_value=inputs_total_value-4*dust_limit-fee
+        # FIXME: handle the case of change smaller than dust limit.
         if change_value < 0:
             error ('negative change value')
         inputs_outputs+=' -o '+exodus_address+':'+str(dust_limit) + \
-                        ' -o '+dataScript+':'+str(change_value)
+                        ' -o '+recipient_address+':'+str(dust_limit) + \
+                        ' -o '+dataScript+':'+str(2*dust_limit)
+        if change_value >= dust_limit:
+            inputs_outputs+=' -o '+changeAddress+':'+str(change_value)
+        else:
+            # under dust limit leave all remaining as fees
+            pass
 
     tx=mktx(inputs_outputs)
     debug(d,'inputs_outputs are '+inputs_outputs)
@@ -183,8 +211,8 @@ def parse_test(tx, tx_hash='unknown'):
     if method == 'multisig_simple':
         info(parse_multisig_simple(tx))
     else:
-        if method == 'multisig_long':
-            info(parse_multisig_long(tx))
+        if method == 'multisig':
+            info(parse_multisig(tx))
         else:
             if method == 'basic':
                 info(parse_simple_basic(tx))
@@ -192,11 +220,15 @@ def parse_test(tx, tx_hash='unknown'):
                 error('cannot parse tx with method '+method)
 
 def get_pubkey_with_instructions(addr):
-    addrPub=get_pubkey(addr)
-    if not addrPub.startswith('04'):
-        error(addrPub.strip('\n') + \
-            "\nplease supply pubkey of "+addr+" instead of the address\n" + \
-            "one option to get the pubkey is run on offline machine echo $PRIVKEY | sx pubkey")
+    if (addr.startswith('04') or addr.startswith('03') or addr.startswith('02')):
+        info('already pubkey given')
+        addrPub=addr
+    else:
+        addrPub=get_pubkey(addr)
+        if not (addrPub.startswith('04') or addrPub.startswith('03') or addrPub.startswith('02')):
+            error(addrPub.strip('\n') + \
+                "\nplease supply pubkey of "+addr+" instead of the address\n" + \
+                "one option to get the pubkey is run on offline machine echo $PRIVKEY | sx pubkey")
     return addrPub.strip('\n')
 
 def yesno():
