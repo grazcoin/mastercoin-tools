@@ -71,8 +71,6 @@ def main():
     change_address_pub=from_address_pub
     changeAddress=from_address
 
-
-
     # get utxo required for the tx
 
     if tx_method == "basic":
@@ -127,7 +125,7 @@ def main():
         # simple send - multisig
         # dust to exodus
         # dust to recipient
-        # double dust to rawscript "1 [ change_address_compressed_pub ] [ dataHex_obfuscated ] 2 checkmultisig"
+        # double dust to rawscript "1 [ change_address_pub ] [ dataHex_obfuscated ] 2 checkmultisig"
         # change to change
         change_value=inputs_total_value-4*dust_limit-fee
         change_address_compressed_pub=get_compressed_pubkey_format(get_pubkey_with_instructions(changeAddress))
@@ -140,7 +138,7 @@ def main():
         debug(d, 'obfus dataHex: '+hacked_dataHex_obfuscated)
         valid_dataHex_obfuscated=get_nearby_valid_pubkey(hacked_dataHex_obfuscated)
         debug(d, 'valid dataHex: '+valid_dataHex_obfuscated)
-        script_str='1 [ '+change_address_compressed_pub+' ] [ '+valid_dataHex_obfuscated+' ] 2 checkmultisig'
+        script_str='1 [ '+change_address_pub+' ] [ '+valid_dataHex_obfuscated+' ] 2 checkmultisig'
         debug(d,'change address is '+changeAddress)
         debug(d,'receipent is '+recipient_address)
         debug(d,'total inputs value is '+str(inputs_total_value))
