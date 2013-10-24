@@ -78,8 +78,12 @@ def main():
         value=tx_dict['value']
         if starting_block_height != None:
             current_block=tx_dict['output_height']
-            if int(current_block)<int(starting_block_height):
-                debug(d,'skip block '+str(current_block)+' since starting at '+str(starting_block_height))
+            if current_block != 'Pending':
+                if int(current_block)<int(starting_block_height):
+                    debug(d,'skip block '+str(current_block)+' since starting at '+str(starting_block_height))
+                    continue
+            else:
+                # Pending block will be checked whenever they are not Pending anymore.
                 continue
         try:
             tx_hash=tx_dict['output'].split(':')[0]
@@ -138,10 +142,19 @@ def main():
                 try:
                     # does this tx exist? (from bootstrap)
                     f=open(filename, 'r')
-                    orig_json=json.load(f)
+                    orig_json=json.load(f)[0]
                     f.close()
-                except:
-                    pass
+                    # verify bootstrap block
+                    if orig_json.has_key('block'):
+                        orig_block=orig_json['block']
+                        info('found this tx already on (previous) block '+orig_block)
+                        if int(orig_block)>last_exodus_bootstrap_block:
+                            info('but it is post exodus - ignoring')
+                            orig_json=None
+                    else:
+                        info('previous tx without block on '+filename)
+                except IOError:
+                     pass
                 try:
                     if orig_json != None: # it was an exodus tx
                         if len(orig_json)==1:

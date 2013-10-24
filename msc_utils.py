@@ -24,6 +24,7 @@ exodus_bootstrap_deadline=1377993600
 currency_type_dict={'00000001':'Mastercoin','00000002':'Test Mastercoin'}
 transaction_type_dict={'00000000':'Simple send'}
 multisig_simple_disabled=True
+multisig_disabled=False
 dust_limit=5430
 
 def run_command(command, input_str=None, ignore_stderr=False):
@@ -392,7 +393,7 @@ def parse_simple_basic(tx, tx_hash='unknown'):
 def parse_multisig_simple(tx, tx_hash='unknown'):
     if multisig_simple_disabled:
         info('multisig simple is disabled: '+tx_hash)
-        return{}
+        return {}
     parsed_json_tx=get_json_tx(tx)
     script=parsed_json_tx['outputs'][1]['script']
     fields=script.split('[ ')
@@ -416,6 +417,9 @@ def parse_multisig_simple(tx, tx_hash='unknown'):
         return {}
 
 def parse_multisig(tx, tx_hash='unknown'):
+    if multisig_disabled:
+        info('multisig is disabled: '+tx_hash)
+        return {}
     parsed_json_tx=get_json_tx(tx)
     parse_dict={}
     input_addr=''
@@ -632,8 +636,6 @@ def get_address_from_output(tx_and_number):
     try:
         txid=tx_and_number.split(':')[0]
         number=int(tx_and_number.split(':')[1])
-        info(txid)
-        info(number)
     except IndexError:
         return None
     rawtx=get_raw_tx(txid)
