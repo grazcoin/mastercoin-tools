@@ -418,6 +418,15 @@ def parse_multisig_simple(tx, tx_hash='unknown'):
 def parse_multisig(tx, tx_hash='unknown'):
     parsed_json_tx=get_json_tx(tx)
     parse_dict={}
+    input_addr=''
+    for i in parsed_json_tx['inputs']:
+        previous_output=i['previous_output']
+        if input_addr == '':
+            input_addr=get_address_from_output(previous_output)
+        else:
+            if get_address_from_output(previous_output) != input_addr:
+                error('Bad multiple inputs on: '+tx_hash)
+                return parse_dict
     all_outputs=parsed_json_tx['outputs']
     (outputs_list_no_exodus, outputs_to_exodus, different_outputs_values)=examine_outputs(all_outputs, tx_hash)
     tx_dust=outputs_to_exodus[0]['value']
@@ -436,7 +445,7 @@ def parse_multisig(tx, tx_hash='unknown'):
                 return parse_dict
             fields=script.split('[ ')
             data_script=fields[2].split(' ]')[0]
-            obfus_str=get_sha256(to_address)[:62]
+            obfus_str=get_sha256(input_addr)[:62]
             dataHex_deobfuscated=get_string_xor(data_script[2:-2],obfus_str).zfill(64)+'00'
             data_dict=parse_data_script(dataHex_deobfuscated)
             if len(data_dict) >= 6: # at least 6 basic fields got parse
@@ -453,14 +462,6 @@ def parse_multisig(tx, tx_hash='unknown'):
     if parse_dict == {}:
         error('Bad parsing of multisig: '+tx_hash)
 
-    input_addr=''
-    for i in parsed_json_tx['inputs']:
-        if input_addr == '':
-            input_addr=i['address']
-        else:
-            if i['address'] != input_addr:
-                error('Bad multiple inputs on: '+tx_hash)
-                return parse_dict
     parse_dict['from_address']=input_addr
     parse_dict['to_address']=to_address
                 
@@ -626,6 +627,20 @@ def get_compressed_pubkey_format(pubkey):
 def get_address_of_pubkey(pubkey):
     public_pair=encoding.sec_to_public_pair(encoding.binascii.unhexlify(pubkey))
     return encoding.public_pair_to_bitcoin_address(public_pair)
+
+def get_address_from_output(tx_and_number):
+    try:
+        txid=tx_and_number.split(':')[0]
+        number=int(tx_and_number.split(':')[1])
+        info(txid)
+        info(number)
+    except IndexError:
+        return None
+    rawtx=get_raw_tx(txid)
+    json_tx=get_json_tx(rawtx)
+    all_outputs=json_tx['outputs']
+    output=all_outputs[number]
+    return output['address']
 
 def get_nearby_valid_pubkey(pubkey):
     valid_pubkey=pubkey

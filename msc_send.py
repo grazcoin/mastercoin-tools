@@ -131,7 +131,7 @@ def main():
         # change to change
         change_value=inputs_total_value-4*dust_limit-fee
         change_address_compressed_pub=get_compressed_pubkey_format(get_pubkey_with_instructions(changeAddress))
-        obfus_str=get_sha256(recipient_address)[:62]
+        obfus_str=get_sha256(from_address)[:62]
         padded_dataHex=dataHex[2:]+''.zfill(len(change_address_compressed_pub)-len(dataHex))[2:]
         dataHex_obfuscated=get_string_xor(padded_dataHex,obfus_str)
         random_byte=hex(random.randrange(0,255)).strip('0x').zfill(2)
