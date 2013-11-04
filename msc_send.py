@@ -131,7 +131,7 @@ def main():
         change_address_compressed_pub=get_compressed_pubkey_format(get_pubkey_with_instructions(changeAddress))
         obfus_str=get_sha256(from_address)[:62]
         padded_dataHex=dataHex[2:]+''.zfill(len(change_address_compressed_pub)-len(dataHex))[2:]
-        dataHex_obfuscated=get_string_xor(padded_dataHex,obfus_str)
+        dataHex_obfuscated=get_string_xor(padded_dataHex,obfus_str).zfill(62)
         random_byte=hex(random.randrange(0,255)).strip('0x').zfill(2)
         hacked_dataHex_obfuscated='02'+dataHex_obfuscated+random_byte
         debug(d, 'plain dataHex: --'+padded_dataHex+'--')
