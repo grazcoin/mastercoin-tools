@@ -142,7 +142,11 @@ def main():
                 try:
                     # does this tx exist? (from bootstrap)
                     f=open(filename, 'r')
-                    orig_json=json.load(f)[0]
+                    info(filename)
+                    try:
+                        orig_json=json.load(f)[0]
+                    except KeyError, ValueError:
+                        orig_json=json.load(f)
                     f.close()
                     # verify bootstrap block
                     if orig_json.has_key('block'):
