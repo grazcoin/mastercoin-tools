@@ -185,7 +185,7 @@ def main():
                 if len(parsed) == 0:
                     # disabled
                     continue
-                parsed['method']='multisig'
+                parsed['method']='multisig simple'
                 parsed['block']=str(block)
                 parsed['index']=str(index)
                 if not parsed.has_key('invalid'):
@@ -213,6 +213,7 @@ def main():
                     if not parsed.has_key('invalid'):
                         parsed['invalid']=False
                     parsed['tx_time']=str(block_timestamp)+'000'
+                    debug(d,str(parsed))
                     filename='tx/'+parsed['tx_hash']+'.json'
                     try:
                         f=open(filename, 'w')

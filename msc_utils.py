@@ -22,10 +22,11 @@ first_exodus_bootstrap_block=249498
 last_exodus_bootstrap_block=255365
 exodus_bootstrap_deadline=1377993600
 currency_type_dict={'00000001':'Mastercoin','00000002':'Test Mastercoin'}
-transaction_type_dict={'00000000':'Simple send'}
+transaction_type_dict={'00000000':'Simple send', '00000014':'Sell offer', '00000016':'Sell accept'}
 multisig_simple_disabled=True
 multisig_disabled=False
 dust_limit=5430
+MAX_PUBKEY_IN_BIP11=3
 
 def run_command(command, input_str=None, ignore_stderr=False):
     if ignore_stderr:
@@ -302,9 +303,17 @@ def parse_data_script(data_script):
     parse_dict['transactionType']=data_script[4:12]
     parse_dict['currencyId']=data_script[12:20]
     parse_dict['amount']=data_script[20:36]
-    parse_dict['padding']=data_script[36:42]
+    parse_dict['bitcoin_amount_desired']=data_script[36:52]
+    parse_dict['block_time_limit']=data_script[52:54]
     return parse_dict
 
+def parse_2nd_data_script(data_script):
+    parse_dict={}
+    if len(data_script)<42:
+        info('invalid data script '+data_script.encode('hex_codec'))
+        return parse_dict
+    parse_dict['fee_required']=data_script[4:10]
+    return parse_dict
 
 def parse_simple_basic(tx, tx_hash='unknown'):
     json_tx=get_json_tx(tx)
@@ -448,17 +457,50 @@ def parse_multisig(tx, tx_hash='unknown'):
                 error('Bad multisig data script '+script)
                 return parse_dict
             fields=script.split('[ ')
-            data_script=fields[2].split(' ]')[0]
-            obfus_str=get_sha256(input_addr)[:62]
-            dataHex_deobfuscated=get_string_xor(data_script[2:-2],obfus_str).zfill(64)+'00'
-            data_dict=parse_data_script(dataHex_deobfuscated)
-            if len(data_dict) >= 6: # at least 6 basic fields got parse
+
+            # parse the BIP11 pubkey list
+            data_script_list=[]
+            for i in range(MAX_PUBKEY_IN_BIP11-1):
+                index=i+2 # the index of the i'th pubkey
+                try:
+                    data_script_list.append(fields[index].split(' ]')[0])
+                except IndexError:
+                    break
+
+            # prepare place holder lists for obfus,deobfus,data_dict
+            obfus_str_list=[]
+            dataHex_deobfuscated_list=[]
+            data_dict_list=[]
+            
+            obfus_str_list.append(get_sha256(input_addr)) # 1st obfus is simple sha256
+            for i in range(len(data_script_list)):
+                if i<len(data_script_list)-1: # one less obfus str is needed (the first was not counted)
+                    obfus_str_list.append(get_sha256(obfus_str_list[i].upper())) # i'th obfus is sha256 of upper prev
+                dataHex_deobfuscated_list.append(get_string_xor(data_script_list[i][2:-2],obfus_str_list[i][:62]).zfill(64)+'00')
+
+            # deobfuscated list is ready
+            #info(dataHex_deobfuscated_list)
+
+            data_dict=parse_data_script(dataHex_deobfuscated_list[0])
+            if len(data_dict) >= 6: # at least 6 basic fields got parse on the first dataHex
                 parse_dict=data_dict
                 parse_dict['tx_hash']=tx_hash
-                parse_dict['formatted_amount'] = str("{0:.8f}".format(int(data_dict['amount'],16)/100000000.0))
+                amount=int(data_dict['amount'],16)/100000000.0
+                parse_dict['formatted_amount'] = str("{0:.8f}".format(amount))
                 parse_dict['currency_str'] = get_currency_type_from_dict(data_dict['currencyId'])
                 parse_dict['tx_type_str'] = get_transaction_type_from_dict(data_dict['transactionType'])
                 parse_dict['tx_method_str'] = 'multisig'
+                bitcoin_amount_desired=int(data_dict['bitcoin_amount_desired'],16)/100000000.0
+                price_per_coin=bitcoin_amount_desired/amount
+                parse_dict['formatted_bitcoin_amount_desired']= str("{0:.8f}".format(bitcoin_amount_desired))
+                parse_dict['formatted_price_per_coin']= str("{0:.8f}".format(price_per_coin))
+                parse_dict['formatted_block_time_limit']= str(int(data_dict['block_time_limit'],16))
+                if len(dataHex_deobfuscated_list)>1:
+                    data_dict=parse_2nd_data_script(dataHex_deobfuscated_list[1])
+                    for key in data_dict:
+                        parse_dict[key]=data_dict[key]
+                    parse_dict['formatted_fee_required'] = str("{0:.8f}".format(int(data_dict['fee_required'],16)/100000000.0))
+
         else: # not the multisig output
             # the output with dust
             parse_dict['to_address']=o['address']
