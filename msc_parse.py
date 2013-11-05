@@ -130,13 +130,15 @@ def main():
 
         if is_basic: # basic option - not multisig
             if num_of_outputs > 2: # for reference, data, marker
-                parsed=parse_simple_basic(raw_tx, tx_hash)
+                after_bootstrap=int(block)>int(last_exodus_bootstrap_block)
+                parsed=parse_simple_basic(raw_tx, tx_hash, after_bootstrap)
                 parsed['method']='basic'
                 parsed['block']=str(block)
                 parsed['index']=str(index)
                 if not parsed.has_key('invalid'):
                     parsed['invalid']=False
                 parsed['tx_time']=str(block_timestamp)+'000'
+                debug(d,str(parsed))
                 filename='tx/'+parsed['tx_hash']+'.json'
                 orig_json=None
                 try:
@@ -178,7 +180,26 @@ def main():
                 except IndexError, OSError:
                     info("json dump failed for "+tx_hash)
             else: # num_of_outputs <= 2 and not multisig
-                debug(d,'not parsing basic tx with less than 3 outputs '+tx_hash)
+                # could still be a bitcoin payment for a sell/buy offer
+                if int(block)>int(last_exodus_bootstrap_block):
+                    parsed=parse_bitcoin_payment(raw_tx, tx_hash)
+                    parsed['method']='bitcoin payment'
+                    parsed['block']=str(block)
+                    parsed['index']=str(index)
+                    parsed['tx_time']=str(block_timestamp)+'000'
+                    debug(d,str(parsed))
+                    filename='tx/'+parsed['tx_hash']+'.json'
+                    try:
+                        f=open(filename, 'w')
+                        f.write('[')
+                        json.dump(parsed, f)
+                        f.write(']\n')
+                        f.close()
+                    except OSError:
+                        info("json dump failed for "+tx_hash)
+                        pass
+                else:
+                    debug(d,'skip bootstrap basic tx with less than 3 outputs '+tx_hash)
         else: # multisig
             if num_of_outputs == 2: # simple version of multisig
                 parsed=parse_multisig_simple(raw_tx, tx_hash)
@@ -191,6 +212,7 @@ def main():
                 if not parsed.has_key('invalid'):
                     parsed['invalid']=False
                 parsed['tx_time']=str(block_timestamp)+'000'
+                debug(d,str(parsed))
                 filename='tx/'+parsed['tx_hash']+'.json'
                 try:
                     f=open(filename, 'w')

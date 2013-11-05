@@ -315,7 +315,45 @@ def parse_2nd_data_script(data_script):
     parse_dict['fee_required']=data_script[4:10]
     return parse_dict
 
-def parse_simple_basic(tx, tx_hash='unknown'):
+def parse_bitcoin_payment(tx, tx_hash='unknown'):
+    json_tx=get_json_tx(tx)
+    outputs_list=json_tx['outputs']
+    
+    from_address=''
+    to_address=''
+    total_inputs=0
+    total_outputs=0
+    try:
+        inputs=json_tx['inputs']
+        for i in inputs:
+            if i['address'] != None:
+                if from_address != '':
+                    from_address+=';'
+                from_address+=i['address']
+            else:
+                from_address='not signed'
+            total_inputs+=get_value_from_output(i['previous_output'])
+    except KeyError, IndexError:
+        error('inputs error')
+    try:
+        for o in outputs_list:
+            if o['address'] != None:
+                if to_address != '':
+                    to_address+=';'
+                to_address+=o['address']+':'+str(o['value'])
+            total_outputs+=(o['value'])
+    except KeyError, IndexError:
+        error('outputs error')
+
+    parse_dict={}
+    parse_dict['from_address']=from_address
+    parse_dict['to_address']=to_address
+    parse_dict['fee']=str(total_inputs-total_outputs)
+    parse_dict['tx_hash']=tx_hash
+    parse_dict['invalid']=(True,'bitcoin payment')
+    return parse_dict
+
+def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
     json_tx=get_json_tx(tx)
     outputs_list=json_tx['outputs']
     (outputs_list_no_exodus, outputs_to_exodus, different_outputs_values)=examine_outputs(outputs_list)
@@ -349,8 +387,12 @@ def parse_simple_basic(tx, tx_hash='unknown'):
 
         # all outputs has to be the same (except for change)
         if len(different_outputs_values) > 2:
-            info('invalid mastercoin tx (different output values) '+tx_hash)
-            return {'invalid':(True,'different output values'), 'tx_hash':tx_hash}
+            if after_bootstrap: # bitcoin payments are possible
+                info('bitcoin payment tx (different output values) '+tx_hash)
+                return parse_bitcoin_payment(tx, tx_hash)
+            else:
+                info('invalid mastercoin tx (different output values) '+tx_hash)
+                return {'invalid':(True,'different output values'), 'tx_hash':tx_hash}
 
         # currently support only the simple send (a single data packet)
         # if broken sequence (i.e. 3,4,8), then the odd-man-out is the change address
@@ -490,12 +532,30 @@ def parse_multisig(tx, tx_hash='unknown'):
                 parse_dict['currency_str'] = get_currency_type_from_dict(data_dict['currencyId'])
                 parse_dict['tx_type_str'] = get_transaction_type_from_dict(data_dict['transactionType'])
                 parse_dict['tx_method_str'] = 'multisig'
-                bitcoin_amount_desired=int(data_dict['bitcoin_amount_desired'],16)/100000000.0
-                price_per_coin=bitcoin_amount_desired/amount
-                parse_dict['formatted_bitcoin_amount_desired']= str("{0:.8f}".format(bitcoin_amount_desired))
-                parse_dict['formatted_price_per_coin']= str("{0:.8f}".format(price_per_coin))
-                parse_dict['formatted_block_time_limit']= str(int(data_dict['block_time_limit'],16))
-                if len(dataHex_deobfuscated_list)>1:
+
+                if data_dict['transactionType'] == '00000000': # Simple send
+                    # remove irrelevant keys
+                    parse_dict.pop('bitcoin_amount_desired', None)
+                    parse_dict.pop('block_time_limit', None)
+
+                if data_dict['transactionType'] == '00000014': # Sell offer
+                    bitcoin_amount_desired=int(data_dict['bitcoin_amount_desired'],16)/100000000.0
+                    price_per_coin=bitcoin_amount_desired/amount
+                    parse_dict['formatted_bitcoin_amount_desired']= str("{0:.8f}".format(bitcoin_amount_desired))
+                    parse_dict['formatted_price_per_coin']= str("{0:.8f}".format(price_per_coin))
+                    parse_dict['formatted_block_time_limit']= str(int(data_dict['block_time_limit'],16))
+
+                if data_dict['transactionType'] == '00000016': # Sell accept
+                    # remove irrelevant keys
+                    parse_dict.pop('bitcoin_amount_desired', None)
+                    parse_dict.pop('block_time_limit', None)
+                    # add place holders
+                    parse_dict['bitcoin_required'] = 'not_yet_calculated'
+                    parse_dict['sell_offer_txid'] = 'not_yet_checked'
+                    parse_dict['payment_txid'] = 'not_yet_checked'
+                    parse_dict['status'] = 'not_yet_checked'
+
+                if len(dataHex_deobfuscated_list)>1: # currently true only for Sell offer
                     data_dict=parse_2nd_data_script(dataHex_deobfuscated_list[1])
                     for key in data_dict:
                         parse_dict[key]=data_dict[key]
@@ -685,6 +745,18 @@ def get_address_from_output(tx_and_number):
     all_outputs=json_tx['outputs']
     output=all_outputs[number]
     return output['address']
+
+def get_value_from_output(tx_and_number):
+    try:
+        txid=tx_and_number.split(':')[0]
+        number=int(tx_and_number.split(':')[1])
+    except IndexError:
+        return None
+    rawtx=get_raw_tx(txid)
+    json_tx=get_json_tx(rawtx)
+    all_outputs=json_tx['outputs']
+    output=all_outputs[number]
+    return output['value']
 
 def get_nearby_valid_pubkey(pubkey):
     valid_pubkey=pubkey
