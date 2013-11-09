@@ -50,6 +50,30 @@ def main():
     for t in sorted_tx_list:
         try:
             if t['invalid']==False:
+
+                # update icon field
+                try:
+                    if t['transactionType']=='00000000':
+                        t['icon']='simplesend'
+                        t['details']=t['to_address']
+                    else:
+                        if t['transactionType']=='00000014':
+                            t['icon']='selloffer'
+                            t['details']=t['formatted_price_per_coin']
+                        else:
+                            if t['transactionType']=='00000016':
+                                t['icon']='sellaccept'
+                                t['details']=t['formatted_price_per_coin']
+                            else:
+                               t['icon']='unknown'
+                except KeyError:
+                    # The only valid tx without transactionType is exodus
+                    t['icon']='exodus'
+                    try:
+                        t['details']=t['from_address']
+                    except KeyError:
+                        error(t)
+
                 to_addr=t['to_address']
                 from_addr=t['from_address']
                 amount_transfer=to_satoshi(t['formatted_amount'])
@@ -114,7 +138,9 @@ def main():
                             f.close()
                             tmp_dict['invalid']=(True,'balance too low')
                             f=open('tx/'+tx_hash+'.json','w')
+                            f.write('[')
                             json.dump(tmp_dict,f)
+                            f.write(']\n')
                             f.close()
                         else:
                             # update to_addr

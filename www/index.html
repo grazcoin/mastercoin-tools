@@ -65,14 +65,14 @@
 							<thead>
 								<tr>
 									<th>Transaction ID</th>
-									<th>Receiving address</th>
+									<th>Details</th>
 									<th>Amount</th>
 									<th>Block time</th>
 								</tr>
 							</thead>
 							<tbody>
 								<tr ng-repeat="trans in transactions">
-                					<td><a href='Transaction.html?tx={{trans.tx_hash}}&currency={{currency}}'>{{trans.tx_hash | characters:10}}</a></td>
+                					<td><a href='{{trans.icon}}.html?tx={{trans.tx_hash}}&currency={{currency}}'>{{trans.tx_hash | characters:10}}</a></td>
                 					<td><a href='Address.html?addr={{trans.to_address}}&currency={{currency}}'>{{trans.to_address}}</a></td>
                 					<td>{{trans.formatted_amount}}</td>
 					                <td>{{trans.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>

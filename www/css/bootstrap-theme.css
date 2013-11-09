@@ -162,7 +162,7 @@ td.test{
 }
 
 .falseValidState {
-    background-color: #5cb85c;
+    background-color: #5cb85c !important;
     color: white;
 }
 

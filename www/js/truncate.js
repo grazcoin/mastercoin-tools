@@ -37,6 +37,8 @@ angular.module('truncate', [])
     })
     .filter('truncate', function () {
         return function (text, length, end) {
+            if (isNaN(text))
+            	return '';
             if (isNaN(length))
                 length = 10;
 
