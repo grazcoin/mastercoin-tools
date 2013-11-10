@@ -68,8 +68,12 @@
                                     <tbody>
 
                                         <tr>
-                                            <td>From/Seller</td>
+                                            <td>Seller</td>
                                             <td><a ng-href="Address.html?addr={{transactionInformation.from_address}}&currency={{transactionInformation.currencyId}}">{{transactionInformation.from_address}}</a></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Buyer</td>
+                                            <td><a ng-href="Address.html?addr={{transactionInformation.to_address}}&currency={{transactionInformation.currencyId}}">{{transactionInformation.to_address}}</a></td>
                                         </tr>
                                         <tr>
                                             <td>MSC Amount</td>
