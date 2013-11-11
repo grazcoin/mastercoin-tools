@@ -51,7 +51,7 @@ def main():
         try:
             if t['invalid']==False:
 
-                # update icon field
+                # update fields icon, details
                 try:
                     if t['transactionType']=='00000000':
                         t['icon']='simplesend'
@@ -63,114 +63,150 @@ def main():
                         else:
                             if t['transactionType']=='00000016':
                                 t['icon']='sellaccept'
-                                t['details']=t['formatted_price_per_coin']
+                                t['details']='unknown_price'
                             else:
                                t['icon']='unknown'
-                except KeyError:
-                    # The only valid tx without transactionType is exodus
-                    t['icon']='exodus'
-                    try:
-                        t['details']=t['from_address']
-                    except KeyError:
-                        error(t)
+                               t['details']='unknown'
+                except KeyError as e:
+                    # The only *valid* mastercoin tx without transactionType is exodus
+                    if t['tx_type_str']=='exodus':
+                        t['icon']='exodus'
+                        try:
+                            t['details']=t['to_address']
+                        except KeyError:
+                            error('exodus tx with no to_address: '+str(t))
+                    else:
+                        error('non exodus valid msc tx without '+e+' ('+t['tx_type_str']+') on '+tx_hash)
 
                 to_addr=t['to_address']
                 from_addr=t['from_address']
                 amount_transfer=to_satoshi(t['formatted_amount'])
                 currency=t['currency_str']
                 tx_hash=t['tx_hash']
-                tx_list_for_addr=[]
-                if from_addr == 'exodus':
+                if from_addr == 'exodus': # assume exodus does not do sell offer/accept
                     # exodus purchase
                     if not addr_dict.has_key(to_addr):
-                                             #msc balance    #received   #sent   #in  #out #exodus
-                        addr_dict[to_addr]=([amount_transfer,0,          0,      [],  [],  [t]],
-                                #test msc balance #received  #sent   #in  #out #exodus # exodus purchase
-				[amount_transfer, 0,         0,      [],  [],  [t]],   [amount_transfer])
+                                             #msc balance    #received   #sent   #b #s #o #in  #out #buy #sold #offer #exodus
+                        addr_dict[to_addr]=([amount_transfer,0,          0,      0, 0, 0, [],  [],  [],  [],   [],    [t]],
+                                #test msc balance #received  #sent   #b #s #o #in  #out #buy #sold #offer #exodus # exodus purchase
+				[amount_transfer, 0,         0,      0, 0, 0, [],  [],  [],  [],   [],    [t]],   [amount_transfer])
                     else:
                         addr_dict[to_addr][0][0]+=amount_transfer # msc
                         addr_dict[to_addr][1][0]+=amount_transfer # test msc
-                        addr_dict[to_addr][0][5].append(t)        # incoming msc
-                        addr_dict[to_addr][1][5].append(t)        # incoming test msc
+                        addr_dict[to_addr][0][11].append(t)        # incoming msc
+                        addr_dict[to_addr][1][11].append(t)        # incoming test msc
                         addr_dict[to_addr][2][0]+=amount_transfer # exodus purchase
                     # exodus bonus - 10% for exodus (available slowly during the years)
                     ten_percent=int((amount_transfer+0.0)/10+0.5)
                     if not addr_dict.has_key(exodus_address):
-                        addr_dict[exodus_address]=([ten_percent,0,0,[],[],[t]],[ten_percent,0,0,[],[],[t]],[0])
+                        addr_dict[exodus_address]=([ten_percent,0,0,0,0,0,[],[],[],[],[],[t]],[ten_percent,0,0,0,0,0,[],[],[],[],[],[t]],[0])
                     else:
                         addr_dict[exodus_address][0][0]+=ten_percent # 10% bonus msc for exodus
                         addr_dict[exodus_address][1][0]+=ten_percent # 10% bonus test msc for exodus
-                        addr_dict[exodus_address][0][5].append(t)    # incoming msc
-                        addr_dict[exodus_address][1][5].append(t)    # incoming test msc
+                        addr_dict[exodus_address][0][11].append(t)    # incoming msc
+                        addr_dict[exodus_address][1][11].append(t)    # incoming test msc
                         addr_dict[exodus_address][2][0]+=0           # no accounting for exodus 10% due to purchase
                     # tx belongs to mastercoin and test mastercoin
                     sorted_mastercoin_tx_list.append(t) 
                     sorted_test_mastercoin_tx_list.append(t) 
                 else:
-                    # normal transfer
-                    if not addr_dict.has_key(from_addr):
-                        info('try to pay from non existing address at '+tx_hash)
-                        # mark tx as invalid and continue
-                        f=open('tx/'+tx_hash+'.json','r')
-                        tmp_dict=json.load(f)[0]
-                        f.close()
-                        tmp_dict['invalid']=(True,'pay from a non existing address')
-                        f=open('tx/'+tx_hash+'.json','w')
-                        f.write('[')
-                        json.dump(tmp_dict,f)
-                        f.write(']\n')
-                        f.close()
+                    if currency=='Mastercoin':
+                        c=0
                     else:
-                        if currency=='Mastercoin':
-                            c=0
+                        if currency=='Test Mastercoin':
+                            c=1
                         else:
-                            if currency=='Test Mastercoin':
-                                c=1
-                            else:
-                                info('unknown currency '+currency+ ' in tx '+tx_hash)
-                                continue
-                        balance_from=addr_dict[from_addr][c][0]
-                        if amount_transfer > int(balance_from):
-                            info('balance of '+currency+' is too low on '+tx_hash)
+                            info('unknown currency '+currency+ ' in tx '+tx_hash)
+                            continue
+                    # left are normal transfer and sell offer/accept
+                    if t['tx_type_str']==transaction_type_dict['00000000']:
+                        # the normal transfer case
+                        if not addr_dict.has_key(from_addr):
+                            info('try to pay from non existing address at '+tx_hash)
                             # mark tx as invalid and continue
                             f=open('tx/'+tx_hash+'.json','r')
                             tmp_dict=json.load(f)[0]
                             f.close()
-                            tmp_dict['invalid']=(True,'balance too low')
+                            tmp_dict['invalid']=(True,'pay from a non existing address')
                             f=open('tx/'+tx_hash+'.json','w')
                             f.write('[')
                             json.dump(tmp_dict,f)
                             f.write(']\n')
                             f.close()
                         else:
-                            # update to_addr
-                            if not addr_dict.has_key(to_addr):
-                                if c==0:                #msc balance     #revieved  #sent #in #out #ex #test balance #in #out
-                                    addr_dict[to_addr]=([amount_transfer,amount_transfer,0,[t],[],[]],[0,0,0,[],[],[]],[0])
-                                else:
-                                    addr_dict[to_addr]=([0,0,0,[],[],[]],[amount_transfer,amount_transfer,0,[t],[],[]],[0])
+                            balance_from=addr_dict[from_addr][c][0]
+                            if amount_transfer > int(balance_from):
+                                info('balance of '+currency+' is too low on '+tx_hash)
+                                # mark tx as invalid and continue
+                                f=open('tx/'+tx_hash+'.json','r')
+                                tmp_dict=json.load(f)[0]
+                                f.close()
+                                tmp_dict['invalid']=(True,'balance too low')
+                                f=open('tx/'+tx_hash+'.json','w')
+                                f.write('[')
+                                json.dump(tmp_dict,f)
+                                f.write(']\n')
+                                f.close()
                             else:
+                                # update to_addr
+                                if not addr_dict.has_key(to_addr):
+                                    if c==0:   #msc balance   #recieved  #sent                 #b #s #o #in #out #by #sld #offr #ex 
+                                        addr_dict[to_addr]=([amount_transfer,amount_transfer,0,0, 0, 0, [t],[],  [], [],  [],   []],
+                                                           #test balance #b #s #o #in #out #buy #sold #offer #ex
+                                                           [0,0,0,       0, 0, 0, [], [],  [],  [],   [],    []],   [0])
+                                    else:
+                                        addr_dict[to_addr]=([0,0,0,0,0,0,[],[],[],[],[],[]],
+                                                           [amount_transfer,amount_transfer,0,0,0,0,[t],[],[],[],[],[]],[0])
+                                else:
+                                    if c==0:
+                                        addr_dict[to_addr][0][0]+=amount_transfer # msc
+                                        addr_dict[to_addr][0][1]+=amount_transfer # msc total received
+                                        addr_dict[to_addr][0][6].append(t)        # incoming msc
+                                    else:                                    
+                                        addr_dict[to_addr][1][0]+=amount_transfer # test msc
+                                        addr_dict[to_addr][1][1]+=amount_transfer # test msc total received
+                                        addr_dict[to_addr][1][6].append(t)        # incoming test msc
+                                # update from_addr
                                 if c==0:
-                                    addr_dict[to_addr][0][0]+=amount_transfer # msc
-                                    addr_dict[to_addr][0][1]+=amount_transfer # msc total received
-                                    addr_dict[to_addr][0][3].append(t)        # incoming msc
+                                    addr_dict[from_addr][0][0]-=amount_transfer # msc
+                                    addr_dict[from_addr][0][2]+=amount_transfer # msc total sent
+                                    addr_dict[from_addr][0][7].append(t)        # outgoing msc
+                                    # update msc list
+                                    sorted_mastercoin_tx_list.append(t) 
                                 else:                                    
-                                    addr_dict[to_addr][1][0]+=amount_transfer # test msc
-                                    addr_dict[to_addr][1][1]+=amount_transfer # test msc total received
-                                    addr_dict[to_addr][1][3].append(t)        # incoming test msc
-                            # update from_addr
+                                    addr_dict[from_addr][1][0]-=amount_transfer # test msc
+                                    addr_dict[from_addr][1][2]+=amount_transfer # test msc total sent
+                                    addr_dict[from_addr][1][7].append(t)        # outgoing test msc
+                                    # update test msc list
+                                    sorted_test_mastercoin_tx_list.append(t)
+
+                    else:
+                        # sell offer
+                        if t['tx_type_str']==transaction_type_dict['00000014']:
+                            debug(d, 'sell offer: '+tx_hash)
+                            # sell offer from empty or non existing address is allowed
+                            # update details of sell offer
+                            # update single allowed tx for sell offer
+                            # add to list to be shown on general
                             if c==0:
-                                addr_dict[from_addr][0][0]-=amount_transfer # msc
-                                addr_dict[from_addr][0][2]+=amount_transfer # msc total sent
-                                addr_dict[from_addr][0][4].append(t)        # outgoing msc
-                                # update msc list
-                                sorted_mastercoin_tx_list.append(t) 
-                            else:                                    
-                                addr_dict[from_addr][1][0]-=amount_transfer # test msc
-                                addr_dict[from_addr][1][2]+=amount_transfer # test msc total sent
-                                addr_dict[from_addr][1][4].append(t)        # outgoing test msc
-                                # update test msc list
-                                sorted_test_mastercoin_tx_list.append(t) 
+                                sorted_mastercoin_tx_list.append(t)
+                            else:
+                                sorted_test_mastercoin_tx_list.append(t)
+                        else:
+                            # sell accept
+                            if t['tx_type_str']==transaction_type_dict['00000016']:
+                                debug(d, 'sell accept: '+tx_hash)
+                                # verify corresponding sell offer exists and partial balance
+                                # partially fill and update balances and sell offer
+                                # add to list to be shown on general
+                                if c==0:
+                                    sorted_mastercoin_tx_list.append(t)
+                                else:
+                                    sorted_test_mastercoin_tx_list.append(t)
+                            else:
+                                info('unknown tx type: '+t['tx_type_str']+' in '+tx_hash)
+                                continue
+
         except OSError:
             info('error on tx '+t['tx_hash'])
 
@@ -181,14 +217,14 @@ def main():
         addr_dict_api['address']=addr
         for i in [0,1]:
             sub_dict={}
-            sub_dict['received_transactions']=addr_dict[addr][i][3]
+            sub_dict['received_transactions']=addr_dict[addr][i][6]
             sub_dict['received_transactions'].reverse()
-            sub_dict['sent_transactions']=addr_dict[addr][i][4]
+            sub_dict['sent_transactions']=addr_dict[addr][i][7]
             sub_dict['sent_transactions'].reverse()
             sub_dict['total_received']=from_satoshi(addr_dict[addr][i][1])
             sub_dict['total_sent']=from_satoshi(addr_dict[addr][i][2])
             sub_dict['balance']=from_satoshi(addr_dict[addr][i][0])
-            sub_dict['exodus_transactions']=addr_dict[addr][i][5]
+            sub_dict['exodus_transactions']=addr_dict[addr][i][11]
             sub_dict['exodus_transactions'].reverse()
             sub_dict['total_exodus']=from_satoshi(addr_dict[addr][2][0])
             addr_dict_api[i]=sub_dict

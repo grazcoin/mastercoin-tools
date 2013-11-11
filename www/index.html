@@ -40,7 +40,6 @@
             </button>
 
             <a class="navbar-brand" href="/"><img src="img/logo.png" alt="mastercoin"></a>
-            <a class="navbar-title navbar-brand" href="#">{{currency}} Masterchain</a>
           </div>
           <div class="navbar-collapse collapse">
             <ul class="nav navbar-nav navbar-right">
@@ -83,12 +82,16 @@
                                             <a ng-href='sellaccept.html?tx={{trans.tx_hash}}&currency={{currency}}'>{{trans.tx_hash | characters:10}}
                                             </a>
                                         </span>
-                                        <span ng-switch-when="unknown">
-                                            <a ng-href='btcpayment.html?tx={{trans.tx_hash}}&currency={{currency}}'>{{trans.tx_hash | characters:10}}
-                                            </a>
-                                        </span>
                                         <span ng-switch-when="simplesend">
                                             <a ng-href='simplesend.html?tx={{trans.tx_hash}}&currency={{currency}}'>{{trans.tx_hash | characters:10}}
+                                            </a>
+                                        </span>
+                                        <span ng-switch-when="exodus">
+                                            <a ng-href='exodus.html?tx={{trans.tx_hash}}&currency={{currency}}'>{{trans.tx_hash | characters:10}}
+                                            </a>
+                                        </span>
+                                        <span ng-switch-when="unknown">
+                                            <a ng-href='btcpayment.html?tx={{trans.tx_hash}}&currency={{currency}}'>{{trans.tx_hash | characters:10}}
                                             </a>
                                         </span>
                                         <span ng-switch-default>
@@ -105,6 +108,9 @@
                                         <span ng-switch-when="sellaccept">{{trans.details}}
                                         </span>
                                         <span ng-switch-when="simplesend">
+                                             <a href='Address.html?addr={{trans.details}}'>{{trans.details}}</a>
+                                        </span>
+                                        <span ng-switch-when="exodus">
                                              <a href='Address.html?addr={{trans.details}}'>{{trans.details}}</a>
                                         </span>
                                         <span ng-switch-default>

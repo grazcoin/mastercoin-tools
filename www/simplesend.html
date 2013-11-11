@@ -42,7 +42,7 @@
             </button>
 
             <a class="navbar-brand" href="/"><img src="img/logo.png" alt="mastercoin"></a>
-            <a class="navbar-title navbar-brand" href="#">{{currency}} Simple send</a>
+            <span class="navbar-brand"><img style="height:26px; width:26px;" src="ico/simplesend.png" alt="{{transactionInformation.tx_type_str}}" /></span>
           </div>
           <div class="navbar-collapse collapse">
             <ul class="nav navbar-nav navbar-right">
@@ -91,7 +91,7 @@
                                <tbody>
                                    <tr>
                                        <td>Transaction type</td>
-                                       <td>{{transactionInformation.tx_type_str}}</td>
+                                       <td><img style="height:18px; width:18px;" src="ico/simplesend.png" alt="{{transactionInformation.tx_type_str}}" /> {{transactionInformation.tx_type_str}}</td>
                                    </tr>
                                    <tr>
                                        <td>Transaction ID</td>

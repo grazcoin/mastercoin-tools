@@ -11,18 +11,4 @@
 "currency":"TMSC",
 "name2":"demo",
 "trend2":"rgb(212,48,48)"
-},
-{
-"name":"Goldcoin",
-"trend":"flat",
-"currency":"AUX",
-"name2":"Oz Gold",
-"trend2":"rgb(168,168,168)"
-},
-{
-"name":"MC Shares",
-"trend":"flat",
-"currency":"MCS",
-"name2":"",
-"trend2":"rgb(168,168,168)"
 }]
