@@ -340,7 +340,7 @@ def parse_bitcoin_payment(tx, tx_hash='unknown'):
             if o['address'] != None:
                 if to_address != '':
                     to_address+=';'
-                to_address+=o['address']+':'+str(o['value'])
+                to_address+=o['address']+':'+from_satoshi((o['value']))
             total_outputs+=(o['value'])
     except KeyError, IndexError:
         error('outputs error')
@@ -348,7 +348,7 @@ def parse_bitcoin_payment(tx, tx_hash='unknown'):
     parse_dict={}
     parse_dict['from_address']=from_address
     parse_dict['to_address']=to_address
-    parse_dict['fee']=str(total_inputs-total_outputs)
+    parse_dict['fee']=from_satoshi(total_inputs-total_outputs)
     parse_dict['tx_hash']=tx_hash
     parse_dict['invalid']=(True,'bitcoin payment')
     return parse_dict
