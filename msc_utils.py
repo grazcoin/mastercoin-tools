@@ -52,6 +52,13 @@ def run_command(command, input_str=None, ignore_stderr=False):
                 stderr=subprocess.STDOUT)
             return p.communicate()
 
+def get_last_height():
+    out, err = run_command("sx fetch-last-height")
+    if err != None:
+        return err
+    else:
+        return out.strip()
+
 def get_block_timestamp(height):
     print height
     raw_block, err = run_command("sx fetch-block-header "+str(height))
