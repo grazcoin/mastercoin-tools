@@ -226,8 +226,14 @@ def main():
                             # add to list to be shown on general
 			    info(t)
                             offer=float(t['formatted_amount'])
-                            addr_dict[from_addr][c][5]=offer      # update latest wish offer
-                            addr_dict[from_addr][c][11]=[t]       # store the latest offer tx for ref
+                            if not addr_dict.has_key(from_addr):
+                                             #msc balance  #received   #sent   #b #s #o #a #in  #out #buy #sold #offer #exodus
+                                addr_dict[from_addr]=([0,  0,          0,      0, 0, 0, 0, [],  [],  [],  [],   [],    []],
+                            #tmsc balance #received  #sent   #b #s #o    #a #in #out #buy #sold #offer #exodus # exodus purchase
+				[0,       0,         0,      0, 0, offer, 0, [], [],  [],  [],   [t],   []],   [])
+                            else: #
+                                addr_dict[from_addr][c][5]=offer      # update latest wish offer
+                                addr_dict[from_addr][c][11]=[t]       # store the latest offer tx for ref
                             sorted_currency_tx_list[c].append(t)  # add per currency tx
                         else:
                             # sell accept
@@ -237,9 +243,12 @@ def main():
                                 # partially fill and update balances and sell offer
                                 # add to list to be shown on general
                                 # partially fill according to spot offer
-				info(t)
                                 accept=float(t['formatted_amount'])
-                                info(to_addr)
+                                if not addr_dict.has_key(to_addr): # update entry if not yet present
+                                              #msc balance  #received   #sent   #b #s #o #a #in  #out #buy #sold #offer #exodus
+                                    addr_dict[to_addr]=([0,  0,          0,      0, 0, 0, 0, [],  [],  [],  [],   [],    []],
+                            #tmsc balance #received  #sent   #b #s #o    #a #in #out #buy #sold #offer #exodus # exodus purchase
+				        [0,   0,   0,         0, 0, 0,   0, [], [],  [],  [],   [],   []],   [])
                                 try:
                                     offer=addr_dict[to_addr][c][5]              # get orig offer from seller
                                     offer_tx=addr_dict[to_addr][c][11][0]       # get orig offer tx from seller
@@ -310,7 +319,10 @@ def main():
             sub_dict['balance']=from_satoshi(addr_dict[addr][i][0])
             sub_dict['exodus_transactions']=addr_dict[addr][i][12]
             sub_dict['exodus_transactions'].reverse()
-            sub_dict['total_exodus']=from_satoshi(addr_dict[addr][2][0])
+            if len(addr_dict[addr][2]) > 0:
+                sub_dict['total_exodus']=from_satoshi(addr_dict[addr][2][0])
+            else:
+                sub_dict['total_exodus']=0
             addr_dict_api[i]=sub_dict
         filename='addr/'+addr+'.json'
         f=open(filename, 'w')

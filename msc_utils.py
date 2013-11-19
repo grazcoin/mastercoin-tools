@@ -488,7 +488,7 @@ def parse_multisig(tx, tx_hash='unknown'):
         else:
             if get_address_from_output(previous_output) != input_addr:
                 error('Bad multiple inputs on: '+tx_hash)
-                return parse_dict
+                return {}
     all_outputs=parsed_json_tx['outputs']
     (outputs_list_no_exodus, outputs_to_exodus, different_outputs_values)=examine_outputs(all_outputs, tx_hash)
     tx_dust=outputs_to_exodus[0]['value']
@@ -504,8 +504,17 @@ def parse_multisig(tx, tx_hash='unknown'):
             # verify that it is a multisig
             if not script.endswith('checkmultisig'):
                 error('Bad multisig data script '+script)
-                return parse_dict
             fields=script.split('[ ')
+
+            # more sanity checks on BIP11
+            max_pubkeys=int(fields[-1].split()[-2])
+            req_pubkeys=int(fields[0])
+            if req_pubkeys != 1:
+                info('error m-of-n with m different than 1 ('+str(req_pubkeys)+'). skipping tx '+tx_hash)
+                return {'tx_hash':tx_hash, 'invalid':(True, 'error m-of-n with m different than 1')}
+            if max_pubkeys < 2 or max_pubkeys > 3:
+                info('error m-of-n with n out of range ('+str(max_pubkeys)+'). skipping tx '+tx_hash)
+                return {'tx_hash':tx_hash, 'invalid':(True, 'error m-of-n with n out of range')}
 
             # parse the BIP11 pubkey list
             data_script_list=[]
@@ -520,7 +529,11 @@ def parse_multisig(tx, tx_hash='unknown'):
             obfus_str_list=[]
             dataHex_deobfuscated_list=[]
             data_dict_list=[]
-            
+           
+            if input_addr == None:
+                info('none input address (BIP11 inputs are not supported yet)')
+                return {'tx_hash':tx_hash, 'invalid':(True, 'not supported input (BIP11/BIP16)')}
+
             obfus_str_list.append(get_sha256(input_addr)) # 1st obfus is simple sha256
             for i in range(len(data_script_list)):
                 if i<len(data_script_list)-1: # one less obfus str is needed (the first was not counted)
@@ -530,7 +543,10 @@ def parse_multisig(tx, tx_hash='unknown'):
             # deobfuscated list is ready
             #info(dataHex_deobfuscated_list)
 
-            data_dict=parse_data_script(dataHex_deobfuscated_list[0])
+            try:
+                data_dict=parse_data_script(dataHex_deobfuscated_list[0])
+            except IndexError:
+                error('cannot parse dataHex_deobfuscated_list')
             if len(data_dict) >= 6: # at least 6 basic fields got parse on the first dataHex
                 parse_dict=data_dict
                 parse_dict['tx_hash']=tx_hash
@@ -547,7 +563,11 @@ def parse_multisig(tx, tx_hash='unknown'):
 
                 if data_dict['transactionType'] == '00000014': # Sell offer
                     bitcoin_amount_desired=int(data_dict['bitcoin_amount_desired'],16)/100000000.0
-                    price_per_coin=bitcoin_amount_desired/amount
+                    if amount > 0:
+                        price_per_coin=bitcoin_amount_desired/amount
+                    else:
+                        price_per_coin=0
+                        parse_dict['invalid']=(True,'non positive sell offer amount')
                     parse_dict['formatted_bitcoin_amount_desired']= str("{0:.8f}".format(bitcoin_amount_desired))
                     parse_dict['formatted_price_per_coin']= str("{0:.8f}".format(price_per_coin))
                     parse_dict['formatted_block_time_limit']= str(int(data_dict['block_time_limit'],16))
