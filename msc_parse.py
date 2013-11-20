@@ -7,10 +7,13 @@ import operator
 import time
 from optparse import OptionParser
 from msc_utils import *
+import msc_globals
 
 d=False # debug_mode
 
 def main():
+    msc_globals.init()
+
     parser = OptionParser("usage: %prog [options]")
     parser.add_option("-d", "--debug", action="store_true",dest='debug_mode', default=False,
                         help="turn debug mode on")
@@ -26,21 +29,39 @@ def main():
     single_tx=options.single_tx
     requested_block_height=options.starting_block_height
     if requested_block_height == None:
-        # try to get last block parsed
+        # which block to start with?
+        revision_block_height=0 # init with 0
+        notes_block_height=0    # init with 0
+        # first check last block on revision.json
         try:
             try:
                 f=open('www/revision.json', 'r')
                 prev_revision_dict=json.load(f)
                 f.close()
+            	revision_block_height=prev_revision_dict['last_block']
             except IOError:
-                info('www/revision.json does not exist. start parsing from block 0')
-                prev_revision_dict={'last_block':0}
-            starting_block_height=prev_revision_dict['last_block']
+                info('www/revision.json does not exist')
         except KeyError:
-            starting_block_height=0
             info('www/revision.json does not have last_block entry')
+
+        # then check LAST_BLOCK_NUMBER_FILE
+        try:
+            f=open(LAST_BLOCK_NUMBER_FILE, 'r')
+            notes=f.readline()
+            f.close()
+            # FIXME: catch ValueError ?
+            if notes != '':
+                notes_block_height=int(notes)
+        except IOError:
+            info(LAST_BLOCK_NUMBER_FILE+' does not exist or has no integer.')
+
+        # take the latest block of all
+        starting_block_height=max(revision_block_height,notes_block_height)
+        msc_globals.last_block=starting_block_height
+
     else:
         starting_block_height=requested_block_height
+
     archive=options.archive
 
     info('starting parsing at block '+str(starting_block_height))
@@ -92,7 +113,11 @@ def main():
             error("Cannot parse tx_dict:" + str(tx_dict))
         raw_tx=get_raw_tx(tx_hash)
         json_tx=get_json_tx(raw_tx, tx_hash)
-	(block,index)=get_tx_index(tx_hash)
+        if json_tx == None:
+            error('failed getting json_tx (None) for '+tx_hash)
+        (block,index)=get_tx_index(tx_hash)
+        if block == None or block == "failed:" or index == None:
+            error('failed getting block None or index None for '+tx_hash)
         if last_block < int(block):
             last_block = int(block)
         # examine the outputs
@@ -118,7 +143,9 @@ def main():
             info("not implemented tx with multiple 1EXoDus outputs: "+tx_hash)
             continue
         num_of_outputs=len(outputs_list)
-        block_timestamp=get_block_timestamp(int(block))
+        (block_timestamp, err)=get_block_timestamp(int(block))
+        if block_timestamp == None:
+            error('failed getting block timestamp of '+str(block)+': '+err)
 
         # check if basic or multisig
         is_basic=True
@@ -144,7 +171,7 @@ def main():
                 try:
                     # does this tx exist? (from bootstrap)
                     f=open(filename, 'r')
-                    info(filename)
+                    debug(d,filename)
                     try:
                         orig_json=json.load(f)[0]
                     except KeyError, ValueError:
@@ -153,9 +180,9 @@ def main():
                     # verify bootstrap block
                     if orig_json.has_key('block'):
                         orig_block=orig_json['block']
-                        info('found this tx already on (previous) block '+orig_block)
+                        debug(d,'found this tx already on (previous) block '+orig_block)
                         if int(orig_block)>last_exodus_bootstrap_block:
-                            info('but it is post exodus - ignoring')
+                            debug(d,'but it is post exodus - ignoring')
                             orig_json=None
                     else:
                         info('previous tx without block on '+filename)
@@ -248,6 +275,11 @@ def main():
                         pass
                 else: # invalid
                     info('multisig with a single output tx found: '+tx_hash)
+
+        # update global block height
+        if single_tx == None and block != None:
+            msc_globals.last_block=block
+
     rev=get_revision_dict(last_block)
     f=open('www/revision.json','w')
     json.dump(rev, f)

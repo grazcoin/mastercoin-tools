@@ -6,8 +6,12 @@ import sys
 import operator
 import time
 from msc_utils import *
+import msc_globals
+
 
 def main():
+
+    msc_globals.init()
 
     # full story format or just csv
     output_format='csv'
@@ -30,7 +34,9 @@ def main():
 
         # interesting addresses are only those within exodus bootstrap blocks
         if int(block) >= first_exodus_bootstrap_block and int(block) <= last_exodus_bootstrap_block:
-            block_timestamp=get_block_timestamp(int(block))
+            (block_timestamp,err)=get_block_timestamp(int(block))
+            if block_timestamp == None:
+                error('failed to get timestamp: '+err)
             try:
             	tx_sec_before_deadline=exodus_bootstrap_deadline-block_timestamp
             except TypeError:

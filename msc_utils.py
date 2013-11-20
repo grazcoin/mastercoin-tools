@@ -7,6 +7,7 @@ import hashlib
 import inspect
 import time
 import git
+import msc_globals
 
 from ecdsa import curves, ecdsa
 # taken from https://github.com/warner/python-ecdsa
@@ -27,6 +28,8 @@ multisig_simple_disabled=True
 multisig_disabled=False
 dust_limit=5430
 MAX_PUBKEY_IN_BIP11=3
+MAX_COMMAND_TRIES=3
+LAST_BLOCK_NUMBER_FILE='last_block.txt'
 
 def run_command(command, input_str=None, ignore_stderr=False):
     if ignore_stderr:
@@ -62,17 +65,21 @@ def get_last_height():
 def get_block_timestamp(height):
     print height
     raw_block, err = run_command("sx fetch-block-header "+str(height))
-    if err != None:
-        return err
+    if err != None or raw_block == None:
+        return (None, err)
     else:
         block_details, err = run_command("sx showblkhead", raw_block)
-        if err != None:
-            return err
+        if err != None or block_details == None:
+            return (None, err)
         else:
-            for line in block_details.split('\n'):
-                if line.startswith('timestamp:'):
-                    timestamp=int(line.split('timestamp: ')[1])
-                    return timestamp
+            lines=block_details.split('\n')
+            if len(lines)>0:
+                for line in lines:
+                    if line.startswith('timestamp:'):
+                        timestamp=int(line.split('timestamp: ')[1])
+                        return (timestamp, None)
+                else:
+                    return (None, "empty block details")
 
 def get_raw_tx(tx_hash):
     out, err = run_command("sx fetch-transaction "+tx_hash)
@@ -83,14 +90,18 @@ def get_raw_tx(tx_hash):
 
 def get_json_tx(raw_tx, tx_hash='unknown hash'):
     parsed_json_tx=None
-    json_tx, err = run_command("sx showtx -j", raw_tx)
-    if err != None:
-        error(err)
-    else:
-        try:
-            parsed_json_tx=simplejson.JSONDecoder().decode(json_tx)
-        except simplejson.JSONDecodeError:
-            error(str(json_tx)+' '+str(tx_hash))
+    for i in range(MAX_COMMAND_TRIES): # few tries
+        json_tx, err = run_command("sx showtx -j", raw_tx)
+        if err != None or json_tx == None:
+            if i == MAX_COMMAND_TRIES:
+                error(str(json_tx)+' '+str(tx_hash))
+        else:
+            try:
+                parsed_json_tx=simplejson.JSONDecoder().decode(json_tx)
+                break
+            except simplejson.JSONDecodeError:
+                if i == MAX_COMMAND_TRIES:
+                    error(str(json_tx)+' '+str(tx_hash))
     return parsed_json_tx
 
 def get_tx(tx_hash):
@@ -191,12 +202,21 @@ def get_addr_from_key(key): # private or public key
     return out.strip('\n')
 
 def error(msg):
+    last_block_msg=''
+    # store last block
+    try:
+        f=open(LAST_BLOCK_NUMBER_FILE,'w')
+        f.write(str(msc_globals.last_block)+'\n')
+        f.close()
+        last_block_msg=' ('+str(msc_globals.last_block)+')'
+    except IOError:
+        pass
     func_name='unknown'
     try:
         func_name=inspect.stack()[1][3]
     except IndexError:
         pass
-    print '[E] '+func_name+': '+str(msg)
+    print '[E] '+func_name+': '+str(msg)+last_block_msg
     exit(1)
 
 def info(msg):
@@ -763,12 +783,14 @@ def get_address_of_pubkey(pubkey):
 
 def get_address_from_output(tx_and_number):
     try:
-        txid=tx_and_number.split(':')[0]
+        tx_hash=tx_and_number.split(':')[0]
         number=int(tx_and_number.split(':')[1])
     except IndexError:
         return None
-    rawtx=get_raw_tx(txid)
+    rawtx=get_raw_tx(tx_hash)
     json_tx=get_json_tx(rawtx)
+    if json_tx == None:
+        error('failed getting json_tx (None) for '+tx_hash)
     all_outputs=json_tx['outputs']
     output=all_outputs[number]
     return output['address']
