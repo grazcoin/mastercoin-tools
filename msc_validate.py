@@ -36,7 +36,6 @@ def get_sorted_tx_list():
     for filename in tx_files:
         if filename.endswith('.json'):
             f=open('tx/'+filename)
-            debug(d, filename)
 	    tx_list.append(json.load(f)[0])
             try: # for basic which is also exodus
 	        tx_list.append(json.load(f)[1])
@@ -54,13 +53,13 @@ def main():
     (options, args) = parser.parse_args()
     d=options.debug_mode
 
+    info('starting validation process')
+
     # get all tx sorted
     sorted_tx_list=get_sorted_tx_list()
 
     # use an artificial empty last tx with last height as a trigger for alarm check
-    info('before')
     last_height=get_last_height()
-    info(last_height)
     sorted_tx_list.append({'invalid':(True,'fake tx'), 'block':last_height, 'tx_hash':'fake'})
 
     # prepare lists for mastercoin and test
@@ -88,8 +87,12 @@ def main():
             if t['invalid']==[True, 'bitcoin payment']:
                 debug(d, 'bitcoin payment: '+tx_hash)
                 fee=t['fee']
-                # check if it fits to any of the
-                # mark deal as closed
+                to_multi_address_and_amount=t['to_address'].split(';')
+                for address_and_amount in to_multi_address_and_amount:
+                    (address,amount)=address_and_amount.split(':')
+                    # check if it fits to the sell+accept offer in address (incl min fee)
+                    
+                    # if yes - mark deal as closed
                 
                                 #addr_dict[to_addr][c][5]-=spot_accept      # reduce balance of seller (conditionally)
                                 #addr_dict[to_addr][c][5]-=spot_accept      # increase balance of buyer
@@ -164,13 +167,13 @@ def main():
                         if currency=='Test Mastercoin':
                             c=1
                         else:
-                            info('unknown currency '+currency+ ' in tx '+tx_hash)
+                            debug(d,'unknown currency '+currency+ ' in tx '+tx_hash)
                             continue
                     # left are normal transfer and sell offer/accept
                     if t['tx_type_str']==transaction_type_dict['00000000']:
                         # the normal transfer case
                         if not addr_dict.has_key(from_addr):
-                            info('try to pay from non existing address at '+tx_hash)
+                            debug(d, 'try to pay from non existing address at '+tx_hash)
                             # mark tx as invalid and continue
                             f=open('tx/'+tx_hash+'.json','r')
                             tmp_dict=json.load(f)[0]
@@ -184,7 +187,7 @@ def main():
                         else:
                             balance_from=addr_dict[from_addr][c][0]
                             if amount_transfer > int(balance_from):
-                                info('balance of '+currency+' is too low on '+tx_hash)
+                                debug(d,'balance of '+currency+' is too low on '+tx_hash)
                                 # mark tx as invalid and continue
                                 f=open('tx/'+tx_hash+'.json','r')
                                 tmp_dict=json.load(f)[0]
@@ -224,7 +227,6 @@ def main():
                             # update details of sell offer
                             # update single allowed tx for sell offer
                             # add to list to be shown on general
-			    info(t)
                             offer=float(t['formatted_amount'])
                             if not addr_dict.has_key(from_addr):
                                              #msc balance  #received   #sent   #b #s #o #a #in  #out #buy #sold #offer #exodus
@@ -250,59 +252,133 @@ def main():
                             #tmsc balance #received  #sent   #b #s #o    #a #in #out #buy #sold #offer #exodus # exodus purchase
 				        [0,   0,   0,         0, 0, 0,   0, [], [],  [],  [],   [],   []],   [])
                                 try:
-                                    offer=addr_dict[to_addr][c][5]              # get orig offer from seller
-                                    offer_tx=addr_dict[to_addr][c][11][0]       # get orig offer tx from seller
+                                    sell_offer=addr_dict[to_addr][c][5]              # get orig offer from seller
+                                    sell_offer_tx=addr_dict[to_addr][c][11][0]       # get orig offer tx from seller
                                 except (KeyError, IndexError):
                                     # offer from wallet without entry (empty wallet)
-                                    # FIXME: mark tx invalid
-                                    info('accept offer from empty seller - ignoring')
+                                    info('accept offer from missing seller '+to_addr)
+                                    t['invalid']=(True,'accept offer for missing sell offer')
+                                    key='other'
+                                    if modified_tx_dict.has_key(key):
+                                        modified_tx_dict[key].append(t)
+                                    else:
+                                        modified_tx_dict[key]=[t]
+                                    sorted_currency_tx_list[c].append(t)    # add per currency tx
                                     continue
                                 try:
                                     available=addr_dict[from_addr][c][0]    # get balance of that currency of buyer
                                 except (KeyError, IndexError):
-                                    info('accept offer to empty buyer balance - ignoring')
-                                    continue
+                                    available=0
+                                try:
+                                    formatted_price_per_coin=sell_offer_tx['formatted_price_per_coin']
+                                except KeyError:
+                                    formatted_price_per_coin='price missing'
+                                t['formatted_price_per_coin']=formatted_price_per_coin
+                                try:
+                                    bitcoin_required=sell_offer_tx['formatted_bitcoin_amount_desired']
+                                except KeyError:
+                                    bitcoin_required='missing required btc'
+                                t['bitcoin_required']=bitcoin_required
+                                t['sell_offer_txid']=sell_offer_tx['tx_hash']
+                                t['btc_offer_txid']=sell_offer_tx['tx_hash']
+
                                 spot_offer=min(offer,available)             # limited by available balance of seller
                                 spot_accept=min(spot_offer,accept)          # deal is limited by amount accepted by buyer
                                 if spot_accept > 0: # ignore 0 or negative accepts
                                     t['spot_accept']=spot_accept
                                     t['payment_done']=False
                                     t['payment_expired']=False
-                                    payment_timeframe=int(offer_tx['formatted_block_time_limit'])
+                                    payment_timeframe=int(sell_offer_tx['formatted_block_time_limit'])
                                     add_alarm(t,payment_timeframe)
                                     addr_dict[to_addr][c][6]+=spot_accept   # update accept
                                     addr_dict[to_addr][c][10].append(t)     # update bids on the offer
-                                    sorted_currency_tx_list[c].append(t)    # add per currency tx
-                                    # add to current bids (which appear on seller tx)
-                                    key=offer_tx['tx_hash']
-                                    if modified_tx_dict.has_key(key):
-                                        modified_tx_dict[key].append(t)
-                                    else:
-                                        modified_tx_dict[key]=[t]
                                 else:
-                                    info('non positive spot accept')
-                                    continue
+                                    debug(d,'non positive spot accept')
+                                # add to current bids (which appear on seller tx)
+                                key=sell_offer_tx['tx_hash']
+                                if modified_tx_dict.has_key(key):
+                                    modified_tx_dict[key].append(t)
+                                else:
+                                    modified_tx_dict[key]=[t]
+                                sorted_currency_tx_list[c].append(t)    # add per currency tx
                             else:
-                                info('unknown tx type: '+t['tx_type_str']+' in '+tx_hash)
-                                continue
+                                debug(d,'unknown tx type: '+t['tx_type_str']+' in '+tx_hash)
 
         except OSError:
-            info('error on tx '+t['tx_hash'])
+            debug(d,'error on tx '+t['tx_hash'])
 
-    # update sell/accept tx files (FIXME: make sure modifications include alarms)
+    # update sell/accept tx files
+    # FIXME: make sure modifications include alarms
+    tx_hash_list=modified_tx_dict.keys()
+    other_tx_list=[]
+    try:
+        other_tx_list=modified_tx_dict['other']
+    except KeyError:
+        pass
+    try:
+        tx_hash_list.remove('other')
+    except ValueError:
+        pass
     for tx_hash in modified_tx_dict.keys():
         # open tx file
-        f=open('tx/'+tx_hash+'.json','r')
-        tmp_dict=json.load(f)[0]
-        f.close()
-        updated_tx=[tmp_dict]
+        try:
+            f_sell=open('tx/'+tx_hash+'.json','r')
+            tmp_sell_dict=json.load(f_sell)[0] # loading only the first (orig) tx
+            f_sell.close()
+        except IOError: # no such file?
+            error('sell offer is missing for '+tx_hash)
+
+        # update orig tx (status?)
+        updated_tx=[tmp_sell_dict]
+
+        # update bids
+        bids=[]
+
+        # go over all related tx
         for t in modified_tx_dict[tx_hash]:
-            updated_tx.append(t)
-        f=open('tx/'+tx_hash+'.json','w')
-        json.dump(updated_tx, f) 
-        f.close()
-        # add additional tx
-        # close file 
+            # add bid tx to sell offer
+            bids.append(t)
+            # update purchase accepts
+            try:
+                f_accept=open('tx/'+t['tx_hash']+'.json','r')
+                tmp_accept_dict=json.load(f_accept)[0]
+                f_accept.close()
+            except IOError: # no such file?
+                error('accept offer is missing for '+t['tx_hash'])
+            for k in t.keys():
+                # run over with new value
+                tmp_accept_dict[k]=t[k]
+            # write updated accept tx
+            # FIXME: make atomic - write to .tmp and move
+            f_accept=open('tx/'+t['tx_hash']+'.json','w')
+            f_accept.write('[')
+            json.dump(tmp_accept_dict, f_accept)
+            f_accept.write(']\n')
+            f_accept.close()
+
+        # go over other tx (mainly invalid)
+        for t in other_tx_list:
+            try:
+                f=open('tx/'+t['tx_hash']+'.json','r')
+                tmp_dict=json.load(f)[0]
+                f.close()
+            except IOError: # no such file?
+                error('tx is missing for '+t['tx_hash'])
+            for k in t.keys():
+                # run over with new value
+                tmp_dict[k]=t[k]
+            # write updated tx
+            # FIXME: make atomic - write to .tmp and move
+            f=open('tx/'+t['tx_hash']+'.json','w')
+            f.write('[')
+            json.dump(tmp_dict, f)
+            f.write(']\n')
+            f.close()
+
+        # write updated bids
+        f_bids=open('bids/bids-'+tx_hash+'.json','w')
+        json.dump(bids, f_bids) 
+        f_bids.close()
 
     # create file for each address
     for addr in addr_dict.keys():
@@ -335,12 +411,12 @@ def main():
     sorted_currency_tx_list[1].reverse()
 
     for i in range(len(sorted_currency_tx_list[0])/chunk):
-    	filename='general/MSC_'+'{0:04}'.format(i)+'.json'
+    	filename='general/MSC_'+'{0:04}'.format(i+1)+'.json'
         f=open(filename, 'w')
         json.dump(sorted_currency_tx_list[0][i*chunk:(i+1)*chunk], f)
         f.close()
     for i in range(len(sorted_currency_tx_list[1])/chunk):
-        filename='general/TMSC_'+'{0:04}'.format(i)+'.json'
+        filename='general/TMSC_'+'{0:04}'.format(i+1)+'.json'
         f=open(filename, 'w')
         json.dump(sorted_currency_tx_list[1][i*chunk:(i+1)*chunk], f)
         f.close()

@@ -81,7 +81,7 @@
                                         </tr>
                                         <tr>
                                             <td>Price per coin</td>
-                                            <td><span class="pull-left">{{transactionInformation.formatted_price_per_coin}}</span>
+                                            <td><span class="pull-left">{{transactionInformation.formatted_price_per_coin}} ฿/{{currency}}</span>
                                         </tr>
                                         <tr>
                                             <td>Amount</td>
@@ -93,15 +93,15 @@
                                         </tr>
                                         <tr>
                                             <td>Bitcoin required</td>
-                                            <td>{{transactionInformation.bitcoin_required}}</td>
+                                            <td>{{transactionInformation.bitcoin_required}} ฿</td>
                                         </tr>
                                         <tr>
                                             <td>Offer</td>
-                                            <td><a ng-href="selloffer.html?addr={{transactionInformation.tx_hash}}&currency={{transactionInformation.currencyId}}">Sell offer</a></td>
+                                            <td><a ng-href="selloffer.html?tx={{transactionInformation.sell_offer_txid}}&currency={{transactionInformation.currencyId}}">{{transactionInformation.sell_offer_txid|characters:10}}</a></td>
                                         </tr>
                                         <tr>
                                             <td>Payment</td>
-                                            <td><a ng-href="btcpayment.html?addr={{transactionInformation.tx_hash}}&currency={{transactionInformation.currencyId}}">Payment</a></td>
+                                            <td><a ng-href="btcpayment.html?tx={{transactionInformation.btc_tx_hash}}&currency={{transactionInformation.currencyId}}">Payment</a></td>
                                         </tr>
 
                                     </tbody>
