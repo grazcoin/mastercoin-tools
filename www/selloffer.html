@@ -77,7 +77,8 @@
                                         <tr>
                                             <td>Price per coin</td>
                                             <td><span class="pull-left">{{transactionInformation.formatted_price_per_coin}}</span>
-                                                <button type="button" class="pull-right btn btn-success btn-xs">ACCEPT</button></td>
+                                                <button type="button" ng-click="AcceptClick()" class="pull-right btn btn-success btn-xs">ACCEPT</button></td>
+                                            
                                         </tr>
                                         <tr>
                                             <td>Amount</td>
@@ -141,6 +142,7 @@
                                     <caption>Bids on this offer</caption>
                                    <thead>
                                         <tr>
+                                            <th>Transaction</th>
                                             <th>Amount</th>
                                             <th>Status</th>
                                             <th>Date</th>
@@ -148,9 +150,33 @@
                                    </thead>
                                     <tbody>
                                         <tr ng-repeat="bid in bids">
-                                            <td>{{bid.amount}}</td>
-                                            <td>{{bid.state}}</td>
-                                            <td>{{bid.date}}</td>
+                                            <td ng-switch on="bid.icon">
+                                                <img style="height: 24px; width: 24px;" src="ico/{{bid.icon}}.png" alt="{{bid.icon}}" />
+
+                                                <span ng-switch-when="selloffer">
+                                                    <a ng-href='selloffer.html?tx={{bid.tx_hash}}&currency={{currency}}'>{{bid.tx_hash | characters:10}}
+                                                    </a>
+                                                </span>
+                                                <span ng-switch-when="sellaccept">
+                                                    <a ng-href='sellaccept.html?tx={{bid.tx_hash}}&currency={{currency}}'>{{bid.tx_hash | characters:10}}
+                                                    </a>
+                                                </span>
+                                                <span ng-switch-when="unknown">
+                                                    <a ng-href='btcpayment.html?tx={{bid.tx_hash}}&currency={{currency}}'>{{bid.tx_hash | characters:10}}
+                                                    </a>
+                                                </span>
+                                                <span ng-switch-when="simplesend">
+                                                    <a ng-href='transaction.html?tx={{bid.tx_hash}}&currency={{currency}}'>{{bid.tx_hash | characters:10}}
+                                                    </a>
+                                                </span>
+                                                <span ng-switch-default>{{bid.tx_hash | characters:10}}
+                                                </span>
+                                            </td>
+                                            
+                                            
+                                            <td>{{bid.formatted_amount}}</td>
+                                            <td>{{bid.status}}</td>
+                                            <td>{{bid.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
                                         </tr>
                                     </tbody>
                                 </table>
