@@ -203,19 +203,21 @@ def get_addr_from_key(key): # private or public key
 
 def error(msg):
     last_block_msg=''
-    # store last block
-    try:
-        f=open(LAST_BLOCK_NUMBER_FILE,'w')
-        f.write(str(msc_globals.last_block)+'\n')
-        f.close()
-        last_block_msg=' ('+str(msc_globals.last_block)+')'
-    except IOError:
-        pass
     func_name='unknown'
     try:
         func_name=inspect.stack()[1][3]
     except IndexError:
         pass
+    # on parse: update last block
+    if func_name=='parse':
+        # store last block
+        try:
+            f=open(LAST_BLOCK_NUMBER_FILE,'w')
+            f.write(str(msc_globals.last_block)+'\n')
+            f.close()
+            last_block_msg=' ('+str(msc_globals.last_block)+')'
+        except IOError:
+            pass
     print '[E] '+func_name+': '+str(msg)+last_block_msg
     exit(1)
 

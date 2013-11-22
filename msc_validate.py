@@ -18,20 +18,16 @@ alarm={}
 # create address dict that holds all details per address
 addr_dict={}
 
+# all available properties of a currency in address
+addr_properties=['balance', 'received', 'sent', 'bought', 'sold', 'offer', 'accept',\
+            'in_tx', 'out_tx', 'bought_tx', 'sold_tx', 'offer_tx', 'accept_tx', 'exodus_tx']
+
 # create modified tx dict which would be used to modify tx files
 modified_tx_dict={}
 
 def sorted_ls(path):
     mtime = lambda f: os.stat(os.path.join(path, f)).st_mtime
     return list(sorted(os.listdir(path), key=mtime))
-
-def add_alarm(t, payment_timeframe):
-    tx_block=int(t['block'])
-    alarm_block=tx_block+payment_timeframe
-    if alarm.has_key(alarm_block):
-        alarm[alarm_block].append(t)
-    else:
-        alarm[alarm_block]=[t]
 
 def get_sorted_tx_list():
     # run on all files in tx
@@ -50,6 +46,14 @@ def get_sorted_tx_list():
             f.close()
     # sort according to time
     return sorted(tx_list, key=lambda k: (k['block'],k['index'])) 
+
+def add_alarm(t, payment_timeframe):
+    tx_block=int(t['block'])
+    alarm_block=tx_block+payment_timeframe
+    if alarm.has_key(alarm_block):
+        alarm[alarm_block].append(t)
+    else:
+        alarm[alarm_block]=[t]
 
 def check_alarm(t, last_block, current_block):
     for b in range(last_block, current_block):
@@ -125,22 +129,62 @@ def check_bitcoin_payment(t):
     return False
 
 
-def update_addr_dict(addr, msc_balance=0, msc_received=0, msc_sent=0, msc_bought=0, msc_sold=0, msc_offer=0, msc_accept=0, \
-    msc_in_tx=[], msc_out_tx=[], msc_bought_tx=[], msc_sold_tx=[], msc_offer_tx=[], msc_accept_tx=[], msc_exodus_tx=[], \
-    tmsc_balance=0, tmsc_received=0, tmsc_sent=0, tmsc_bought=0, tmsc_sold=0, mtsc_offer=0, tmsc_accept=0, \
-    tmsc_in_tx=[], tmsc_out_tx=[], tmsc_bought_tx=[], tmsc_sold_tx=[], tmsc_offer_tx=[], tmsc_accept_tx=[], tmsc_exodus_tx=[], \
-    exodus_purchase=0):
+# A fresh initialized address entry
+def new_addr_entry():
+    entry={}
+    # for each currency
+    for c in ['0','1']:
+        currency_dict={}
+        # initialize all properties
+        for property in addr_properties:
+            if property.endswith('_tx'):
+                 currency_dict[property]=[]
+            else:
+                 currency_dict[property]=0
+        entry[c]=currency_dict
+    entry['exodus']={'bought':0}
+    return entry
 
-    if not addr_dict.has_key(to_addr):
-        addr_dict[addr]=([msc_balance, msc_received, msc_sent, msc_bought, msc_sold, msc_offer, msc_accept, \
-            msc_in_tx, msc_out_tx, msc_bought_tx, msc_sold_tx, msc_offer_tx, msc_accept_tx, msc_exodus_tx], \
-            [tmsc_balance, tmsc_received, tmsc_sent, tmsc_bought, tmsc_sold, tmsc_offer, tmsc_accept, \
-            tmsc_in_tx, tmsc_out_tx, tmsc_bought_tx, tmsc_sold_tx, tmsc_offer_tx, tmsc_accept_tx, tmsc_exodus_tx], [exodus_purchase])
-    else:
-        debug(d,'not implemented')
+# example call:
+# update_addr_dict("1address", "0", balance=10, bought=2, bought_tx=[])
+
+def update_addr_dict(addr, *arguments, **keywords):
+
+        # update specific currency fields within address
+        # address is first arg
+        # currency is second arg
+        # supported:
+        # '0' for mastercoin
+        # '1' for test mastercoin
+        # 'exodus' for exodus purchases
+        # then come the keywords and values to be updated
+        c=arguments[0]
+        if c!='0' and c!='1' and c!='exodus':
+            error('update_addr_dict called with unsupported currency: '+c)
+
+        # is there already entry for this address?
+        if not addr_dict.has_key(addr):
+            # no - so create a new one
+            addr_dict[addr]=new_addr_entry()
+
+        # update all given fields with new values
+        keys = sorted(keywords.keys())
+        # allow only keys from addr_properties
+        for kw in keys:
+            try:
+                prop_index=addr_properties.index(kw)
+            except ValueError:
+                error('unsupported property of addr: '+kw)
+
+            if kw.endswith('_tx'):
+                addr_dict[addr][c][kw].append(keywords[kw])
+            else:
+                addr_dict[addr][c][kw]+=int(keywords[kw])
 
 
 def main():
+
+    # parse command line arguments
     parser = OptionParser("usage: %prog [options]")
     parser.add_option("-d", "--debug", action="store_true",dest='debug_mode', default=False,
                         help="turn debug mode on")
@@ -158,7 +202,7 @@ def main():
     sorted_tx_list.append({'invalid':(True,'fake tx'), 'block':last_height, 'tx_hash':'fake'})
 
     # prepare lists for mastercoin and test
-    sorted_currency_tx_list=[[],[]] # first list if for mastercoins, second for test mastercoins
+    sorted_currency_tx_list={'0':[],'1':[]} # list 0 for mastercoins, list 1 for test mastercoins
 
     last_block=0 # keep tracking of last block for alarm purposes
 
@@ -212,37 +256,23 @@ def main():
                 tx_hash=t['tx_hash']
                 if from_addr == 'exodus': # assume exodus does not do sell offer/accept
                     # exodus purchase
-                    if not addr_dict.has_key(to_addr):
-                                             #msc balance    #received   #sent   #b #s #o #a #in  #out #buy #sold #offer #acc #exodus
-                        addr_dict[to_addr]=([amount_transfer,0,          0,      0, 0, 0, 0, [],  [],  [],  [],   [],    [],  [t]],
-                                #test msc balance #received  #sent   #b #s #o #a #in  #out #buy #sold #offer #acc #exodus # exodus purchase
-				[amount_transfer, 0,         0,      0, 0, 0, 0, [],  [],  [],  [],   [],    [],  [t]],   [amount_transfer])
-                    else:
-                        addr_dict[to_addr][0][0]+=amount_transfer # msc
-                        addr_dict[to_addr][1][0]+=amount_transfer # test msc
-                        addr_dict[to_addr][0][13].append(t)       # incoming msc
-                        addr_dict[to_addr][1][13].append(t)       # incoming test msc
-                        addr_dict[to_addr][2][0]+=amount_transfer # exodus purchase
+                    update_addr_dict(to_addr, '0', balance=amount_transfer, exodus_tx=t)
+                    update_addr_dict(to_addr, '1', balance=amount_transfer, exodus_tx=t)
+                    update_addr_dict(to_addr, 'exodus', bought=amount_transfer)
                     # exodus bonus - 10% for exodus (available slowly during the years)
                     ten_percent=int((amount_transfer+0.0)/10+0.5)
-                    if not addr_dict.has_key(exodus_address):
-                        addr_dict[exodus_address]=([ten_percent,0,0,0,0,0,0,[],[],[],[],[],[],[t]],
-                                                  [ten_percent,0,0,0,0,0,0,[],[],[],[],[],[],[t]],[0])
-                    else:
-                        addr_dict[exodus_address][0][0]+=ten_percent # 10% bonus msc for exodus
-                        addr_dict[exodus_address][1][0]+=ten_percent # 10% bonus test msc for exodus
-                        addr_dict[exodus_address][0][13].append(t)   # incoming msc
-                        addr_dict[exodus_address][1][13].append(t)   # incoming test msc
-                        addr_dict[exodus_address][2][0]+=0           # no accounting for exodus 10% due to purchase
+                    update_addr_dict(exodus_address, '0', balance=ten_percent, exodus_tx=t)
+                    update_addr_dict(exodus_address, '1', balance=ten_percent, exodus_tx=t)
+
                     # tx belongs to mastercoin and test mastercoin
-                    sorted_currency_tx_list[0].append(t) 
-                    sorted_currency_tx_list[1].append(t) 
+                    sorted_currency_tx_list['0'].append(t) 
+                    sorted_currency_tx_list['1'].append(t) 
                 else:
                     if currency=='Mastercoin':
-                        c=0
+                        c='0'
                     else:
                         if currency=='Test Mastercoin':
-                            c=1
+                            c='1'
                         else:
                             debug(d,'unknown currency '+currency+ ' in tx '+tx_hash)
                             continue
@@ -262,7 +292,7 @@ def main():
                             f.write(']\n')
                             f.close()
                         else:
-                            balance_from=addr_dict[from_addr][c][0]
+                            balance_from=addr_dict[from_addr][c]['balance']
                             if amount_transfer > int(balance_from):
                                 debug(d,'balance of '+currency+' is too low on '+tx_hash)
                                 # mark tx as invalid and continue
@@ -277,22 +307,9 @@ def main():
                                 f.close()
                             else:
                                 # update to_addr
-                                if not addr_dict.has_key(to_addr):
-                                    if c==0:   #msc balance   #recieved  #sent                 #b #s #o #a #in #out #by #sld #ofr #acc #ex 
-                                        addr_dict[to_addr]=([amount_transfer,amount_transfer,0,0, 0, 0, 0, [t],[],  [], [],  [],  [],  []],
-                                                           #test balance #b #s #o #a #in #out #buy #sold #ofr #ac #ex
-                                                           [0,0,0,       0, 0, 0, 0, [], [],  [],  [],   [],  [], []],  [0])
-                                    else:
-                                        addr_dict[to_addr]=([0,0,0,0,0,0,0,[],[],[],[],[],[],[]],
-                                                           [amount_transfer,amount_transfer,0,0,0,0,0,[t],[],[],[],[],[],[]],[0])
-                                else:
-                                    addr_dict[to_addr][c][0]+=amount_transfer # msc
-                                    addr_dict[to_addr][c][1]+=amount_transfer # msc total received
-                                    addr_dict[to_addr][c][7].append(t)        # incoming msc
+                                update_addr_dict(to_addr, c, balance=amount_transfer, received=amount_transfer, in_tx=t)
                                 # update from_addr
-                                addr_dict[from_addr][c][0]-=amount_transfer # msc
-                                addr_dict[from_addr][c][2]+=amount_transfer # msc total sent
-                                addr_dict[from_addr][c][8].append(t)        # outgoing msc
+                                update_addr_dict(from_addr, c, balance=-amount_transfer, sent=amount_transfer, out_tx=t)
                                 # update msc list
                                 sorted_currency_tx_list[c].append(t) 
 
@@ -304,16 +321,9 @@ def main():
                             # update details of sell offer
                             # update single allowed tx for sell offer
                             # add to list to be shown on general
-                            offer=float(t['formatted_amount'])
-                            if not addr_dict.has_key(from_addr):
-                                             #msc balance  #received   #sent   #b #s #o #a #in  #out #buy #sold #ofr #acc #exodus
-                                addr_dict[from_addr]=([0,  0,          0,      0, 0, 0, 0, [],  [],  [],  [],   [],  [],  []],
-                            #tmsc balance #received  #sent   #b #s #o    #a #in #out #buy #sold #ofr #acc #exodus # exodus purchase
-				[0,       0,         0,      0, 0, offer, 0, [], [],  [],  [],   [t],[],  []],    [])
-                            else: #
-                                addr_dict[from_addr][c][5]=offer      # update latest wish offer
-                                addr_dict[from_addr][c][11]=[t]       # store the latest offer tx for ref
-                            sorted_currency_tx_list[c].append(t)  # add per currency tx
+                            offer_amount=float(t['formatted_amount'])
+                            update_addr_dict(from_addr, c, offer=offer_amount, offer_tx=t)
+                            sorted_currency_tx_list[c].append(t)
                         else:
                             # sell accept
                             if t['tx_type_str']==transaction_type_dict['00000016']:
@@ -322,15 +332,11 @@ def main():
                                 # partially fill and update balances and sell offer
                                 # add to list to be shown on general
                                 # partially fill according to spot offer
-                                accept=float(t['formatted_amount'])
-                                if not addr_dict.has_key(to_addr): # update entry if not yet present
-                                              #msc balance  #received   #sent   #b #s #o #a #in  #out #buy #sold #ofr #acc #exodus
-                                    addr_dict[to_addr]=([0,  0,          0,      0, 0, 0, 0, [],  [],  [],  [],  [],  [],  []],
-                            #tmsc balance #received  #sent   #b #s #o    #a #in #out #buy #sold #ofr #acc #exodus # exodus purchase
-				        [0,   0,   0,         0, 0, 0,   0, [], [],  [],  [],   [],  [],  []],   [])
+                                accept_amount=float(t['formatted_amount'])
+                                update_addr_dict(from_addr, c, accept=accept_amount, accept_tx=t)
                                 try:
-                                    sell_offer=addr_dict[to_addr][c][5]              # get orig offer from seller
-                                    sell_offer_tx=addr_dict[to_addr][c][11][0]       # get orig offer tx from seller
+                                    sell_offer=addr_dict[to_addr][c]['offer']              # get orig offer from seller
+                                    sell_offer_tx=addr_dict[to_addr][c]['offer_tx'][-1][0] # get orig offer tx (last) from seller
                                 except (KeyError, IndexError):
                                     # offer from wallet without entry (empty wallet)
                                     info('accept offer from missing seller '+to_addr)
@@ -340,10 +346,10 @@ def main():
                                         modified_tx_dict[key].append(t)
                                     else:
                                         modified_tx_dict[key]=[t]
-                                    sorted_currency_tx_list[c].append(t)    # add per currency tx
+                                    sorted_currency_tx_list[c].append(t)
                                     continue
                                 try:
-                                    available=addr_dict[from_addr][c][0]    # get balance of that currency of buyer
+                                    available=addr_dict[from_addr][c]['balance']    # get balance of that currency of buyer
                                 except (KeyError, IndexError):
                                     available=0
                                 try:
@@ -359,16 +365,15 @@ def main():
                                 t['sell_offer_txid']=sell_offer_tx['tx_hash']
                                 t['btc_offer_txid']='unknown'
 
-                                spot_offer=min(offer,available)             # limited by available balance of seller
-                                spot_accept=min(spot_offer,accept)          # deal is limited by amount accepted by buyer
+                                spot_offer=min(sell_offer,available)        # limited by available balance of seller
+                                spot_accept=min(spot_offer,accept_amount)   # deal is limited by amount accepted by buyer
                                 if spot_accept > 0: # ignore 0 or negative accepts
                                     t['spot_accept']=spot_accept
                                     t['payment_done']=False
                                     t['payment_expired']=False
                                     payment_timeframe=int(sell_offer_tx['formatted_block_time_limit'])
                                     add_alarm(t,payment_timeframe)
-                                    addr_dict[to_addr][c][6]+=spot_accept   # update accept
-                                    addr_dict[to_addr][c][12].append(t)     # update bids on the offer
+                                    update_addr_dict(from_addr, c, accept=spot_accept, accept_tx=t)
                                 else:
                                     debug(d,'non positive spot accept')
                                 # add to current bids (which appear on seller tx)
@@ -396,7 +401,7 @@ def main():
         tx_hash_list.remove('other')
     except ValueError:
         pass
-    for tx_hash in modified_tx_dict.keys():
+    for tx_hash in tx_hash_list:
         # open tx file
         try:
             f_sell=open('tx/'+tx_hash+'.json','r')
@@ -461,22 +466,19 @@ def main():
     for addr in addr_dict.keys():
         addr_dict_api={}
         addr_dict_api['address']=addr
-        for i in [0,1]:
+        for c in ['0','1']:
             sub_dict={}
-            sub_dict['received_transactions']=addr_dict[addr][i][7]
+            sub_dict['received_transactions']=addr_dict[addr][c]['in_tx']
             sub_dict['received_transactions'].reverse()
-            sub_dict['sent_transactions']=addr_dict[addr][i][8]
+            sub_dict['sent_transactions']=addr_dict[addr][c]['out_tx']
             sub_dict['sent_transactions'].reverse()
-            sub_dict['total_received']=from_satoshi(addr_dict[addr][i][1])
-            sub_dict['total_sent']=from_satoshi(addr_dict[addr][i][2])
-            sub_dict['balance']=from_satoshi(addr_dict[addr][i][0])
-            sub_dict['exodus_transactions']=addr_dict[addr][i][13]
+            sub_dict['total_received']=from_satoshi(addr_dict[addr][c]['received'])
+            sub_dict['total_sent']=from_satoshi(addr_dict[addr][c]['sent'])
+            sub_dict['balance']=from_satoshi(addr_dict[addr][c]['balance'])
+            sub_dict['exodus_transactions']=addr_dict[addr][c]['exodus_tx']
             sub_dict['exodus_transactions'].reverse()
-            if len(addr_dict[addr][2]) > 0:
-                sub_dict['total_exodus']=from_satoshi(addr_dict[addr][2][0])
-            else:
-                sub_dict['total_exodus']=0
-            addr_dict_api[i]=sub_dict
+            sub_dict['total_exodus']=from_satoshi(addr_dict[addr]['exodus']['bought'])
+            addr_dict_api[c]=sub_dict
         filename='addr/'+addr+'.json'
         f=open(filename, 'w')
         json.dump(addr_dict_api, f)
@@ -484,19 +486,20 @@ def main():
 
     # create files for msc and files for test_msc
     chunk=10
-    sorted_currency_tx_list[0].reverse()
-    sorted_currency_tx_list[1].reverse()
+    sorted_currency_tx_list['0'].reverse()
+    sorted_currency_tx_list['1'].reverse()
 
-    for i in range(len(sorted_currency_tx_list[0])/chunk):
+    for i in range(len(sorted_currency_tx_list['0'])/chunk):
     	filename='general/MSC_'+'{0:04}'.format(i+1)+'.json'
         f=open(filename, 'w')
-        json.dump(sorted_currency_tx_list[0][i*chunk:(i+1)*chunk], f)
+        json.dump(sorted_currency_tx_list['0'][i*chunk:(i+1)*chunk], f)
         f.close()
-    for i in range(len(sorted_currency_tx_list[1])/chunk):
+    for i in range(len(sorted_currency_tx_list['1'])/chunk):
         filename='general/TMSC_'+'{0:04}'.format(i+1)+'.json'
         f=open(filename, 'w')
-        json.dump(sorted_currency_tx_list[1][i*chunk:(i+1)*chunk], f)
+        json.dump(sorted_currency_tx_list['1'][i*chunk:(i+1)*chunk], f)
         f.close()
+    info('validation done')
 
 if __name__ == "__main__":
     main()

@@ -11,7 +11,7 @@ import msc_globals
 
 d=False # debug_mode
 
-def main():
+def parse():
     msc_globals.init()
 
     parser = OptionParser("usage: %prog [options]")
@@ -289,4 +289,4 @@ def main():
         archive_parsed_data()
 
 if __name__ == "__main__":
-    main()
+    parse()
