@@ -45,9 +45,12 @@ def get_sorted_tx_list():
     for filename in tx_files:
         if filename.endswith('.json'):
             f=open('tx/'+filename)
-	    tx_list.append(json.load(f)[0])
-            try: # for basic which is also exodus
-	        tx_list.append(json.load(f)[1])
+            t_list=json.load(f)
+            t=t_list[0] # normally take only first tx from list
+            tx_list.append(t)
+            try: # for exodus
+                if t['tx_type_str'] == 'exodus':
+                    tx_list.append(t_list[1])
             except:
                 pass
             f.close()
@@ -313,7 +316,7 @@ def generate_api_jsons():
     sorted_currency_tx_list['Test Mastercoin'].reverse()
 
     for i in range(len(sorted_currency_tx_list['Mastercoin'])/chunk):
-    	atomic_json_dump(sorted_currency_tx_list['Mastercoin'][i*chunk:(i+1)*chunk], \
+        atomic_json_dump(sorted_currency_tx_list['Mastercoin'][i*chunk:(i+1)*chunk], \
             'general/MSC_'+'{0:04}'.format(i+1)+'.json')
     for i in range(len(sorted_currency_tx_list['Test Mastercoin'])/chunk):
         atomic_json_dump(sorted_currency_tx_list['Test Mastercoin'][i*chunk:(i+1)*chunk], \

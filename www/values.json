@@ -3,12 +3,14 @@
 "trend":"down",
 "currency":"MSC",
 "name2":"",
-"trend2":"rgb(13,157,51)"
+"trend2":"rgb(13,157,51)",
+"pages":"13"
 },
 {
 "name":"Test MSC",
 "trend":"up",
 "currency":"TMSC",
 "name2":"",
-"trend2":"rgb(212,48,48)"
+"trend2":"rgb(212,48,48)",
+"pages":"14"
 }]
