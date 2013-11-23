@@ -317,10 +317,10 @@ def generate_api_jsons():
 
     for i in range(len(sorted_currency_tx_list['Mastercoin'])/chunk):
         atomic_json_dump(sorted_currency_tx_list['Mastercoin'][i*chunk:(i+1)*chunk], \
-            'general/MSC_'+'{0:04}'.format(i+1)+'.json')
+            'general/MSC_'+'{0:04}'.format(i+1)+'.json', add_brackets=False)
     for i in range(len(sorted_currency_tx_list['Test Mastercoin'])/chunk):
         atomic_json_dump(sorted_currency_tx_list['Test Mastercoin'][i*chunk:(i+1)*chunk], \
-            'general/TMSC_'+'{0:04}'.format(i+1)+'.json')
+            'general/TMSC_'+'{0:04}'.format(i+1)+'.json', add_brackets=False)
 
 
 # main function - validates all tx and calculates balances of addresses
@@ -349,7 +349,10 @@ def validate():
     for t in sorted_tx_list:
 
         # check alarm (verify accept offers get payment in time)
-        current_block=int(t['block'])
+        try:
+            current_block=int(t['block'])
+        except ValueError:
+            error('invalid block number during validation: '+t['block'])
         check_alarm(t, last_block, current_block)
         # update last_block for next alarm check
         last_block=current_block

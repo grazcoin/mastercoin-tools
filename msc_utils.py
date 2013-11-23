@@ -242,11 +242,30 @@ def bootstrap_dict_per_tx(block, tx_hash, address, value, dacoins):
     tx_dict={"block": str(block), "tx_hash": tx_hash, "currency_str": "Mastercoin and Test Mastercoin", "to_address": address, "from_address": "exodus", "exodus": True, "tx_method_str": "exodus", "orig_value":value ,"formatted_amount": from_satoshi(dacoins), "tx_type_str": "exodus"}
     return tx_dict
 
+def formatted_decimal(float_number):
+    s=str("{0:.8f}".format(float_number))
+    if s.strip('0.') == '':      # only zero and/or decimal point
+        return '0.0'
+    else:
+        trimmed=s.rstrip('0')     # remove zeros on the right
+        if trimmed.endswith('.'): # make sure there is at least one zero on the right
+            return trimmed+'0'
+        else:
+            if trimmed.find('.')==-1:
+                return trimmed+'.0'
+            else:
+                return trimmed
+
 def to_satoshi(value):
     return int(float(value)*100000000+0.5)
 
 def from_satoshi(value):
-    return str("{0:.8f}".format(int(value)/100000000.0))
+    float_number=int(value)/100000000.0
+    return formatted_decimal(float_number)
+
+def from_hex_satoshi(value):
+    float_number=int(value,16)/100000000.0
+    return formatted_decimal(float_number)
 
 def b58encode(v):
   """ encode v, which is a string of bytes, to base58.
@@ -460,7 +479,7 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
             parse_dict['tx_hash']=tx_hash
             parse_dict['from_address']=from_address
             parse_dict['to_address']=to_address
-            parse_dict['formatted_amount']=str(int(data_dict['amount'],16)/100000000.0)
+            parse_dict['formatted_amount']=from_hex_satoshi(data_dict['amount'])
             parse_dict['currency_str']=get_currency_type_from_dict(data_dict['currencyId'])
             parse_dict['tx_type_str']=get_transaction_type_from_dict(data_dict['transactionType'])
             parse_dict['tx_method_str']='basic'
@@ -487,7 +506,7 @@ def parse_multisig_simple(tx, tx_hash='unknown'):
         parse_dict['tx_hash']=tx_hash
         parse_dict['from_address'] = get_addr_from_key(change_address_pub)
         parse_dict['to_address'] = b58encode(recipientHex.decode('hex_codec'))
-        parse_dict['formatted_amount'] = str("{0:.8f}".format(int(data_dict['amount'],16)/100000000.0))
+        parse_dict['formatted_amount'] = from_hex_satoshi(data_dict['amount'])
         parse_dict['currency_str'] = get_currency_type_from_dict(data_dict['currencyId'])
         parse_dict['tx_type_str'] = get_transaction_type_from_dict(data_dict['transactionType'])
         parse_dict['tx_method_str'] = 'multisig simple'
@@ -570,10 +589,10 @@ def parse_multisig(tx, tx_hash='unknown'):
             except IndexError:
                 error('cannot parse dataHex_deobfuscated_list')
             if len(data_dict) >= 6: # at least 6 basic fields got parse on the first dataHex
+                amount=int(data_dict['amount'],16)/100000000.0
                 parse_dict=data_dict
                 parse_dict['tx_hash']=tx_hash
-                amount=int(data_dict['amount'],16)/100000000.0
-                parse_dict['formatted_amount'] = str("{0:.8f}".format(amount))
+                parse_dict['formatted_amount'] = formatted_decimal(amount)
                 parse_dict['currency_str'] = get_currency_type_from_dict(data_dict['currencyId'])
                 parse_dict['tx_type_str'] = get_transaction_type_from_dict(data_dict['transactionType'])
                 parse_dict['tx_method_str'] = 'multisig'
@@ -590,8 +609,8 @@ def parse_multisig(tx, tx_hash='unknown'):
                     else:
                         price_per_coin=0
                         parse_dict['invalid']=(True,'non positive sell offer amount')
-                    parse_dict['formatted_bitcoin_amount_desired']= str("{0:.8f}".format(bitcoin_amount_desired))
-                    parse_dict['formatted_price_per_coin']= str("{0:.8f}".format(price_per_coin))
+                    parse_dict['formatted_bitcoin_amount_desired']= formatted_decimal(bitcoin_amount_desired)
+                    parse_dict['formatted_price_per_coin']= formatted_decimal(price_per_coin)
                     parse_dict['formatted_block_time_limit']= str(int(data_dict['block_time_limit'],16))
 
                 if data_dict['transactionType'] == '00000016': # Sell accept
@@ -608,7 +627,7 @@ def parse_multisig(tx, tx_hash='unknown'):
                     data_dict=parse_2nd_data_script(dataHex_deobfuscated_list[1])
                     for key in data_dict:
                         parse_dict[key]=data_dict[key]
-                    parse_dict['formatted_fee_required'] = str("{0:.8f}".format(int(data_dict['fee_required'],16)/100000000.0))
+                    parse_dict['formatted_fee_required'] = from_hex_satoshi(data_dict['fee_required'])
 
         else: # not the multisig output
             # the output with dust
@@ -805,7 +824,10 @@ def get_value_from_output(tx_and_number):
         return None
     rawtx=get_raw_tx(txid)
     json_tx=get_json_tx(rawtx)
-    all_outputs=json_tx['outputs']
+    try: 
+        all_outputs=json_tx['outputs']
+    except TypeError: # obelisk can give None
+        error('bad outputs parsing on: '+json_tx)
     output=all_outputs[number]
     return output['value']
 
