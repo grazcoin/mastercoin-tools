@@ -28,6 +28,8 @@ addr_properties=['balance', 'received', 'sent', 'bought', 'sold', 'offer', 'acce
 # coins and their numbers
 coins_list=['Mastercoin', 'Test Mastercoin']
 coins_dict={'Mastercoin':'0','Test Mastercoin':'1'}
+coins_short_name_dict={'Mastercoin':'MSC','Test Mastercoin':'TMSC'}
+coins_reverse_short_name_dict=dict((v,k) for k, v in coins_short_name_dict.iteritems())
 
 # create modified tx dict which would be used to modify tx files
 modified_tx_dict={}
@@ -229,10 +231,13 @@ def update_icon_details(t):
             error('non exodus valid msc tx without '+e+' ('+t['tx_type_str']+') on '+tx_hash)
     return t
 
-def load_dict_from_file(filename):
+def load_dict_from_file(filename, all_list=False):
     try:
         f=open(filename,'r')
-        tmp_dict=json.load(f)[0]
+        if all_list == False:
+            tmp_dict=json.load(f)[0]
+        else:
+            tmp_dict=json.load(f)
         f.close()
     except IOError: # no such file?
         error('dict load failed. missing '+filename)
@@ -320,12 +325,19 @@ def generate_api_jsons():
     sorted_currency_tx_list['Mastercoin'].reverse()
     sorted_currency_tx_list['Test Mastercoin'].reverse()
 
-    for i in range(len(sorted_currency_tx_list['Mastercoin'])/chunk):
-        atomic_json_dump(sorted_currency_tx_list['Mastercoin'][i*chunk:(i+1)*chunk], \
-            'general/MSC_'+'{0:04}'.format(i+1)+'.json', add_brackets=False)
-    for i in range(len(sorted_currency_tx_list['Test Mastercoin'])/chunk):
-        atomic_json_dump(sorted_currency_tx_list['Test Mastercoin'][i*chunk:(i+1)*chunk], \
-            'general/TMSC_'+'{0:04}'.format(i+1)+'.json', add_brackets=False)
+    # create the latest transactions pages
+    pages={'Mastercoin':0, 'Test Mastercoin':0}
+    for c in coins_list:
+        for i in range(len(sorted_currency_tx_list[c])/chunk):
+            atomic_json_dump(sorted_currency_tx_list[c][i*chunk:(i+1)*chunk], \
+                'general/'+coins_short_name_dict[c]+'_'+'{0:04}'.format(i+1)+'.json', add_brackets=False)
+            pages[c]+=1
+    values_list=load_dict_from_file('www/values.json', all_list=True)
+    updated_values_list=[]
+    for v in values_list:
+        v['pages']=pages[coins_reverse_short_name_dict[v['currency']]]
+        updated_values_list.append(v)
+    atomic_json_dump(updated_values_list, 'www/values.json', add_brackets=False)
 
     # create /mastercoin_verify/addresses/$currency
     for c in coins_list:
