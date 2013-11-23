@@ -12,6 +12,10 @@ function BTCController($scope, $http) {
     $scope.prevClass='disabled';
     $scope.nextClass='';
     
+    $scope.$on('handlePagesBroadcast', function(event, args) {
+        $scope.numberOfPages = Number(args.message);
+    });
+    
     $scope.getData = function ($i) {
         // Clear scope members
         $scope.currentPageStart = (1+$i-($i%$scope.showPages));

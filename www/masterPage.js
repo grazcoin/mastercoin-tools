@@ -15,9 +15,11 @@ function NavigationController($scope, $http) {
         // Nav bar selection - Make the http request and process the result
         $http.get('values.json', {}).success(function (data, status, headers, config) {
            $scope.values = data;
-	   angular.forEach($scope.values, function(value, key){
-	    if (value.currency==$scope.currency)
+	   angular.forEach($scope.values, function(value, key) {
+	    if (value.currency==$scope.currency) {
 		$scope.values[key].selected="selected";
+		$scope.$emit('handlePagesEmit', {message: value.pages});
+	    }
 	    else
 		$scope.values[key].selected="";
 	  });
