@@ -368,8 +368,129 @@ def generate_api_jsons():
         atomic_json_dump(mastercoin_verify_tx_per_address, 'mastercoin_verify/transactions/'+addr, add_brackets=False)     
         
 
+# validate a matercoin transaction
+def check_mastercoin_transaction(t):
 
-# main function - validates all tx and calculates balances of addresses
+    # update icon and details
+    t=update_icon_details(t)
+
+    # get general data from tx
+    to_addr=t['to_address']
+    from_addr=t['from_address']
+    amount_transfer=to_satoshi(t['formatted_amount'])
+    currency=t['currency_str']
+    tx_hash=t['tx_hash']
+
+    if from_addr == 'exodus': # assume exodus does not do sell offer/accept
+        # exodus purchase
+        update_addr_dict(to_addr, True, 'Mastercoin', balance=amount_transfer, exodus_tx=t)
+        update_addr_dict(to_addr, True, 'Test Mastercoin', balance=amount_transfer, exodus_tx=t)
+        update_addr_dict(to_addr, True, 'exodus', bought=amount_transfer)
+        # exodus bonus - 10% for exodus (available slowly during the years)
+        ten_percent=int((amount_transfer+0.0)/10+0.5)
+        update_addr_dict(exodus_address, True, 'Mastercoin', balance=ten_percent, exodus_tx=t)
+        update_addr_dict(exodus_address, True, 'Test Mastercoin', balance=ten_percent, exodus_tx=t)
+
+        # tx belongs to mastercoin and test mastercoin
+        for c in coins_list:
+            sorted_currency_tx_list[c].append(t) 
+    else:
+        c=currency
+        if c!='Mastercoin' and c!='Test Mastercoin':
+            debug(d,'unknown currency '+currency+ ' in tx '+tx_hash)
+            return
+        # left are normal transfer and sell offer/accept
+        if t['tx_type_str']==transaction_type_dict['00000000']:
+            # the normal transfer case
+            if not addr_dict.has_key(from_addr):
+                debug(d, 'try to pay from non existing address at '+tx_hash)
+                mark_tx_invalid(tx_hash, 'pay from a non existing address')
+                return 
+            else:
+                balance_from=addr_dict[from_addr][c]['balance']
+                if amount_transfer > int(balance_from):
+                    debug(d,'balance of '+currency+' is too low on '+tx_hash)
+                    mark_tx_invalid(tx_hash, 'balance too low')
+                    return
+                else:
+                    # update to_addr
+                    update_addr_dict(to_addr, True, c, balance=amount_transfer, received=amount_transfer, in_tx=t)
+                    # update from_addr
+                    update_addr_dict(from_addr, True, c, balance=-amount_transfer, sent=amount_transfer, out_tx=t)
+                    # update msc list
+                    sorted_currency_tx_list[c].append(t) 
+
+        else:
+            # sell offer
+            if t['tx_type_str']==transaction_type_dict['00000014']:
+                debug(d, 'sell offer: '+tx_hash)
+                # sell offer from empty or non existing address is allowed
+                # update details of sell offer
+                # update single allowed tx for sell offer
+                # add to list to be shown on general
+                offer_amount=float(t['formatted_amount'])
+                update_addr_dict(from_addr, True, c, offer=offer_amount, offer_tx=t)
+                sorted_currency_tx_list[c].append(t)
+            else:
+                # sell accept
+                if t['tx_type_str']==transaction_type_dict['00000016']:
+                    debug(d, 'sell accept: '+tx_hash)
+                    # verify corresponding sell offer exists and partial balance
+                    # partially fill and update balances and sell offer
+                    # add to list to be shown on general
+                    # partially fill according to spot offer
+                    accept_amount=float(t['formatted_amount'])
+                    update_addr_dict(from_addr, True, c, accept=accept_amount, accept_tx=t)
+                    try:
+                        sell_offer=addr_dict[to_addr][c]['offer']              # get orig offer from seller
+                        sell_offer_tx=addr_dict[to_addr][c]['offer_tx'][-1][0] # get orig offer tx (last) from seller
+                    except (KeyError, IndexError):
+                        # offer from wallet without entry (empty wallet)
+                        debug(d, 'accept offer from missing seller '+to_addr)
+                        mark_tx_invalid(tx_hash, 'accept offer of missing sell offer')
+                        return 
+                    try:
+                        available=addr_dict[from_addr][c]['balance']    # get balance of that currency of buyer
+                    except (KeyError, IndexError):
+                        available=0
+                    try:
+                        formatted_price_per_coin=sell_offer_tx['formatted_price_per_coin']
+                    except KeyError:
+                        formatted_price_per_coin='price missing'
+                    t['formatted_price_per_coin']=formatted_price_per_coin
+                    try:
+                        bitcoin_required=sell_offer_tx['formatted_bitcoin_amount_desired']
+                    except KeyError:
+                        bitcoin_required='missing required btc'
+                    t['bitcoin_required']=bitcoin_required
+                    t['sell_offer_txid']=sell_offer_tx['tx_hash']
+                    t['btc_offer_txid']='unknown'
+
+                    spot_offer=min(sell_offer,available)        # limited by available balance of seller
+                    spot_accept=min(spot_offer,accept_amount)   # deal is limited by amount accepted by buyer
+                    if spot_accept > 0: # ignore 0 or negative accepts
+                        t['spot_accept']=spot_accept
+                        t['payment_done']=False
+                        t['payment_expired']=False
+                        payment_timeframe=int(sell_offer_tx['formatted_block_time_limit'])
+                        add_alarm(t,payment_timeframe)
+                        update_addr_dict(from_addr, True, c, accept=spot_accept, accept_tx=t)
+                    else:
+                        debug(d,'non positive spot accept')
+                    # add to current bids (which appear on seller tx)
+                    key=sell_offer_tx['tx_hash']
+                    if modified_tx_dict.has_key(key):
+                        modified_tx_dict[key].append(t)
+                    else:
+                        modified_tx_dict[key]=[t]
+                    sorted_currency_tx_list[c].append(t)    # add per currency tx
+                else:
+                    debug(d,'unknown tx type: '+t['tx_type_str']+' in '+tx_hash)
+
+
+#########################################################################
+# main function - validates all tx and calculates balances of addresses #
+#########################################################################
 def validate():
 
     # parse command line arguments
@@ -409,126 +530,10 @@ def validate():
                 continue
 
             if t['invalid']==False:
-
-                # update icon and details
-                t=update_icon_details(t)
-
-                # get general data from tx
-                to_addr=t['to_address']
-                from_addr=t['from_address']
-                amount_transfer=to_satoshi(t['formatted_amount'])
-                currency=t['currency_str']
-                tx_hash=t['tx_hash']
-
-                if from_addr == 'exodus': # assume exodus does not do sell offer/accept
-                    # exodus purchase
-                    update_addr_dict(to_addr, True, 'Mastercoin', balance=amount_transfer, exodus_tx=t)
-                    update_addr_dict(to_addr, True, 'Test Mastercoin', balance=amount_transfer, exodus_tx=t)
-                    update_addr_dict(to_addr, True, 'exodus', bought=amount_transfer)
-                    # exodus bonus - 10% for exodus (available slowly during the years)
-                    ten_percent=int((amount_transfer+0.0)/10+0.5)
-                    update_addr_dict(exodus_address, True, 'Mastercoin', balance=ten_percent, exodus_tx=t)
-                    update_addr_dict(exodus_address, True, 'Test Mastercoin', balance=ten_percent, exodus_tx=t)
-
-                    # tx belongs to mastercoin and test mastercoin
-                    for c in coins_list:
-                        sorted_currency_tx_list[c].append(t) 
-                else:
-                    c=currency
-                    if c!='Mastercoin' and c!='Test Mastercoin':
-                        debug(d,'unknown currency '+currency+ ' in tx '+tx_hash)
-                        continue
-                    # left are normal transfer and sell offer/accept
-                    if t['tx_type_str']==transaction_type_dict['00000000']:
-                        # the normal transfer case
-                        if not addr_dict.has_key(from_addr):
-                            debug(d, 'try to pay from non existing address at '+tx_hash)
-                            mark_tx_invalid(tx_hash, 'pay from a non existing address')
-                            continue
-                        else:
-                            balance_from=addr_dict[from_addr][c]['balance']
-                            if amount_transfer > int(balance_from):
-                                debug(d,'balance of '+currency+' is too low on '+tx_hash)
-                                mark_tx_invalid(tx_hash, 'balance too low')
-                                continue
-                            else:
-                                # update to_addr
-                                update_addr_dict(to_addr, True, c, balance=amount_transfer, received=amount_transfer, in_tx=t)
-                                # update from_addr
-                                update_addr_dict(from_addr, True, c, balance=-amount_transfer, sent=amount_transfer, out_tx=t)
-                                # update msc list
-                                sorted_currency_tx_list[c].append(t) 
-
-                    else:
-                        # sell offer
-                        if t['tx_type_str']==transaction_type_dict['00000014']:
-                            debug(d, 'sell offer: '+tx_hash)
-                            # sell offer from empty or non existing address is allowed
-                            # update details of sell offer
-                            # update single allowed tx for sell offer
-                            # add to list to be shown on general
-                            offer_amount=float(t['formatted_amount'])
-                            update_addr_dict(from_addr, True, c, offer=offer_amount, offer_tx=t)
-                            sorted_currency_tx_list[c].append(t)
-                        else:
-                            # sell accept
-                            if t['tx_type_str']==transaction_type_dict['00000016']:
-                                debug(d, 'sell accept: '+tx_hash)
-                                # verify corresponding sell offer exists and partial balance
-                                # partially fill and update balances and sell offer
-                                # add to list to be shown on general
-                                # partially fill according to spot offer
-                                accept_amount=float(t['formatted_amount'])
-                                update_addr_dict(from_addr, True, c, accept=accept_amount, accept_tx=t)
-                                try:
-                                    sell_offer=addr_dict[to_addr][c]['offer']              # get orig offer from seller
-                                    sell_offer_tx=addr_dict[to_addr][c]['offer_tx'][-1][0] # get orig offer tx (last) from seller
-                                except (KeyError, IndexError):
-                                    # offer from wallet without entry (empty wallet)
-                                    debug(d, 'accept offer from missing seller '+to_addr)
-                                    mark_tx_invalid(tx_hash, 'accept offer of missing sell offer')
-                                    continue
-                                try:
-                                    available=addr_dict[from_addr][c]['balance']    # get balance of that currency of buyer
-                                except (KeyError, IndexError):
-                                    available=0
-                                try:
-                                    formatted_price_per_coin=sell_offer_tx['formatted_price_per_coin']
-                                except KeyError:
-                                    formatted_price_per_coin='price missing'
-                                t['formatted_price_per_coin']=formatted_price_per_coin
-                                try:
-                                    bitcoin_required=sell_offer_tx['formatted_bitcoin_amount_desired']
-                                except KeyError:
-                                    bitcoin_required='missing required btc'
-                                t['bitcoin_required']=bitcoin_required
-                                t['sell_offer_txid']=sell_offer_tx['tx_hash']
-                                t['btc_offer_txid']='unknown'
-
-                                spot_offer=min(sell_offer,available)        # limited by available balance of seller
-                                spot_accept=min(spot_offer,accept_amount)   # deal is limited by amount accepted by buyer
-                                if spot_accept > 0: # ignore 0 or negative accepts
-                                    t['spot_accept']=spot_accept
-                                    t['payment_done']=False
-                                    t['payment_expired']=False
-                                    payment_timeframe=int(sell_offer_tx['formatted_block_time_limit'])
-                                    add_alarm(t,payment_timeframe)
-                                    update_addr_dict(from_addr, True, c, accept=spot_accept, accept_tx=t)
-                                else:
-                                    debug(d,'non positive spot accept')
-                                # add to current bids (which appear on seller tx)
-                                key=sell_offer_tx['tx_hash']
-                                if modified_tx_dict.has_key(key):
-                                    modified_tx_dict[key].append(t)
-                                else:
-                                    modified_tx_dict[key]=[t]
-                                sorted_currency_tx_list[c].append(t)    # add per currency tx
-                            else:
-                                debug(d,'unknown tx type: '+t['tx_type_str']+' in '+tx_hash)
+                check_mastercoin_transaction(t)
 
         except OSError:
             debug(d,'error on tx '+t['tx_hash'])
-
 
     # update changed tx and create json for bids
     update_modified_tx_and_bids()
