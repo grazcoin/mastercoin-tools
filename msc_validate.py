@@ -253,8 +253,11 @@ def atomic_json_dump(tmp_dict, filename, add_brackets=True):
 def mark_tx_invalid(tx_hash, reason):
     # mark tx as invalid
     tmp_dict=load_dict_from_file('tx/'+tx_hash+'.json')
-    tmp_dict['invalid']=(True,reason)
-    atomic_json_dump(tmp_dict,'tx/'+tx_hash+'.json')
+    if int(tmp_dict['block']) < last_exodus_bootstrap_block:
+        debug(d,'skip invalidating exodus tx '+tx_hash+' and reason '+reason)
+    else:
+        tmp_dict['invalid']=(True,reason)
+        atomic_json_dump(tmp_dict,'tx/'+tx_hash+'.json')
 
 # go over modified tx and update the required tx + create bids json
 def update_modified_tx_and_bids():
