@@ -243,7 +243,7 @@ def atomic_json_dump(tmp_dict, filename, add_brackets=True):
     f=open(filename,'w')
     if add_brackets:
         f.write('[')
-    json.dump(tmp_dict, f)
+    f.write(json.dumps(tmp_dict, sort_keys=True))
     if add_brackets:
         f.write(']')
     f.write('\n')
@@ -293,7 +293,9 @@ def update_modified_tx_and_bids():
 # generate api json
 # address
 # general files (10 in a page)
+# mastercoin_verify
 def generate_api_jsons():
+
     # create file for each address
     for addr in addr_dict.keys():
         addr_dict_api={}
@@ -324,6 +326,35 @@ def generate_api_jsons():
     for i in range(len(sorted_currency_tx_list['Test Mastercoin'])/chunk):
         atomic_json_dump(sorted_currency_tx_list['Test Mastercoin'][i*chunk:(i+1)*chunk], \
             'general/TMSC_'+'{0:04}'.format(i+1)+'.json', add_brackets=False)
+
+    # create /mastercoin_verify/addresses/$currency
+    for c in coins_list:
+        mastercoin_verify_list=[]
+        subdir=coins_dict[c]
+        for addr in addr_dict.keys():
+            sub_dict={}
+            sub_dict['address']=addr
+            sub_dict['balance']=from_satoshi(addr_dict[addr][c]['balance'])
+            mastercoin_verify_list.append(sub_dict)
+        atomic_json_dump(sorted(mastercoin_verify_list, key=lambda k: k['address']), 'mastercoin_verify/addresses/'+subdir, add_brackets=False)
+
+    # create /mastercoin_verify/transactions/<ADDRESS>
+    for addr in addr_dict.keys():
+        single_addr_tx_dict={}
+        tx_dict={}
+        tx_list=[]
+        for c in coins_list:
+            for t in addr_dict[addr][c]['exodus_tx']+addr_dict[addr][c]['in_tx']+addr_dict[addr][c]['out_tx']:
+                if t['invalid']==False:
+                    tx_dict[t['tx_hash']]=True
+                else:
+                    tx_dict[t['tx_hash']]=False
+        # collect all unique entries
+        for key, value in tx_dict.iteritems():
+            tx_list.append({'tx_hash':key, 'valid':value})
+        mastercoin_verify_tx_per_address={'address':addr, 'transactions':tx_list}
+        atomic_json_dump(mastercoin_verify_tx_per_address, 'mastercoin_verify/transactions/'+addr, add_brackets=False)     
+        
 
 
 # main function - validates all tx and calculates balances of addresses
