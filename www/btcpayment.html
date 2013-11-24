@@ -75,7 +75,7 @@
                                                 <span class="pull-left">To <a href="Address.html?addr={{f.address}}">{{f.address | characters:10}}</a></span>
                                             </td>
                                             <td>
-                                                <span class="pull-right">{{f.value}}</span>
+                                                <span class="pull-right">{{f.value}} ฿</span>
                                                 </td>
                                         </tr>
                                         <tr>
@@ -84,11 +84,15 @@
                                         </tr>
                                         <tr>
                                             <td>Fee</td>
-                                            <td><span class="pull-right">{{transactionInformation.fee}}</span></td>
+                                            <td><span class="pull-right">{{transactionInformation.fee}} ฿</span></td>
                                         </tr>
                                         <tr>
-                                            <td>Offer</td>
-                                            <td><a href="selloffer.html/{{transactionInformation.tx_id}}">{{transactionInformation.tx_id}}</a></td>
+                                            <td>Sell Offer</td>
+                                            <td><a href="selloffer.html/{{transactionInformation.sell_tx_id}}">{{transactionInformation.sell_tx_id}}</a></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Accept Offer</td>
+                                            <td><a href="selloffer.html/{{transactionInformation.accept_tx_id}}">{{transactionInformation.accept_tx_id}}</a></td>
                                         </tr>
 
                                     </tbody>
