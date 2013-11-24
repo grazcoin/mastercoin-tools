@@ -7,6 +7,7 @@ import hashlib
 import inspect
 import time
 import git
+import os
 import msc_globals
 
 from ecdsa import curves, ecdsa
@@ -229,8 +230,8 @@ def info(msg):
         pass
     print '[I] '+func_name+': '+str(msg)
 
-def debug(debug_mode, msg):
-    if debug_mode == True:
+def debug(msg):
+    if msc_globals.d == True:
         func_name='unknown'
         try:
             func_name=inspect.stack()[1][3]
@@ -844,3 +845,44 @@ def get_nearby_valid_pubkey(pubkey):
 def get_string_xor(s1,s2):
     result = int(s1, 16) ^ int(s2, 16)
     return '{:x}'.format(result)
+
+def load_dict_from_file(filename, all_list=False, skip_error=False):
+    tmp_dict={}
+    try:
+        f=open(filename,'r')
+        if all_list == False:
+            tmp_dict=json.load(f)[0]
+        else:
+            tmp_dict=json.load(f)
+        f.close()
+    except IOError: # no such file?
+        if skip_error:
+            info('dict load failed. missing '+filename)
+        else:
+            error('dict load failed. missing '+filename)
+    return tmp_dict
+
+# mkdir -p function
+def mkdirp(directory):
+    if not os.path.isdir(directory):
+        os.makedirs(directory)
+
+# dump json to a file, and replace it atomically
+def atomic_json_dump(tmp_dict, filename, add_brackets=True):
+    # check if filename already exists
+    # if exists, write to a tmp file first
+    # then move atomically
+
+    # make sure path exists
+    path, only_filename = os.path.split(filename)
+    mkdirp(path)
+
+    f=open(filename,'w')
+    if add_brackets:
+        f.write('[')
+    f.write(json.dumps(tmp_dict, sort_keys=True))
+    if add_brackets:
+        f.write(']')
+    f.write('\n')
+    f.close()
+

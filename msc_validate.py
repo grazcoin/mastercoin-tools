@@ -8,8 +8,7 @@ import time
 import os
 from optparse import OptionParser
 from msc_utils import *
-
-d=False # debug_mode
+import msc_globals
 
 # alarm to release funds if accept not paid on time
 # format is {block:[accept_tx1, accept_tx2, ..], ..}
@@ -48,7 +47,10 @@ def get_sorted_tx_list():
         if filename.endswith('.json'):
             f=open('tx/'+filename)
             t_list=json.load(f)
-            t=t_list[0] # normally take only first tx from list
+            try:
+                t=t_list[0] # normally take only first tx from list
+            except (KeyError, IndexError):
+                info('failed getting first tx from '+filename)
             tx_list.append(t)
             try: # for exodus
                 if t['tx_type_str'] == 'exodus':
@@ -70,14 +72,14 @@ def add_alarm(t, payment_timeframe):
 def check_alarm(t, last_block, current_block):
     for b in range(last_block, current_block):
         if alarm.has_key(b):
-            debug(d, 'alarm for block '+str(b))
+            debug('alarm for block '+str(b))
             for a in alarm[b]:
-                debug(d, 'verify payment for tx '+str(a))
+                debug('verify payment for tx '+str(a))
                 # mark invalid and update standing accept value
 
 def check_bitcoin_payment(t):
     if t['invalid']==[True, 'bitcoin payment']:
-        debug(d,'bitcoin payment: '+t['tx_hash'])
+        debug('bitcoin payment: '+t['tx_hash'])
         fee=t['fee']
         from_address=t['from_address']
         current_block=t['block']
@@ -106,7 +108,7 @@ def check_bitcoin_payment(t):
                 # any relevant sell offer found?
                 if sell_offer_tx != None:
                     info('bitcoin payment: '+t['tx_hash'])
-                    info('accept offer: '+sell_offer_tx['tx_hash'])
+                    info('for accept offer: '+sell_offer_tx['tx_hash'])
                     try:
                         required_btc=float(sell_offer_tx['formatted_bitcoin_amount_desired'])
                         required_fee=float(sell_offer_tx['formatted_fee_required'])
@@ -114,7 +116,7 @@ def check_bitcoin_payment(t):
                     except KeyError:
                         error('sell offer with missing details: '+sell_offer_tx['tx_hash'])
                     # now find the relevant accept and verify details (also partial purchase)
-                    for sell_accept_tx in addr_dict[address][c][12]: # go over all accepts
+                    for sell_accept_tx in addr_dict[address][c]['accept_tx']: # go over all accepts
                         # now check if minimal amount, fee and block time limit are as required
                         sell_accept_block=int(sell_accept_tx['block'])
                         info('deal')
@@ -139,7 +141,7 @@ def check_bitcoin_payment(t):
                             return True # hidden assumption: payment is for a single accept
 
                         else:
-                            debug(d,'payment does not fit to accept: '+sell_accept_tx['tx_hash'])
+                            debug('payment does not fit to accept: '+sell_accept_tx['tx_hash'])
     return False
 
 
@@ -229,37 +231,14 @@ def update_icon_details(t):
                 error('exodus tx with no to_address: '+str(t))
         else:
             error('non exodus valid msc tx without '+e+' ('+t['tx_type_str']+') on '+tx_hash)
+    debug(t['icon'])
     return t
 
-def load_dict_from_file(filename, all_list=False):
-    try:
-        f=open(filename,'r')
-        if all_list == False:
-            tmp_dict=json.load(f)[0]
-        else:
-            tmp_dict=json.load(f)
-        f.close()
-    except IOError: # no such file?
-        error('dict load failed. missing '+filename)
-    return tmp_dict
-
-# dump json to a file, and replace it atomically
-def atomic_json_dump(tmp_dict, filename, add_brackets=True):
-    f=open(filename,'w')
-    if add_brackets:
-        f.write('[')
-    f.write(json.dumps(tmp_dict, sort_keys=True))
-    if add_brackets:
-        f.write(']')
-    f.write('\n')
-    f.close()
-
-# mark a tx invalid and specify a reason
 def mark_tx_invalid(tx_hash, reason):
     # mark tx as invalid
     tmp_dict=load_dict_from_file('tx/'+tx_hash+'.json')
     if int(tmp_dict['block']) < last_exodus_bootstrap_block:
-        debug(d,'skip invalidating exodus tx '+tx_hash+' and reason '+reason)
+        debug('skip invalidating exodus tx '+tx_hash+' and reason '+reason)
     else:
         tmp_dict['invalid']=(True,reason)
         atomic_json_dump(tmp_dict,'tx/'+tx_hash+'.json')
@@ -292,7 +271,7 @@ def update_modified_tx_and_bids():
             atomic_json_dump(tmp_accept_dict, 'tx/'+t['tx_hash']+'.json')
 
         # write updated bids
-        atomic_json_dump(bids, 'bids/bids-'+tx_hash+'.json')
+        atomic_json_dump(bids, 'bids/bids-'+tx_hash+'.json', add_brackets=False)
 
 
 # generate api json
@@ -393,37 +372,38 @@ def check_mastercoin_transaction(t):
 
         # tx belongs to mastercoin and test mastercoin
         for c in coins_list:
-            sorted_currency_tx_list[c].append(t) 
+            sorted_currency_tx_list[c].append(t)
+        return True 
     else:
         c=currency
         if c!='Mastercoin' and c!='Test Mastercoin':
-            debug(d,'unknown currency '+currency+ ' in tx '+tx_hash)
-            return
+            debug('unknown currency '+currency+ ' in tx '+tx_hash)
+            return False
         # left are normal transfer and sell offer/accept
         if t['tx_type_str']==transaction_type_dict['00000000']:
             # the normal transfer case
             if not addr_dict.has_key(from_addr):
-                debug(d, 'try to pay from non existing address at '+tx_hash)
+                debug('try to pay from non existing address at '+tx_hash)
                 mark_tx_invalid(tx_hash, 'pay from a non existing address')
-                return 
+                return False 
             else:
                 balance_from=addr_dict[from_addr][c]['balance']
                 if amount_transfer > int(balance_from):
-                    debug(d,'balance of '+currency+' is too low on '+tx_hash)
+                    debug('balance of '+currency+' is too low on '+tx_hash)
                     mark_tx_invalid(tx_hash, 'balance too low')
-                    return
+                    return False
                 else:
                     # update to_addr
                     update_addr_dict(to_addr, True, c, balance=amount_transfer, received=amount_transfer, in_tx=t)
                     # update from_addr
                     update_addr_dict(from_addr, True, c, balance=-amount_transfer, sent=amount_transfer, out_tx=t)
                     # update msc list
-                    sorted_currency_tx_list[c].append(t) 
-
+                    sorted_currency_tx_list[c].append(t)
+                    return True
         else:
             # sell offer
             if t['tx_type_str']==transaction_type_dict['00000014']:
-                debug(d, 'sell offer: '+tx_hash)
+                debug('sell offer: '+tx_hash)
                 # sell offer from empty or non existing address is allowed
                 # update details of sell offer
                 # update single allowed tx for sell offer
@@ -431,24 +411,25 @@ def check_mastercoin_transaction(t):
                 offer_amount=float(t['formatted_amount'])
                 update_addr_dict(from_addr, True, c, offer=offer_amount, offer_tx=t)
                 sorted_currency_tx_list[c].append(t)
+                return True
             else:
                 # sell accept
                 if t['tx_type_str']==transaction_type_dict['00000016']:
-                    debug(d, 'sell accept: '+tx_hash)
+                    debug('sell accept: '+tx_hash)
                     # verify corresponding sell offer exists and partial balance
                     # partially fill and update balances and sell offer
                     # add to list to be shown on general
                     # partially fill according to spot offer
                     accept_amount=float(t['formatted_amount'])
-                    update_addr_dict(from_addr, True, c, accept=accept_amount, accept_tx=t)
+                    #update_addr_dict(from_addr, True, c, accept=accept_amount, accept_tx=t)
                     try:
                         sell_offer=addr_dict[to_addr][c]['offer']              # get orig offer from seller
-                        sell_offer_tx=addr_dict[to_addr][c]['offer_tx'][-1][0] # get orig offer tx (last) from seller
+                        sell_offer_tx=addr_dict[to_addr][c]['offer_tx'][-1] # get orig offer tx (last) from seller
                     except (KeyError, IndexError):
                         # offer from wallet without entry (empty wallet)
-                        debug(d, 'accept offer from missing seller '+to_addr)
+                        info('accept offer from missing seller '+to_addr)
                         mark_tx_invalid(tx_hash, 'accept offer of missing sell offer')
-                        return 
+                        return False
                     try:
                         available=addr_dict[from_addr][c]['balance']    # get balance of that currency of buyer
                     except (KeyError, IndexError):
@@ -476,7 +457,7 @@ def check_mastercoin_transaction(t):
                         add_alarm(t,payment_timeframe)
                         update_addr_dict(from_addr, True, c, accept=spot_accept, accept_tx=t)
                     else:
-                        debug(d,'non positive spot accept')
+                        debug('non positive spot accept')
                     # add to current bids (which appear on seller tx)
                     key=sell_offer_tx['tx_hash']
                     if modified_tx_dict.has_key(key):
@@ -484,14 +465,16 @@ def check_mastercoin_transaction(t):
                     else:
                         modified_tx_dict[key]=[t]
                     sorted_currency_tx_list[c].append(t)    # add per currency tx
+                    return True
                 else:
-                    debug(d,'unknown tx type: '+t['tx_type_str']+' in '+tx_hash)
+                    info('unknown tx type: '+t['tx_type_str']+' in '+tx_hash)
+                    return False
 
 
 #########################################################################
 # main function - validates all tx and calculates balances of addresses #
 #########################################################################
-def validate():
+def main():
 
     # parse command line arguments
     parser = OptionParser("usage: %prog [options]")
@@ -499,7 +482,8 @@ def validate():
                         help="turn debug mode on")
 
     (options, args) = parser.parse_args()
-    d=options.debug_mode
+    msc_globals.init()
+    msc_globals.d=options.debug_mode
 
     info('starting validation process')
 
@@ -525,15 +509,16 @@ def validate():
         last_block=current_block
 
         try:
-            # first check if it was a bitcoin payment
-            if check_bitcoin_payment(t):
-                continue
-
-            if t['invalid']==False:
+            if t['invalid'] == False: # normal valid mastercoin tx
                 check_mastercoin_transaction(t)
+            else: # maybe bitcoin payment
+                if check_bitcoin_payment(t):
+                    continue
+                else: # report reason for invalid tx
+                   debug(t['invalid'])
 
         except OSError:
-            debug(d,'error on tx '+t['tx_hash'])
+            error('error on tx '+t['tx_hash'])
 
     # update changed tx and create json for bids
     update_modified_tx_and_bids()
@@ -544,4 +529,4 @@ def validate():
     info('validation done')
 
 if __name__ == "__main__":
-    validate()
+    main()

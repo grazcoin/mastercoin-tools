@@ -9,8 +9,6 @@ from optparse import OptionParser
 from msc_utils import *
 import msc_globals
 
-d=False # debug_mode
-
 def parse():
     msc_globals.init()
 
@@ -33,16 +31,12 @@ def parse():
         revision_block_height=0 # init with 0
         notes_block_height=0    # init with 0
         # first check last block on revision.json
+        filename='www/revision.json'
         try:
-            try:
-                f=open('www/revision.json', 'r')
-                prev_revision_dict=json.load(f)
-                f.close()
-            	revision_block_height=prev_revision_dict['last_block']
-            except IOError:
-                info('www/revision.json does not exist')
+            prev_revision_dict=load_dict_from_file(filename, all_list=True, skip_error=True)
+            revision_block_height=prev_revision_dict['last_block']
         except KeyError:
-            info('www/revision.json does not have last_block entry')
+            info(filename+' does not have last_block entry')
 
         # then check LAST_BLOCK_NUMBER_FILE
         try:
@@ -101,7 +95,7 @@ def parse():
             current_block=tx_dict['output_height']
             if current_block != 'Pending':
                 if int(current_block)<int(starting_block_height):
-                    debug(d,'skip block '+str(current_block)+' since starting at '+str(starting_block_height))
+                    debug('skip block '+str(current_block)+' since starting at '+str(starting_block_height))
                     continue
             else:
                 # Pending block will be checked whenever they are not Pending anymore.
@@ -151,7 +145,7 @@ def parse():
         is_basic=True
         for o in outputs_list:
             if is_script_multisig(o['script']):
-                debug(d,'multisig tx found: '+tx_hash)
+                debug('multisig tx found: '+tx_hash)
                 is_basic=False
                 break
 
@@ -165,47 +159,41 @@ def parse():
                 if not parsed.has_key('invalid'):
                     parsed['invalid']=False
                 parsed['tx_time']=str(block_timestamp)+'000'
-                debug(d,str(parsed))
+                debug(str(parsed))
                 filename='tx/'+parsed['tx_hash']+'.json'
                 orig_json=None
                 try:
                     # does this tx exist? (from bootstrap)
                     f=open(filename, 'r')
-                    debug(d,filename)
+                    debug(filename)
                     try:
                         orig_json=json.load(f)[0]
-                    except KeyError, ValueError:
-                        orig_json=json.load(f)
+                    except (KeyError, ValueError):
+                        try:
+                            orig_json=json.load(f)
+                        except ValueError:
+                            error('failed loading json from '+filename)
                     f.close()
                     # verify bootstrap block
                     if orig_json.has_key('block'):
                         orig_block=orig_json['block']
-                        debug(d,'found this tx already on (previous) block '+orig_block)
+                        debug('found this tx already on (previous) block '+orig_block)
                         if int(orig_block)>last_exodus_bootstrap_block:
-                            debug(d,'but it is post exodus - ignoring')
+                            debug('but it is post exodus - ignoring')
                             orig_json=None
                     else:
                         info('previous tx without block on '+filename)
                 except IOError:
                      pass
-                try:
-                    if orig_json != None: # it was an exodus tx
-                        if len(orig_json)==1:
-                            f=open(filename, 'w')
-                            new_json=[orig_json[0],parsed]
-                            json.dump(new_json, f)
-                            f.write('\n')
-                            info('basic tx was also exodus on '+tx_hash)
-                        else:
-                            info('basic tx is already present on exodus on '+tx_hash)
+                if orig_json != None: # it was an exodus tx
+                    if len(orig_json)==1:
+                        new_json=[orig_json[0],parsed]
+                        atomic_json_dump(new_json, filename, add_brackets=False)
+                        info('basic tx was also exodus on '+tx_hash)
                     else:
-                        f=open(filename, 'w')
-                        f.write('[')
-                        json.dump(parsed, f)
-                        f.write(']\n')
-                    f.close()
-                except IndexError, OSError:
-                    info("json dump failed for "+tx_hash)
+                        info('basic tx is already present on exodus on '+tx_hash)
+                else:
+                    atomic_json_dump(parsed, filename)
             else: # num_of_outputs <= 2 and not multisig
                 # could still be a bitcoin payment for a sell/buy offer
                 if int(block)>int(last_exodus_bootstrap_block):
@@ -214,19 +202,11 @@ def parse():
                     parsed['block']=str(block)
                     parsed['index']=str(index)
                     parsed['tx_time']=str(block_timestamp)+'000'
-                    debug(d,str(parsed))
+                    debug(str(parsed))
                     filename='tx/'+parsed['tx_hash']+'.json'
-                    try:
-                        f=open(filename, 'w')
-                        f.write('[')
-                        json.dump(parsed, f)
-                        f.write(']\n')
-                        f.close()
-                    except OSError:
-                        info("json dump failed for "+tx_hash)
-                        pass
+                    atomic_json_dump(parsed, filename)
                 else:
-                    debug(d,'skip bootstrap basic tx with less than 3 outputs '+tx_hash)
+                    debug('skip bootstrap basic tx with less than 3 outputs '+tx_hash)
         else: # multisig
             if num_of_outputs == 2: # simple version of multisig
                 parsed=parse_multisig_simple(raw_tx, tx_hash)
@@ -239,17 +219,9 @@ def parse():
                 if not parsed.has_key('invalid'):
                     parsed['invalid']=False
                 parsed['tx_time']=str(block_timestamp)+'000'
-                debug(d,str(parsed))
+                debug(str(parsed))
                 filename='tx/'+parsed['tx_hash']+'.json'
-                try:
-                    f=open(filename, 'w')
-                    f.write('[')
-                    json.dump(parsed, f)
-                    f.write(']\n')
-                    f.close()
-                except OSError:
-                    info("json dump failed for "+tx_hash)
-                    pass
+                atomic_json_dump(parsed, filename)
             else:
                 if num_of_outputs > 2: # multisig
                     parsed=parse_multisig(raw_tx, tx_hash)
@@ -262,17 +234,9 @@ def parse():
                     if not parsed.has_key('invalid'):
                         parsed['invalid']=False
                     parsed['tx_time']=str(block_timestamp)+'000'
-                    debug(d,str(parsed))
+                    debug(str(parsed))
                     filename='tx/'+parsed['tx_hash']+'.json'
-                    try:
-                        f=open(filename, 'w')
-                        f.write('[')
-                        json.dump(parsed, f)
-                        f.write(']\n')
-                        f.close()
-                    except OSError:
-                        info("json dump failed for "+tx_hash)
-                        pass
+                    atomic_json_dump(parsed, filename)
                 else: # invalid
                     info('multisig with a single output tx found: '+tx_hash)
 
@@ -281,9 +245,7 @@ def parse():
             msc_globals.last_block=block
 
     rev=get_revision_dict(last_block)
-    f=open('www/revision.json','w')
-    json.dump(rev, f)
-    f.close()
+    atomic_json_dump(rev, 'www/revision.json', add_brackets=False)
 
     if archive:
         archive_parsed_data()
