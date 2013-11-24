@@ -1,9 +1,8 @@
 from optparse import OptionParser
 import sys
-import msc_utils
 import getpass
 import random
-from msc_utils import *
+from msc_utils_parsing import *
 
 d=False # debug_mode
 

@@ -1,13 +1,7 @@
 #!/usr/bin/python
-import subprocess
-import json
-import simplejson
-import sys
 import operator
-import time
 from optparse import OptionParser
-from msc_utils import *
-import msc_globals
+from msc_utils_parsing import *
 
 def parse():
     msc_globals.init()

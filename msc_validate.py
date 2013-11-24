@@ -1,14 +1,7 @@
 #!/usr/bin/python
-import subprocess
-import json
-import simplejson
-import sys
-import operator
-import time
 import os
 from optparse import OptionParser
-from msc_utils import *
-import msc_globals
+from msc_utils_validating import *
 
 # alarm to release funds if accept not paid on time
 # format is {block:[accept_tx1, accept_tx2, ..], ..}
@@ -79,7 +72,6 @@ def check_alarm(t, last_block, current_block):
 
 def check_bitcoin_payment(t):
     if t['invalid']==[True, 'bitcoin payment']:
-        debug('bitcoin payment: '+t['tx_hash'])
         fee=t['fee']
         from_address=t['from_address']
         current_block=t['block']
@@ -231,7 +223,6 @@ def update_icon_details(t):
                 error('exodus tx with no to_address: '+str(t))
         else:
             error('non exodus valid msc tx without '+e+' ('+t['tx_type_str']+') on '+tx_hash)
-    debug(t['icon'])
     return t
 
 def mark_tx_invalid(tx_hash, reason):
@@ -474,7 +465,7 @@ def check_mastercoin_transaction(t):
 #########################################################################
 # main function - validates all tx and calculates balances of addresses #
 #########################################################################
-def main():
+def validate():
 
     # parse command line arguments
     parser = OptionParser("usage: %prog [options]")
@@ -515,7 +506,7 @@ def main():
                 if check_bitcoin_payment(t):
                     continue
                 else: # report reason for invalid tx
-                   debug(t['invalid'])
+                   debug(str(t['invalid'])+' '+t['tx_hash'])
 
         except OSError:
             error('error on tx '+t['tx_hash'])
@@ -529,4 +520,4 @@ def main():
     info('validation done')
 
 if __name__ == "__main__":
-    main()
+    validate()

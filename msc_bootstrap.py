@@ -5,9 +5,7 @@ import simplejson
 import sys
 import operator
 import time
-from msc_utils import *
-import msc_globals
-
+from msc_utils_bitcoin import *
 
 def main():
 

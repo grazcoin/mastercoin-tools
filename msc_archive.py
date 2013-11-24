@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import git
 from optparse import OptionParser
-from msc_utils import *
+from msc_utils_general import *
 
 d=False # debug_mode
 
