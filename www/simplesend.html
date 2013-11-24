@@ -148,7 +148,7 @@
     </div>
     <div id="footer" ng-controller="RevisionController" ng-init="getData()">
       <div class="container c-footer-container">
-      	<div class="revision">Last sync: {{revision.last_parsed}}  using revision <a href='{{revision.url}}'>{{revision.commit_hexsha|truncate:11}}</a> ({{revision.commit_time}}).</div>
+        <div class="revision">Updated: {{revision.last_parsed}} rev <a href='{{revision.url}}'>{{revision.commit_hexsha|characters:6}}</a> ({{revision.commit_time}})</div>
         <div class="muted credit">&copy; Masterchain Grazcoin Grimentz 2013.</div>
       </div>
     </div>
