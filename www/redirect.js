@@ -6,10 +6,17 @@ $(document).ready(function () {
 
     var tx = myURLParams['tx'];
     var currency = myURLParams['currency'];
+    var url = '';
+    if (tx.length < 63)
+    {
+    	url = "Address.html?addr=" + tx;
+    	window.location = url;
+    	return;
+    }
 
 
     //Ajax call so I can see transactionType from JSON
-    var url = '/tx/' + tx + '.json';
+    url = '/tx/' + tx + '.json';
     $.ajax({
 	url: url,
 	type: 'get',

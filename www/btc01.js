@@ -164,3 +164,114 @@ function str_pad (input, pad_length, pad_string, pad_type) {
 
   return input;
 }
+
+$(document).ready(function () {
+    SearchHistoryContext.initHistoryCombobox();
+
+
+    //Add padding to the body
+    var navHeight = $('.navbar').height();
+    $('.page-container').css('paddingTop', navHeight + 10);
+    console.log('CHanged padding of body');
+
+
+    $('#btnSearch').click(function () {
+
+        SearchHistoryContext.addSearchToHistory();
+
+
+        //redirect to Search.html?tx=<searched term>
+        var searchTerm = $('.combobox-container .select').val();
+
+        window.location.href = "Search.html?tx=" + searchTerm;
+
+    });
+});
+
+SearchHistoryContext = new function () {
+};
+
+SearchHistoryContext.initHistoryCombobox = function () {
+    if (SearchHistoryContext.supportsStorage()) {
+
+        console.log(localStorage["Search"]);
+        if (localStorage["Search"]) {
+
+            var addresses = localStorage["Search"];
+            var history = JSON.parse(addresses);
+
+            console.log(history);
+
+            //if there is something in history add to combobox
+            var showValuesInCombobox = history.reverse();
+            $.each(showValuesInCombobox, function (key, value) {
+
+                console.log(key);
+                console.log(value);
+
+                $('#searchText')
+                    .append($("<option></option>")
+                    .attr("value", value)
+                    .text(value));
+
+            });
+
+        }
+        $("#searchText").combobox();
+
+
+        //Add button in here
+
+        $('.search .combobox-container').append($("<button id='btnSearch' class='btn btn-default'></button>")
+                    .text('Search'));
+
+        //Placeholder
+        $('.search .combobox-container .customDropdown').attr("placeholder", "Address or Transaction");
+
+    }
+    else {
+        //Doesn't support storage, do nothing
+    }
+};
+
+SearchHistoryContext.supportsStorage = function () {
+    try {
+        return 'localStorage' in window && window['localStorage'] !== null;
+    } catch (e) {
+        return false;
+    }
+};
+
+SearchHistoryContext.addSearchToHistory = function () {
+    if (SearchHistoryContext.supportsStorage()) {
+
+        // var address = $("input.select.optional.form-control.form-control30px.combobox").val();
+        var search = $('.combobox-container .select').val();
+
+        console.log(search);
+
+        var history;
+        if (localStorage["Search"]) {
+            history = JSON.parse(localStorage["Search"]);
+            if (history.length > 9) {
+                history.shift();
+            }
+          
+            var index = history.indexOf(search);
+            if (index > -1) {
+                history.splice(index, 1);
+            }
+
+            history.push(search);
+
+            localStorage["Search"] = JSON.stringify(history);
+        }
+        else { 
+            var que = [];
+            que.push(search);
+            localStorage["Search"] = JSON.stringify(que);
+        }
+
+    }
+};
+
