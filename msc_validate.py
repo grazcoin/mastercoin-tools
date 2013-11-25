@@ -85,16 +85,10 @@ def check_bitcoin_payment(t):
                 sell_offer_tx=None
                 required_btc=0
                 required_fee=0
-                c=0 # default is mastercoin
-                try:
-                    sell_offer_tx=addr_dict[address][0][11][0]
-                except (IndexError,KeyError):
-                    pass
-                if sell_offer_tx == None:
-                    # if not, then maybe test mastercoins sell offer?
+                for c in coins_list: # check for offers of Mastercoin or Test Mastercoin
                     try:
-                        sell_offer_tx=addr_dict[address][1][11][0]
-                        c=1 # test mastercoins offer found
+                        sell_offer_tx=addr_dict[address][c]['offer_tx'][-1]
+                        break
                     except (IndexError,KeyError):
                         pass
                 # any relevant sell offer found?
@@ -125,11 +119,20 @@ def check_bitcoin_payment(t):
                             # update bitcoin payment in accept tx
                             key=sell_accept_tx['tx_hash']
                             info('modify accept: '+key)
-                            sell_accept_tx['btc_offer_txid']=key
+                            sell_accept_tx['btc_offer_txid']=t['tx_hash']
+                            sell_accept_tx['status']='Closed'
                             if modified_tx_dict.has_key(key):
                                 modified_tx_dict[key].append(sell_accept_tx)
                             else:
                                 modified_tx_dict[key]=[sell_accept_tx]
+                            # update sell and accept offer in bitcoin payment
+                            t['sell_tx_id']=sell_offer_tx['tx_hash']
+                            t['accept_tx_id']=sell_accept_tx['tx_hash']
+                            key=t['tx_hash']
+                            if modified_tx_dict.has_key(key):
+                                modified_tx_dict[key].append(t)
+                            else:
+                                modified_tx_dict[key]=[t]
                             return True # hidden assumption: payment is for a single accept
 
                         else:

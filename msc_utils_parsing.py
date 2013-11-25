@@ -310,10 +310,10 @@ def parse_multisig(tx, tx_hash='unknown'):
                     parse_dict.pop('bitcoin_amount_desired', None)
                     parse_dict.pop('block_time_limit', None)
                     # add place holders
-                    parse_dict['bitcoin_required'] = 'not_yet_calculated'
-                    parse_dict['sell_offer_txid'] = 'not_yet_checked'
-                    parse_dict['payment_txid'] = 'not_yet_checked'
-                    parse_dict['status'] = 'not_yet_checked'
+                    parse_dict['bitcoin_required'] = 'Not available'
+                    parse_dict['sell_offer_txid'] = 'Not available'
+                    parse_dict['payment_txid'] = 'Not available'
+                    parse_dict['status'] = 'Open'
 
                 if len(dataHex_deobfuscated_list)>1: # currently true only for Sell offer
                     data_dict=parse_2nd_data_script(dataHex_deobfuscated_list[1])
