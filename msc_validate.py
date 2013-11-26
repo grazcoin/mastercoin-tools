@@ -132,15 +132,12 @@ def check_bitcoin_payment(t):
                                 spot_accept=addr_dict[address][c]['accept']
                                 info('spot accept: '+str(spot_accept))
                                 info('part bought: '+str(part_bought))
-                                spot_closed=min(int(part_bought*float(spot_accept)+0.5), spot_accept)
+                                spot_closed=min((part_bought*float(spot_accept)+0.000000005), spot_accept)
                                 info('spot closed: '+str(spot_closed))
-                                info('closed')
-                                addr_dict[address][c]['balance']-=spot_closed  # reduce balance of seller
-                                addr_dict[from_address][c]['balance']+=spot_closed # increase balance of buyer
-                                addr_dict[from_address][c]['bought']+=spot_closed  # update bought
-                                addr_dict[address][c]['sold']+=spot_closed         # update sold
-                                addr_dict[address][c]['offer']-=spot_closed        # update offer
-                                addr_dict[address][c]['accept']-=spot_closed       # update accept
+                                # update sold tx
+                                update_addr_dict(address, True, c, balance=-spot_closed, sold=spot_closed, offer=-spot_closed, sold_tx=sell_accept_tx)
+                                # update bough tx
+                                update_addr_dict(from_address, True, c, balance=spot_closed, bought=spot_closed, accept=-spot_closed, bought_tx=sell_accept_tx)
                                 # update sell offer
                                 sell_offer_tx['amount_available']=addr_dict[address][c]['offer']
                                 sell_offer_tx['formatted_amount_available']=formatted_decimal(sell_offer_tx['amount_available'])
@@ -318,8 +315,18 @@ def generate_api_jsons():
             sub_dict['received_transactions'].reverse()
             sub_dict['sent_transactions']=addr_dict[addr][c]['out_tx']
             sub_dict['sent_transactions'].reverse()
+            sub_dict['bought_transactions']=addr_dict[addr][c]['bought_tx']
+            sub_dict['bought_transactions'].reverse()
+            sub_dict['sold_transactions']=addr_dict[addr][c]['sold_tx']
+            sub_dict['sold_transactions'].reverse()
+            sub_dict['offer_transactions']=addr_dict[addr][c]['offer_tx']
+            sub_dict['offer_transactions'].reverse()
+            sub_dict['accept_transactions']=addr_dict[addr][c]['accept_tx']
+            sub_dict['accept_transactions'].reverse()
             sub_dict['total_received']=from_satoshi(addr_dict[addr][c]['received'])
             sub_dict['total_sent']=from_satoshi(addr_dict[addr][c]['sent'])
+            sub_dict['total_sold']=from_satoshi(addr_dict[addr][c]['sold'])
+            sub_dict['total_bought']=from_satoshi(addr_dict[addr][c]['bought'])
             sub_dict['balance']=from_satoshi(addr_dict[addr][c]['balance'])
             sub_dict['exodus_transactions']=addr_dict[addr][c]['exodus_tx']
             sub_dict['exodus_transactions'].reverse()
