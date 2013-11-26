@@ -96,6 +96,7 @@ def check_bitcoin_payment(t):
                 # check if it fits to a sell offer in address (incl min fee)
                 # first check if msc sell offer exists
                 sell_offer_tx=None
+                sell_accept_tx=None
                 required_btc=0
                 required_fee=0
                 for c in coins_list: # check for offers of Mastercoin or Test Mastercoin
@@ -106,8 +107,8 @@ def check_bitcoin_payment(t):
                         pass
                 # any relevant sell offer found?
                 if sell_offer_tx != None:
-                    info('bitcoin payment: '+t['tx_hash'])
-                    info('for accept offer: '+sell_offer_tx['tx_hash'])
+                    debug('bitcoin payment: '+t['tx_hash'])
+                    debug('for sell offer: '+sell_offer_tx['tx_hash'])
                     try:
                         required_btc=float(sell_offer_tx['formatted_bitcoin_amount_desired'])
                         required_fee=float(sell_offer_tx['formatted_fee_required'])
@@ -115,7 +116,12 @@ def check_bitcoin_payment(t):
                     except KeyError:
                         error('sell offer with missing details: '+sell_offer_tx['tx_hash'])
                     # now find the relevant accept and verify details (also partial purchase)
-                    for sell_accept_tx in addr_dict[address][c]['accept_tx']: # go over all accepts
+                    try:
+                        sell_accept_tx_list=addr_dict[from_address][c]['accept_tx']
+                    except KeyError:
+                        debug('no accept_tx on '+from_address)
+                        continue
+                    for sell_accept_tx in sell_accept_tx_list: # go over all accepts
                         # now check if minimal amount, fee and block time limit are as required
                         sell_accept_block=int(sell_accept_tx['block'])
                         info('deal')
