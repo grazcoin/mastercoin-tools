@@ -30,7 +30,13 @@ $(document).ready(function () {
 	    console.log(response[0].transactionType);
 	    var transactionType = response[0].transactionType;
 	    var method = response[0].method;
-	    if ((method == 'basic') || (transactionType == '00000000')) {
+	    var invalid = response[0].invalid;
+	    var invalid_str = invalid.toString();
+	    if (invalid_str == 'true,bitcoin payment') {
+                //if is bitcoin payment
+		url += "btcpayment.html?tx=";
+            }
+	    else if ((method == 'basic') || (transactionType == '00000000')) {
 		//it is simplesend
 		url += "simplesend.html?tx=";
 	    }
@@ -41,10 +47,6 @@ $(document).ready(function () {
 	    else if (transactionType == '00000016') {
 		//it is a sell accept
 		url += "sellaccept.html?tx=";
-	    }
-	    else {
-		//no transactionType - it is btc payment.
-		url += "btcpayment.html?tx=";
 	    }
 
 	    url += tx + "&currency=" + currency;
