@@ -171,7 +171,7 @@ $(document).ready(function () {
 
     //Add padding to the body
     var navHeight = $('.navbar').height();
-    $('.page-container').css('paddingTop', navHeight + 10);
+    $('.page-container').css('paddingTop', navHeight + 20);
     console.log('CHanged padding of body');
 
 
