@@ -29,7 +29,8 @@ $(document).ready(function () {
 	    console.log(response);
 	    console.log(response[0].transactionType);
 	    var transactionType = response[0].transactionType;
-	    if (transactionType == '00000000') {
+	    var method = response[0].method;
+	    if ((method == 'basic') || (transactionType == '00000000')) {
 		//it is simplesend
 		url += "simplesend.html?tx=";
 	    }
