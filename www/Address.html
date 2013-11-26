@@ -85,11 +85,11 @@
                                 </tr>
                                 <tr>
                                     <td>Coins bought</td>
-                                    <td>{{addressInformation.bought}}</td>
+                                    <td>{{addressInformation.total_bought}}</td>
                                 </tr>
                                 <tr>
                                     <td>Coins sold</td>
-                                    <td>{{addressInformation.sold}}</td>
+                                    <td>{{addressInformation.total_sold}}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -108,24 +108,28 @@
                                     <td>{{addressInformation.exodus_transactions.length}}</td>
                                 </tr>
                                 <tr>
-                                    <td>Sold coins</td>
-                                    <td>{{addressInformation.sold_transactions.length}}</td>
-                                </tr>
-                                <tr>
-                                    <td>Bought coins</td>
-                                    <td>{{addressInformation.bought_transactions.length}}</td>
-                                </tr>
-                                <tr>
-                                    <td>Sell Offers</td>
-                                    <td>{{addressInformation.offers_transactions.length}}</td>
-                                </tr>
-                                <tr>
                                     <td>Incoming transactions</td>
                                     <td>{{addressInformation.received_transactions.length}}</td>
                                 </tr>
                                 <tr>
                                     <td>Outgoing transactions</td>
                                     <td>{{addressInformation.sent_transactions.length}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Sold transactions</td>
+                                    <td>{{addressInformation.sold_transactions.length}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Bought transactions</td>
+                                    <td>{{addressInformation.bought_transactions.length}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Sell offer transaction</td>
+                                    <td>{{addressInformation.offer_transactions.length}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Sell accept transaction</td>
+                                    <td>{{addressInformation.accept_transactions.length}}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -144,7 +148,7 @@
                                 </thead>
                                 <tbody>
                                     <tr ng-repeat="exodus in addressInformation.exodus_transactions">
-											<td><a ng-href="exodus.html?tx={{exodus.tx_hash}}&currency={{currency}}">{{exodus.tx_hash | characters:10}}</a></td>
+											<td><img style="height:18px; width:18px;" src="ico/exodus.png" alt="exodus" /> <a ng-href="exodus.html?tx={{exodus.tx_hash}}&currency={{currency}}">{{exodus.tx_hash | characters:10}}</a></td>
                                         <td>{{exodus.formatted_amount}}</td>
                                         <td>{{exodus.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
                                     </tr>
@@ -164,8 +168,8 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr ng-repeat="exodus in addressInformation.sold_transactions">
-											<td><a ng-href="exodus.html?tx={{sold.tx_hash}}&currency={{currency}}">{{sold.tx_hash | characters:10}}</a></td>
+                                    <tr ng-repeat="sold in addressInformation.sold_transactions">
+											<td><img style="height:18px; width:18px;" src="ico/selloffer.png" alt="sell offer" /> <a ng-href="selloffer.html?tx={{sold.tx_hash}}&currency={{currency}}">{{sold.tx_hash | characters:10}}</a></td>
                                         <td>{{sold.formatted_amount}}</td>
                                         <td>{{sold.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
                                     </tr>
@@ -186,7 +190,7 @@
                                 </thead>
                                 <tbody>
                                     <tr ng-repeat="bought in addressInformation.bought_transactions">
-											<td><a ng-href="sellaccept.html?tx={{bought.tx_hash}}&currency={{currency}}">{{bought.tx_hash | characters:10}}</a></td>
+											<td><img style="height:18px; width:18px;" src="ico/sellaccept.png" alt="sell accept" />  <a ng-href="sellaccept.html?tx={{bought.tx_hash}}&currency={{currency}}">{{bought.tx_hash | characters:10}}</a></td>
                                         <td>{{bought.formatted_amount}}</td>
                                         <td>{{bought.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
                                     </tr>
@@ -194,10 +198,10 @@
                             </table>
 			</div>
 			</div>
-	      	<div class="row" ng-show="addressInformation.offers_transactions.length">
+	      	<div class="row" ng-show="addressInformation.offer_transactions.length">
 		<div class="col-md-12">
 		    <table class="table table-striped table-hover table-condensed">
-                                <caption>Sell offers ({{addressInformation.offers_transactions.length}})</caption>
+                                <caption>Sell offers ({{addressInformation.offer_transactions.length}})</caption>
                                 <thead>
                                     <tr>
                                         <th>Transaction</th>
@@ -207,7 +211,28 @@
                                 </thead>
                                 <tbody>
                                     <tr ng-repeat="offer in addressInformation.offer_transactions">
-											<td><a ng-href="selloffer.html?tx={{offer.tx_hash}}&currency={{currency}}">{{offer.tx_hash | characters:10}}</a></td>
+											<td><img style="height:18px; width:18px;" src="ico/selloffer.png" alt="sell offer" /> <a ng-href="selloffer.html?tx={{offer.tx_hash}}&currency={{currency}}">{{offer.tx_hash | characters:10}}</a></td>
+                                        <td>{{offer.formatted_amount}}</td>
+                                        <td>{{offer.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+			</div>
+			</div>
+	      	<div class="row" ng-show="addressInformation.accept_transactions.length">
+		<div class="col-md-12">
+		    <table class="table table-striped table-hover table-condensed">
+                                <caption>Sell accepts ({{addressInformation.accept_transactions.length}})</caption>
+                                <thead>
+                                    <tr>
+                                        <th>Transaction</th>
+                                        <th>Amount</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="offer in addressInformation.accept_transactions">
+											<td><img style="height:18px; width:18px;" src="ico/sellaccept.png" alt="sell accept" /> <a ng-href="sellaccept.html?tx={{offer.tx_hash}}&currency={{currency}}">{{offer.tx_hash | characters:10}}</a></td>
                                         <td>{{offer.formatted_amount}}</td>
                                         <td>{{offer.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
                                     </tr>
@@ -231,7 +256,7 @@
                                 </thead>
                                 <tbody>
                                     <tr ng-repeat="received in addressInformation.received_transactions">
-										<td><a ng-href="simplesend.html?tx={{received.tx_hash}}&currency={{currency}}">{{received.tx_hash | characters:10}}</a></td>
+										<td><img style="height:18px; width:18px;" src="ico/simplesend.png" alt="simple send" /> <a ng-href="simplesend.html?tx={{received.tx_hash}}&currency={{currency}}">{{received.tx_hash | characters:10}}</a></td>
 										 <td><a ng-href="Address.html?addr={{received.from_address}}&currency={{currency}}">{{received.from_address}}</a></td>
 										<td><a ng-href="Address.html?addr={{received.to_address}}&currency={{currency}}">{{received.to_address}}</a></td>
                                         <td>{{received.formatted_amount}}</td>
@@ -260,7 +285,7 @@
                                 </thead>
                                 <tbody>
                                     <tr ng-repeat="sent in addressInformation.sent_transactions">
-										<td><a ng-href="simplesend.html?tx={{sent.tx_hash}}&currency={{currency}}">{{sent.tx_hash | characters:10}}</a></td>
+										<td><img style="height:18px; width:18px;" src="ico/simplesend.png" alt="simple send" /> <a ng-href="simplesend.html?tx={{sent.tx_hash}}&currency={{currency}}">{{sent.tx_hash | characters:10}}</a></td>
 										<td><a ng-href="Address.html?addr={{sent.from_address}}&currency={{currency}}">{{sent.from_address}}</a></td>
 										<td><a ng-href="Address.html?addr={{sent.to_address}}&currency={{currency}}">{{sent.to_address}}</a></td>
                                         <td>{{sent.formatted_amount}}</td>
