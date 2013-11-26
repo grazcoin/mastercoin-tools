@@ -81,11 +81,14 @@
                                             <td>Price per coin</td>
                                             <td><span class="pull-left">{{transactionInformation.formatted_price_per_coin}} ฿/{{currency}}</span>
                                                 <button type="button" ng-click="AcceptClick()" class="pull-right btn btn-success btn-xs">ACCEPT</button></td>
-                                            
                                         </tr>
                                         <tr>
                                             <td>Amount</td>
                                             <td>{{transactionInformation.formatted_amount}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Amount available</td>
+                                            <td>{{transactionInformation.formatted_amount_available}}</td>
                                         </tr>
                                         <tr>
                                             <td>Bitcoin amount desired</td>

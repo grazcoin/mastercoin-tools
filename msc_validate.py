@@ -63,12 +63,25 @@ def add_alarm(t, payment_timeframe):
         alarm[alarm_block]=[t]
 
 def check_alarm(t, last_block, current_block):
+    # check alarms for all blocks since last check
     for b in range(last_block, current_block):
         if alarm.has_key(b):
             debug('alarm for block '+str(b))
             for a in alarm[b]:
-                debug('verify payment for tx '+str(a))
+                debug('verify payment for tx '+str(a['tx_hash']))
                 # mark invalid and update standing accept value
+                if a['btc_offer_txid']=='unknown': # accept with no payment
+                    debug('accept offer expired '+str(a['tx_hash']))
+                    a['payment_expired']=True
+                else:
+                    debug('accept offer done '+str(a['tx_hash']))  
+                    a['payment_done']=True
+                # in any case, this offer is closed
+                a['status']='Closed'
+                if modified_tx_dict.has_key(a['tx_hash']):
+                    modified_tx_dict[a['tx_hash']].append(a)
+                else:
+                    modified_tx_dict[a['tx_hash']]=[a]
 
 def check_bitcoin_payment(t):
     if t['invalid']==[True, 'bitcoin payment']:
@@ -106,35 +119,50 @@ def check_bitcoin_payment(t):
                         # now check if minimal amount, fee and block time limit are as required
                         sell_accept_block=int(sell_accept_tx['block'])
                         info('deal')
-                        if amount >= required_btc and fee >= required_fee and sell_accept_block+block_time_limit <= current_block:
-                            # mark deal as closed
-                            info('closed')
-                            spot_accept=addr_dict[address][c]['accept']
-                            addr_dict[address][c]['balance']-=spot_accept      # reduce balance of seller
-                            addr_dict[from_address][c]['balance']+=spot_accept # increase balance of buyer
-                            addr_dict[from_address][c]['bought']+=spot_accept  # update bought
-                            addr_dict[address][c]['sold']+=spot_accept         # update sold
-                            addr_dict[address][c]['offer']-=spot_accept        # update offer
-                            addr_dict[address][c]['accept']-=spot_accept       # update accept
-                            # update bitcoin payment in accept tx
-                            key=sell_accept_tx['tx_hash']
-                            info('modify accept: '+key)
-                            sell_accept_tx['btc_offer_txid']=t['tx_hash']
-                            sell_accept_tx['status']='Closed'
-                            if modified_tx_dict.has_key(key):
-                                modified_tx_dict[key].append(sell_accept_tx)
+                        if fee >= required_fee and sell_accept_block+block_time_limit <= current_block:
+                            part_bought=float(amount)/required_btc
+                            if part_bought>0:
+                                # mark deal as closed
+                                spot_accept=addr_dict[address][c]['accept']
+                                info('spot accept: '+str(spot_accept))
+                                info('part bought: '+str(part_bought))
+                                spot_closed=min(int(part_bought*float(spot_accept)+0.5), spot_accept)
+                                info('spot closed: '+str(spot_closed))
+                                info('closed')
+                                addr_dict[address][c]['balance']-=spot_closed  # reduce balance of seller
+                                addr_dict[from_address][c]['balance']+=spot_closed # increase balance of buyer
+                                addr_dict[from_address][c]['bought']+=spot_closed  # update bought
+                                addr_dict[address][c]['sold']+=spot_closed         # update sold
+                                addr_dict[address][c]['offer']-=spot_closed        # update offer
+                                addr_dict[address][c]['accept']-=spot_closed       # update accept
+                                # update sell offer
+                                sell_offer_tx['amount_available']=addr_dict[address][c]['offer']
+                                sell_offer_tx['formatted_amount_available']=formatted_decimal(sell_offer_tx['amount_available'])
+                                # if not more left in the offer - close sell
+                                if addr_dict[address][c]['offer'] == 0:
+                                    sell_offer_tx['status']='Closed'
+                                # update bitcoin payment in accept tx
+                                key=sell_accept_tx['tx_hash']
+                                info('modify accept: '+key)
+                                sell_accept_tx['btc_offer_txid']=t['tx_hash']
+                                sell_accept_tx['status']='Closed'
+                                sell_accept_tx['payment_done']=True
+                                sell_accept_tx['formatted_amount_bought']=spot_closed
+                                if modified_tx_dict.has_key(key):
+                                    modified_tx_dict[key].append(sell_accept_tx)
+                                else:
+                                    modified_tx_dict[key]=[sell_accept_tx]
+                                # update sell and accept offer in bitcoin payment
+                                t['sell_tx_id']=sell_offer_tx['tx_hash']
+                                t['accept_tx_id']=sell_accept_tx['tx_hash']
+                                key=t['tx_hash']
+                                if modified_tx_dict.has_key(key):
+                                    modified_tx_dict[key].append(t)
+                                else:
+                                    modified_tx_dict[key]=[t]
+                                return True # hidden assumption: payment is for a single accept
                             else:
-                                modified_tx_dict[key]=[sell_accept_tx]
-                            # update sell and accept offer in bitcoin payment
-                            t['sell_tx_id']=sell_offer_tx['tx_hash']
-                            t['accept_tx_id']=sell_accept_tx['tx_hash']
-                            key=t['tx_hash']
-                            if modified_tx_dict.has_key(key):
-                                modified_tx_dict[key].append(t)
-                            else:
-                                modified_tx_dict[key]=[t]
-                            return True # hidden assumption: payment is for a single accept
-
+                                error('non positive part bought on bitcoin payment: '+t['tx_hash'])
                         else:
                             debug('payment does not fit to accept: '+sell_accept_tx['tx_hash'])
     return False
@@ -414,20 +442,18 @@ def check_mastercoin_transaction(t):
                     # partially fill and update balances and sell offer
                     # add to list to be shown on general
                     # partially fill according to spot offer
-                    accept_amount=float(t['formatted_amount'])
-                    #update_addr_dict(from_addr, True, c, accept=accept_amount, accept_tx=t)
                     try:
-                        sell_offer=addr_dict[to_addr][c]['offer']              # get orig offer from seller
+                        accept_amount_requested=float(t['formatted_amount_requested'])
+                    except KeyError:
+                        accept_amount_requested=0.0
+                    try:
+                        sell_offer=addr_dict[to_addr][c]['offer']           # get orig offer from seller
                         sell_offer_tx=addr_dict[to_addr][c]['offer_tx'][-1] # get orig offer tx (last) from seller
                     except (KeyError, IndexError):
                         # offer from wallet without entry (empty wallet)
                         info('accept offer from missing seller '+to_addr)
                         mark_tx_invalid(tx_hash, 'accept offer of missing sell offer')
                         return False
-                    try:
-                        available=addr_dict[from_addr][c]['balance']    # get balance of that currency of buyer
-                    except (KeyError, IndexError):
-                        available=0
                     try:
                         formatted_price_per_coin=sell_offer_tx['formatted_price_per_coin']
                     except KeyError:
@@ -441,17 +467,16 @@ def check_mastercoin_transaction(t):
                     t['sell_offer_txid']=sell_offer_tx['tx_hash']
                     t['btc_offer_txid']='unknown'
 
-                    spot_offer=min(sell_offer,available)        # limited by available balance of seller
-                    spot_accept=min(spot_offer,accept_amount)   # deal is limited by amount accepted by buyer
+                    spot_accept=min(sell_offer,accept_amount_requested)   # the accept is on min of all
                     if spot_accept > 0: # ignore 0 or negative accepts
-                        t['spot_accept']=spot_accept
+                        t['formatted_amount_accepted']=spot_accept
                         t['payment_done']=False
                         t['payment_expired']=False
                         payment_timeframe=int(sell_offer_tx['formatted_block_time_limit'])
                         add_alarm(t,payment_timeframe)
                         update_addr_dict(from_addr, True, c, accept=spot_accept, accept_tx=t)
                     else:
-                        debug('non positive spot accept')
+                        mark_tx_invalid(t['tx_hash'],'non positive spot accept')
                     # add to current bids (which appear on seller tx)
                     key=sell_offer_tx['tx_hash']
                     if modified_tx_dict.has_key(key):

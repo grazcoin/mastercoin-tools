@@ -301,6 +301,9 @@ def parse_multisig(tx, tx_hash='unknown'):
                     else:
                         price_per_coin=0
                         parse_dict['invalid']=(True,'non positive sell offer amount')
+                    # duplicate with another name
+                    parse_dict['formatted_amount_available'] = parse_dict['formatted_amount']
+                    # format fields
                     parse_dict['formatted_bitcoin_amount_desired']= formatted_decimal(bitcoin_amount_desired)
                     parse_dict['formatted_price_per_coin']= formatted_decimal(price_per_coin)
                     parse_dict['formatted_block_time_limit']= str(int(data_dict['block_time_limit'],16))
@@ -309,6 +312,8 @@ def parse_multisig(tx, tx_hash='unknown'):
                     # remove irrelevant keys
                     parse_dict.pop('bitcoin_amount_desired', None)
                     parse_dict.pop('block_time_limit', None)
+                    # duplicate with another name
+                    parse_dict['formatted_amount_requested'] = parse_dict['formatted_amount']
                     # add place holders
                     parse_dict['bitcoin_required'] = 'Not available'
                     parse_dict['sell_offer_txid'] = 'Not available'

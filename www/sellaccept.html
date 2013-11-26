@@ -71,11 +71,11 @@
                                     <tbody>
 
                                         <tr>
-                                            <td>Seller</td>
+                                            <td>Buyer</td>
                                             <td><a ng-href="Address.html?addr={{transactionInformation.from_address}}&currency={{transactionInformation.currencyId}}">{{transactionInformation.from_address}}</a></td>
                                         </tr>
                                         <tr>
-                                            <td>Buyer</td>
+                                            <td>Seller</td>
                                             <td><a ng-href="Address.html?addr={{transactionInformation.to_address}}&currency={{transactionInformation.currencyId}}">{{transactionInformation.to_address}}</a></td>
                                         </tr>
                                         <tr>
@@ -87,8 +87,16 @@
                                             <td><span class="pull-left">{{transactionInformation.formatted_price_per_coin}} ฿/{{currency}}</span>
                                         </tr>
                                         <tr>
-                                            <td>Amount</td>
+                                            <td>Amount requested</td>
+                                            <td>{{transactionInformation.formatted_amount_requested}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Amount accepted</td>
                                             <td>{{transactionInformation.formatted_amount}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Amount bought</td>
+                                            <td>{{transactionInformation.formatted_amount_bought}}</td>
                                         </tr>
                                         <tr>
                                             <td>Status</td>
