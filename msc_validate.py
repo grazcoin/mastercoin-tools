@@ -327,6 +327,8 @@ def generate_api_jsons():
             sub_dict['total_sent']=from_satoshi(addr_dict[addr][c]['sent'])
             sub_dict['total_sold']=from_satoshi(addr_dict[addr][c]['sold'])
             sub_dict['total_bought']=from_satoshi(addr_dict[addr][c]['bought'])
+            sub_dict['total_sell_accept']=from_satoshi(addr_dict[addr][c]['accept'])
+            sub_dict['total_sell_offer']=from_satoshi(addr_dict[addr][c]['offer'])
             sub_dict['balance']=from_satoshi(addr_dict[addr][c]['balance'])
             sub_dict['exodus_transactions']=addr_dict[addr][c]['exodus_tx']
             sub_dict['exodus_transactions'].reverse()

@@ -124,10 +124,10 @@
                                         <span ng-switch-when="sellaccept">{{trans.formatted_price_per_coin}} ฿/{{currency}}
                                         </span>
                                         <span ng-switch-when="simplesend">
-                                             <a href='Address.html?addr={{trans.to_address}}'>{{trans.to_address}}</a>
+                                             <a href='Address.html?addr={{trans.to_address}}&currency={{currency}}'>{{trans.to_address}}</a>
                                         </span>
                                         <span ng-switch-when="exodus">
-                                             <a href='Address.html?addr={{trans.to_address}}'>{{trans.to_address}}</a>
+                                             <a href='Address.html?addr={{trans.to_address}}&currency={{currency}}'>{{trans.to_address}}</a>
                                         </span>
                                         <span ng-switch-default>
 

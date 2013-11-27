@@ -68,7 +68,7 @@
                             <tbody>
                                 <tr>
                                     <td>Final balance</td>
-                                    <td>{{addressInformation.balance}}</td>
+                                    <td><strong>{{addressInformation.balance}}</strong></td>
                                 </tr>
                                 <tr>
                                     <td>Bought via Exodus</td>
@@ -91,6 +91,14 @@
                                     <td>Coins sold</td>
                                     <td>{{addressInformation.total_sold}}</td>
                                 </tr>
+                                <tr>
+                                    <td>Open accept</td>
+                                    <td>{{addressInformation.total_sell_accept}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Open sell</td>
+                                    <td>{{addressInformation.total_sell_offer}}</td>
+                                </tr>
                             </tbody>
                         </table>
 		</div>
@@ -101,7 +109,7 @@
                             <tbody>
                                 <tr>
                                     <td>Currency</td>
-                                    <td>{{currency}}</td>
+                                    <td><strong>{{currency}}</strong></td>
                                 </tr>
                                 <tr>
                                     <td>Exodus transactions</td>
@@ -116,20 +124,20 @@
                                     <td>{{addressInformation.sent_transactions.length}}</td>
                                 </tr>
                                 <tr>
-                                    <td>Sold transactions</td>
-                                    <td>{{addressInformation.sold_transactions.length}}</td>
-                                </tr>
-                                <tr>
                                     <td>Bought transactions</td>
                                     <td>{{addressInformation.bought_transactions.length}}</td>
                                 </tr>
                                 <tr>
-                                    <td>Sell offer transaction</td>
-                                    <td>{{addressInformation.offer_transactions.length}}</td>
+                                    <td>Sold transactions</td>
+                                    <td>{{addressInformation.sold_transactions.length}}</td>
                                 </tr>
                                 <tr>
-                                    <td>Sell accept transaction</td>
+                                    <td>Open accept transaction</td>
                                     <td>{{addressInformation.accept_transactions.length}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Open sell transaction</td>
+                                    <td>{{addressInformation.offer_transactions.length}}</td>
                                 </tr>
                             </tbody>
                         </table>
