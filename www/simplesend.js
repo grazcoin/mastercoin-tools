@@ -3,7 +3,16 @@ function TransactionController($scope, $http) {
 
     $scope.footer = "FOOTER";
     $scope.title = "TITLE";
+    $scope.reason = "unknown";
 
+    //Function for creating popup
+    $scope.makePopup = function () {
+	//Popup for valid/invalid 
+	$('#validPopup').popover({ trigger: "hover" });
+	var navHeight = $('.navbar').height();
+	$('.page-container').css('paddingTop', navHeight + 20);
+    };
+    
     $scope.getTransactionData = function () {
 
         // parse tx from url parameters
@@ -12,6 +21,13 @@ function TransactionController($scope, $http) {
         // Make the http request and process the result
         $http.get(file, {}).success(function (data, status, headers, config) {
             $scope.transactionInformation = data[0];
+            $scope.updateReason();
         });
+    }
+    
+    $scope.updateReason = function () {
+    	if (!angular.isArray($scope.transactionInformation.invalid)) return;
+    	if ($scope.transactionInformation.invalid.length < 2) return;
+    	$scope.reason = $scope.transactionInformation.invalid[1];
     }
 }

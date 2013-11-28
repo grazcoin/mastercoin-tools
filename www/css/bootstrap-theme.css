@@ -170,14 +170,35 @@ td.test{
         content: "Valid";
     }
 
+    .falseValidStateDiv,.falseValidStateDiv:hover  {
+    background-color: #5cb85c !important;
+    color: white;
+}
+
+    .trueValidStateDiv, .trueValidStateDiv:hover{
+         background-color: #d9534f !important;
+    color: white;
+    }
+
 .trueValidState {
-    background-color: #d9534f;
+    background-color: #d9534f !important;
     color: white;
 }
 
     .trueValidState::after {
         content: "Invalid";
     }
+    
+.popover-content{
+    color:black;
+}
+
+
+
+.popover-title{
+     background-color: #d9534f;
+    color: white;
+}
     
 a.panel-link{
   text-decoration: none;
