@@ -18,7 +18,14 @@ function NavigationController($scope, $http) {
 	   angular.forEach($scope.values, function(value, key) {
 	    if (value.currency==$scope.currency) {
 		$scope.values[key].selected="selected";
-		$scope.$emit('handlePagesEmit', {message: value.pages});
+		
+		var filename = location.pathname.substr(location.pathname.lastIndexOf("/")+1,location.pathname.length);
+		if (filename.indexOf("accepted") >= 0) {
+			$scope.$emit('handlePagesEmit', {message: value.accept_pages});
+		}
+		else {
+			$scope.$emit('handlePagesEmit', {message: value.pages});
+		}
 	    }
 	    else
 		$scope.values[key].selected="";

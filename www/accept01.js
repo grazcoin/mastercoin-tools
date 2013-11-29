@@ -14,6 +14,8 @@ function BTCController($scope, $http) {
     
     $scope.$on('handlePagesBroadcast', function(event, args) {
         $scope.numberOfPages = Number(args.message);
+        $scope.showPages = Math.min(5, $scope.numberOfPages);
+        $scope.pages = $scope.pagesCreator($scope.currentPageStart);
     });
     
     $scope.getData = function ($i) {
