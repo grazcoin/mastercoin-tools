@@ -27,6 +27,10 @@ coins_reverse_short_name_dict=dict((v,k) for k, v in coins_short_name_dict.iteri
 
 # create modified tx dict which would be used to modify tx files
 modified_tx_dict={}
+modified_sell_tx_dict={}
+
+# global last block on the net
+last_height=get_last_height()
 
 def sorted_ls(path):
     mtime = lambda f: os.stat(os.path.join(path, f)).st_mtime
@@ -75,15 +79,17 @@ def check_alarm(t, last_block, current_block):
                 if a['btc_offer_txid']=='unknown': # accept with no payment
                     debug('accept offer expired '+str(a['tx_hash']))
                     a['payment_expired']=True
+                    a['color']='bgc-expired'
+                    a['icon_text']='Payment expired'
+                    a['status']='Expired'
                 else:
                     debug('accept offer done '+str(a['tx_hash']))  
                     a['payment_done']=True
-                # in any case, this offer is closed
-                a['status']='Closed'
-                if modified_tx_dict.has_key(a['tx_hash']):
-                    modified_tx_dict[a['tx_hash']].append(a)
-                else:
-                    modified_tx_dict[a['tx_hash']]=[a]
+                    a['color']='bgc-done'
+                    a['icon_text']='Payment done'
+                    a['status']='Closed'
+                add_modified_sell_tx(a['tx_hash'],a)
+                update_sorted_currency_tx_list(a)
 
 def check_bitcoin_payment(t):
     if t['invalid']==[True, 'bitcoin payment']:
@@ -145,7 +151,13 @@ def check_bitcoin_payment(t):
                                 sell_offer_tx['formatted_amount_available']=formatted_decimal(sell_offer_tx['amount_available'])
                                 # if not more left in the offer - close sell
                                 if addr_dict[address][c]['offer'] == 0:
-                                    sell_offer_tx['status']='Closed'
+                                    sell_offer_tx['color']='bgc-done'
+                                    sell_offer_tx['icon_text']='Sell offer done'
+                                else:
+                                    sell_offer_tx['color']='bgc-accepted-done'
+                                    sell_offer_tx['icon_text']='Sell offer partially done'
+                                # FIXME: add_modified_sell_tx here?
+                                update_sorted_currency_tx_list(sell_offer_tx)
                                 # update bitcoin payment in accept tx
                                 key=sell_accept_tx['tx_hash']
                                 info('modify accept: '+key)
@@ -153,18 +165,16 @@ def check_bitcoin_payment(t):
                                 sell_accept_tx['status']='Closed'
                                 sell_accept_tx['payment_done']=True
                                 sell_accept_tx['formatted_amount_bought']=spot_closed
-                                if modified_tx_dict.has_key(key):
-                                    modified_tx_dict[key].append(sell_accept_tx)
-                                else:
-                                    modified_tx_dict[key]=[sell_accept_tx]
+                                sell_accept_tx['color']='bgc-done'
+                                sell_offer_tx['icon_text']='Accept offer paid'
+                                add_modified_sell_tx(key,sell_accept_tx)
+                                update_sorted_currency_tx_list(sell_accept_tx)
                                 # update sell and accept offer in bitcoin payment
                                 t['sell_tx_id']=sell_offer_tx['tx_hash']
                                 t['accept_tx_id']=sell_accept_tx['tx_hash']
                                 key=t['tx_hash']
-                                if modified_tx_dict.has_key(key):
-                                    modified_tx_dict[key].append(t)
-                                else:
-                                    modified_tx_dict[key]=[t]
+                                add_modified_sell_tx(key,t)
+                                update_sorted_currency_tx_list(sell_offer_tx)
                                 return True # hidden assumption: payment is for a single accept
                             else:
                                 error('non positive part bought on bitcoin payment: '+t['tx_hash'])
@@ -232,8 +242,9 @@ def update_addr_dict(addr, accomulate, *arguments, **keywords):
                     addr_dict[addr][c][kw]=int(keywords[kw])
 
 
-def update_icon_details(t):
+def update_initial_icon_details(t):
     # update fields icon, details
+    t['color']='bgc-new'
     try:
         if t['transactionType']=='00000000':
             t['icon']='simplesend'
@@ -268,14 +279,41 @@ def mark_tx_invalid(tx_hash, reason):
         debug('skip invalidating exodus tx '+tx_hash+' and reason '+reason)
     else:
         tmp_dict['invalid']=(True,reason)
+        tmp_dict['color']='bgc-invalid'
         atomic_json_dump(tmp_dict,'tx/'+tx_hash+'.json')
+
+# add another general tx to the modified dict
+def add_modified_tx(key, t):
+    if modified_tx_dict.has_key(key):
+        modified_tx_dict[key].append(t)
+    else:
+        modified_tx_dict[key]=[t]
+
+# add another sell tx to the modified dict
+def add_modified_sell_tx(key, t):
+    if modified_sell_tx_dict.has_key(key):
+        modified_sell_tx_dict[key].append(t)
+    else:
+        modified_sell_tx_dict[key]=[t]
 
 # go over modified tx and update the required tx + create bids json
 def update_modified_tx_and_bids():
 
-    # update sell/accept tx files
-    # FIXME: make sure modifications include alarms
+    # first deal with general tx
     for tx_hash in modified_tx_dict.keys():
+        # get tx dict from the filesystem
+        tmp_dict=load_dict_from_file('tx/'+tx_hash+'.json','r')
+        # get updated data from modified dict
+        t=modified_tx_dict[tx_hash]
+        for k in tmp_dict.keys():
+            # run over with new value
+            tmp_dict[k]=t[k]
+        # save back to filesystem
+        atomic_json_dump(tmp_dict, 'tx/'+tx_hash+'.json')
+
+    # then update sell/accept tx files
+    # FIXME: make sure modifications include alarms
+    for tx_hash in modified_sell_tx_dict.keys():
         # get tx dict
         tmp_sell_dict=load_dict_from_file('tx/'+tx_hash+'.json','r')
 
@@ -286,7 +324,7 @@ def update_modified_tx_and_bids():
         bids=[]
 
         # go over all related tx
-        for t in modified_tx_dict[tx_hash]:
+        for t in modified_sell_tx_dict[tx_hash]:
             # add bid tx to sell offer
             bids.append(t)
             # update purchase accepts
@@ -300,6 +338,15 @@ def update_modified_tx_and_bids():
         # write updated bids
         atomic_json_dump(bids, 'bids/bids-'+tx_hash+'.json', add_brackets=False)
 
+def update_sorted_currency_tx_list(t):
+    tx_hash=t['tx_hash']
+    try:
+        currency=t['currency_str']
+    except KeyError:
+        error(t)
+    for n,i in enumerate(sorted_currency_tx_list[currency]):
+        if i['tx_hash']==tx_hash:
+            sorted_currency_tx_list[currency][n]=t
 
 # generate api json
 # address
@@ -406,7 +453,7 @@ def generate_api_jsons():
 def check_mastercoin_transaction(t):
 
     # update icon and details
-    t=update_icon_details(t)
+    t=update_initial_icon_details(t)
 
     # get general data from tx
     to_addr=t['to_address']
@@ -414,6 +461,7 @@ def check_mastercoin_transaction(t):
     amount_transfer=to_satoshi(t['formatted_amount'])
     currency=t['currency_str']
     tx_hash=t['tx_hash']
+    tx_age=int(last_height) - int(t['block'])
 
     if from_addr == 'exodus': # assume exodus does not do sell offer/accept
         # exodus purchase
@@ -424,6 +472,10 @@ def check_mastercoin_transaction(t):
         ten_percent=int((amount_transfer+0.0)/10+0.5)
         update_addr_dict(exodus_address, True, 'Mastercoin', balance=ten_percent, exodus_tx=t)
         update_addr_dict(exodus_address, True, 'Test Mastercoin', balance=ten_percent, exodus_tx=t)
+
+        # all exodus are done
+        t['color']='bgc-done'
+        t['icon_text']='Exodus'
 
         # tx belongs to mastercoin and test mastercoin
         for c in coins_list:
@@ -436,6 +488,20 @@ def check_mastercoin_transaction(t):
             return False
         # left are normal transfer and sell offer/accept
         if t['tx_type_str']==transaction_type_dict['00000000']:
+            t['icon_text']='Simple send ('+str(tx_age)+' confirms)'
+            if tx_age > blocks_consider_new:
+                if tx_age < blocks_consider_mature:
+                    t['color']='bgc-new-done'
+                else:
+                    t['color']='bgc-done'
+                    t['icon_text']='Simple send'
+            else:
+                pass # left are new simple send with color new
+
+            # to update the general
+            if tx_age <= blocks_consider_new+1: # FIXME: verify that no un-updated tx are left
+                add_modified_tx(t['tx_hash'],t)
+ 
             # the normal transfer case
             if not addr_dict.has_key(from_addr):
                 debug('try to pay from non existing address at '+tx_hash)
@@ -459,6 +525,7 @@ def check_mastercoin_transaction(t):
             # sell offer
             if t['tx_type_str']==transaction_type_dict['00000014']:
                 debug('sell offer: '+tx_hash)
+                t['icon_text']='Sell Offer ('+str(tx_age)+' confirms)'
                 # sell offer from empty or non existing address is allowed
                 # update details of sell offer
                 # update single allowed tx for sell offer
@@ -508,14 +575,20 @@ def check_mastercoin_transaction(t):
                         payment_timeframe=int(sell_offer_tx['formatted_block_time_limit'])
                         add_alarm(t,payment_timeframe)
                         update_addr_dict(from_addr, True, c, accept=spot_accept, accept_tx=t)
+                        # update icon colors of sell
+                        if sell_offer > spot_accept:
+                            sell_offer_tx['color']='bgc-new-accepted'
+                            sell_offer_tx['icon_text']='Sell offer partially accepted'
+                        else:
+                            sell_offer_tx['color']='bgc-accepted'
+                            sell_offer_tx['icon_text']='Sell offer accepted'
+                        # and update the sorted list
+                        update_sorted_currency_tx_list(sell_offer_tx)
                     else:
                         mark_tx_invalid(t['tx_hash'],'non positive spot accept')
                     # add to current bids (which appear on seller tx)
                     key=sell_offer_tx['tx_hash']
-                    if modified_tx_dict.has_key(key):
-                        modified_tx_dict[key].append(t)
-                    else:
-                        modified_tx_dict[key]=[t]
+                    add_modified_sell_tx(key, t)
                     sorted_currency_tx_list[c].append(t)    # add per currency tx
                     return True
                 else:
@@ -543,7 +616,6 @@ def validate():
     sorted_tx_list=get_sorted_tx_list()
 
     # use an artificial empty last tx with last height as a trigger for alarm check
-    last_height=get_last_height()
     sorted_tx_list.append({'invalid':(True,'fake tx'), 'block':last_height, 'tx_hash':'fake'})
 
     last_block=0 # keep tracking of last block for alarm purposes

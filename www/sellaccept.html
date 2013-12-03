@@ -46,7 +46,7 @@
 
                         <a class="navbar-brand" href="/">
                             <img src="img/logo.png" alt="mastercoin"></a>
-                        <span class="navbar-brand"><img style="height:26px; width:26px;" src="ico/sellaccept.png" alt="{{transactionInformation.tx_type_str}}" /></span>
+                        <span class="navbar-brand"><img class="icon32 round-corner bgc-default" src="ico/sellaccept32t.png" alt="{{transactionInformation.tx_type_str}}" /></span>
                     </div>
                     <div class="navbar-collapse collapse">
                         <ul class="nav navbar-nav navbar-right">
@@ -107,11 +107,11 @@
                                             <td>{{transactionInformation.bitcoin_required}} ฿</td>
                                         </tr>
                                         <tr>
-                                            <td><img style="height:18px; width:18px;" src="ico/selloffer.png" alt="Sell offer" /> Sell Offer</td>
+                                            <td><img class="icon24 round-corner bgc-default" src="ico/selloffer24t.png" alt="Sell offer" /> Sell Offer</td>
                                             <td><a ng-href="selloffer.html?tx={{transactionInformation.sell_offer_txid}}&currency={{currency}}">{{transactionInformation.sell_offer_txid|characters:10}}</a></td>
                                         </tr>
                                         <tr>
-                                            <td><img style="height:18px; width:18px;" src="ico/bitcoin.png" alt="Bitcoin payment" /> Payment</td>
+                                            <td><img class="icon24 round-corner bgc-default" src="ico/bitcoin24t.png" alt="Bitcoin payment" /> Payment</td>
                                             <td><a ng-href="btcpayment.html?tx={{transactionInformation.btc_offer_txid}}&currency={{currency}}">{{transactionInformation.btc_offer_txid|characters:10}}</a></td>
                                         </tr>
 
@@ -124,7 +124,7 @@
                                     <tbody>
                                         <tr>
                                             <td>Transaction type</td>
-                                            <td><img style="height:18px; width:18px;" src="ico/sellaccept.png" alt="{{transactionInformation.tx_type_str}}" /> {{transactionInformation.tx_type_str}}</td>
+                                            <td><img class="icon24 round-corner bgc-default" src="ico/sellaccept.png" alt="{{transactionInformation.tx_type_str}}" /> {{transactionInformation.tx_type_str}}</td>
                                         </tr>
                                         <tr>
                                             <td>Transaction ID</td>

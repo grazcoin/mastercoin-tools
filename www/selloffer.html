@@ -46,7 +46,7 @@
 
                         <a class="navbar-brand" href="/">
                             <img src="img/logo.png" alt="mastercoin"></a>
-                        <span class="navbar-brand"><img style="height:26px; width:26px;" src="ico/selloffer.png" alt="Sell Offer" /></span>
+                        <span class="navbar-brand"><img class="icon32 round-corner bgc-default" src="ico/selloffer32t.png" alt="Sell Offer" /></span>
                     </div>
                     <div class="navbar-collapse collapse">
                         <ul class="nav navbar-nav navbar-right">
@@ -112,7 +112,7 @@
                                     <tbody>
                                         <tr>
                                             <td>Transaction type</td>
-                                            <td><img style="height:18px; width:18px;" src="ico/selloffer.png" alt="{{transactionInformation.tx_type_str}}" /> {{transactionInformation.tx_type_str}}</td>
+                                            <td><img class="icon24 round-corner bgc-default" src="ico/selloffer24t.png" alt="{{transactionInformation.tx_type_str}}" /> {{transactionInformation.tx_type_str}}</td>
                                         </tr>
                                         <tr>
                                             <td>Transaction ID</td>
@@ -157,7 +157,7 @@
                                     <tbody>
                                         <tr ng-repeat="bid in bids">
                                             <td ng-switch on="bid.icon">
-                                                <img style="height: 24px; width: 24px;" src="ico/{{bid.icon}}.png" alt="{{bid.icon}}" />
+                                                <img class="icon24 round-corner {{bid.color}}" src="ico/{{bid.icon}}24t.png" alt="{{bid.icon}}" />
 
                                                 <span ng-switch-when="selloffer">
                                                     <a ng-href='selloffer.html?tx={{bid.tx_hash}}&currency={{currency}}'>{{bid.tx_hash | characters:10}}

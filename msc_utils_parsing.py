@@ -318,7 +318,7 @@ def parse_multisig(tx, tx_hash='unknown'):
                     parse_dict['bitcoin_required'] = 'Not available'
                     parse_dict['sell_offer_txid'] = 'Not available'
                     parse_dict['payment_txid'] = 'Not available'
-                    parse_dict['status'] = 'Open'
+                    parse_dict['status'] = 'Awaiting payment'
 
                 if len(dataHex_deobfuscated_list)>1: # currently true only for Sell offer
                     data_dict=parse_2nd_data_script(dataHex_deobfuscated_list[1])

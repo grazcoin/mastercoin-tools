@@ -7,6 +7,9 @@ from pycoin import encoding
 # taken from https://github.com/richardkiss/pycoin
 from msc_utils_general import *
 
+blocks_consider_new=3
+blocks_consider_mature=6
+
 __b58chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 __b58base = len(__b58chars)
 

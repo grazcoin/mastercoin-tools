@@ -89,7 +89,7 @@
 							<tbody>
 								<tr ng-repeat="trans in transactions">
                                     <td ng-switch on="trans.icon">
-                                        <img style="height:24px; width:24px;" src="ico/{{trans.icon}}.png" alt="{{trans.icon}}" />
+                                        <img class="icon24 round-corner {{trans.color}}" src="ico/{{trans.icon}}24t.png" alt="{{trans.icon}}" />
 
                                         <span ng-switch-when="selloffer">
                                             <a ng-href='selloffer.html?tx={{trans.tx_hash}}&currency={{currency}}'>{{trans.tx_hash | characters:10}}
