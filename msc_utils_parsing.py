@@ -177,7 +177,7 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
             parse_dict['tx_method_str']='basic'
             # FIXME: checksum?
             return parse_dict
-    except KeyError, IndexError:
+    except (KeyError, IndexError, TypeError):
         info('invalid mastercoin tx '+tx_hash)
         return {'invalid':(True,'bad parsing'), 'tx_hash':tx_hash}
 
