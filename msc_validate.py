@@ -303,8 +303,18 @@ def update_modified_tx_and_bids():
     for tx_hash in modified_tx_dict.keys():
         # get tx dict from the filesystem
         tmp_dict=load_dict_from_file('tx/'+tx_hash+'.json','r')
+        try:
+            # hack to remove []
+            tmp_dict=tmp_dict[0]
+        except IndexError:
+            pass
         # get updated data from modified dict
         t=modified_tx_dict[tx_hash]
+        try:
+            # hack to remove []
+            t=t[0]
+        except IndexError:
+            pass
         for k in tmp_dict.keys():
             # run over with new value
             tmp_dict[k]=t[k]
