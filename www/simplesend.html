@@ -31,7 +31,7 @@
       <script src="js/respond.min.js"></script>
     <![endif]-->
 </head>
-<body>
+<body ng-controller="TransactionController" ng-init="getTransactionData()">
 	<div id="wrap">
     <div ng-controller="NavigationController" ng-init="getNavData()">
       <!-- Fixed navbar -->
@@ -45,7 +45,7 @@
             </button>
 
             <a class="navbar-brand" href="/"><img src="img/logo.png" alt="mastercoin"></a>
-            <span class="navbar-brand"><img class="icon24 round-corner bgc-default" src="ico/simplesend.png" alt="{{transactionInformation.tx_type_str}}" /></span>
+            <span class="navbar-brand"><img class="icon24 round-corner {{transactionInformation.color}}" src="ico/{{transactionInformation.icon}}32t.png" alt="{{transactionInformation.tx_type_str}}" /></span>
           </div>
           <div class="navbar-collapse collapse">
             <ul class="nav navbar-nav navbar-right">
@@ -63,7 +63,7 @@
       <div class="container page-container">
         <div class="row">
           <div class="no-fixed col-sm-9 col-sm-push-3 col-md-10 col-md-push-2">
-            <div class="transactionContainer" ng-controller="TransactionController" ng-init="getTransactionData()">
+            <div class="transactionContainer">
               <div class="col-md-6">
                     <table class="table table-striped table-hover table-condensed">
                                <caption>Basic Information</caption>
@@ -94,7 +94,7 @@
                                <tbody>
                                    <tr>
                                        <td>Transaction type</td>
-                                       <td><img class="icon24 round-corner bgc-default" src="ico/simplesend.png" alt="{{transactionInformation.tx_type_str}}" /> {{transactionInformation.tx_type_str}}</td>
+                                       <td><img class="icon24 round-corner bgc-default {{transactionInformation.color}}" src="ico/{{transactionInformation.icon}}24t.png" alt="{{transactionInformation.tx_type_str}}" /> {{transactionInformation.tx_type_str}}</td>
                                    </tr>
                                    <tr>
                                        <td>Transaction ID</td>

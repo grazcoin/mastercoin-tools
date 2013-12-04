@@ -1,6 +1,5 @@
 function TransactionController($scope, $http) {
     $scope.transactionInformation;
-
     $scope.footer = "FOOTER";
     $scope.title = "TITLE";
     $scope.reason = "unknown";
@@ -21,8 +20,18 @@ function TransactionController($scope, $http) {
         // Make the http request and process the result
         $http.get(file, {}).success(function (data, status, headers, config) {
             $scope.transactionInformation = data[0];
+            $scope.setDefaults();
             $scope.updateReason();
         });
+    }
+    
+    $scope.setDefaults = function() {
+    	if (!$scope.transactionInformation.icon) {
+    		$scope.transactionInformation.icon = "simplesend";
+    	}
+    	if (!$scope.transactionInformation.color) {
+	    	$scope.transactionInformation.color = "bgc-default";
+    	}
     }
     
     $scope.updateReason = function () {
