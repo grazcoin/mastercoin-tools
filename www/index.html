@@ -89,7 +89,13 @@
 							<tbody>
 								<tr ng-repeat="trans in transactions">
                                     <td ng-switch on="trans.icon">
-                                        <img class="icon24 round-corner {{trans.color}}" src="ico/{{trans.icon}}24t.png" alt="{{trans.icon}}" />
+                                        <img class="icon24 round-corner {{trans.color}} iconPopupInit"
+                                        src="ico/{{trans.icon}}24t.png"
+                                        ng-init="createIconPopup()"
+                                        data-content="{{trans.icon_text}}" rel="popover"
+                                        data-placement="bottom"
+                                        alt=""
+                                        />
 
                                         <span ng-switch-when="selloffer">
                                             <a ng-href='selloffer.html?tx={{trans.tx_hash}}&currency={{currency}}'>{{trans.tx_hash | characters:10}}

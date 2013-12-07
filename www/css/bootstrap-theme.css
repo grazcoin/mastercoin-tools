@@ -189,10 +189,11 @@ td.test{
         content: "Invalid";
     }
     
-.popover-content{
-    color:black;
+.popover-content {
+    color: black;
+    -ms-word-wrap: break-word;
+    word-wrap: break-word;
 }
-
 
 
 .popover-title{
