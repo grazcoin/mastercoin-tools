@@ -93,20 +93,18 @@ def check_alarm(t, last_block, current_block):
 
 def check_bitcoin_payment(t):
     if t['invalid']==[True, 'bitcoin payment']:
-        fee=t['fee']
         from_address=t['from_address']
-        current_block=t['block']
+        current_block=int(t['block'])
         # was there accept from this address to any of the payment addresses?
         to_multi_address_and_amount=t['to_address'].split(';')
         for address_and_amount in to_multi_address_and_amount:
             (address,amount)=address_and_amount.split(':')
             if address!=exodus_address:
-                # check if it fits to a sell offer in address (incl min fee)
+                # check if it fits to a sell offer in address
                 # first check if msc sell offer exists
                 sell_offer_tx=None
                 sell_accept_tx=None
                 required_btc=0
-                required_fee=0
                 for c in coins_list: # check for offers of Mastercoin or Test Mastercoin
                     try:
                         sell_offer_tx=addr_dict[address][c]['offer_tx'][-1]
@@ -119,7 +117,6 @@ def check_bitcoin_payment(t):
                     debug('for sell offer: '+sell_offer_tx['tx_hash'])
                     try:
                         required_btc=float(sell_offer_tx['formatted_bitcoin_amount_desired'])
-                        required_fee=float(sell_offer_tx['formatted_fee_required'])
                         block_time_limit=int(sell_offer_tx['formatted_block_time_limit'])
                     except KeyError:
                         error('sell offer with missing details: '+sell_offer_tx['tx_hash'])
@@ -130,18 +127,16 @@ def check_bitcoin_payment(t):
                         debug('no accept_tx on '+from_address)
                         continue
                     for sell_accept_tx in sell_accept_tx_list: # go over all accepts
-                        # now check if minimal amount, fee and block time limit are as required
+                        # now check if block time limit is as required
                         sell_accept_block=int(sell_accept_tx['block'])
-                        info('deal')
-                        if fee >= required_fee and sell_accept_block+block_time_limit <= current_block:
+                        # if sell accept is valid, then fee is OK - no need to re-check
+                        if sell_accept_block+block_time_limit >= current_block:
                             part_bought=float(amount)/required_btc
                             if part_bought>0:
                                 # mark deal as closed
-                                spot_accept=addr_dict[address][c]['accept']
-                                info('spot accept: '+str(spot_accept))
-                                info('part bought: '+str(part_bought))
+                                # calculate the spot accept
+                                spot_accept=float(sell_accept_tx['formatted_amount_accepted'])
                                 spot_closed=min((part_bought*float(spot_accept)+0.000000005), spot_accept)
-                                info('spot closed: '+str(spot_closed))
                                 # update sold tx
                                 update_addr_dict(address, True, c, balance=-spot_closed, sold=spot_closed, offer=-spot_closed, sold_tx=sell_accept_tx)
                                 # update bough tx
@@ -581,9 +576,10 @@ def check_mastercoin_transaction(t):
                     # verify corresponding sell offer exists and partial balance
                     # partially fill and update balances and sell offer
                     # add to list to be shown on general
-                    # partially fill according to spot offer
+                    # partially fill according to spot offer  
+
                     try:
-                        accept_amount_requested=float(t['formatted_amount_requested'])
+                        accept_amount_requested=t['formatted_amount_requested']
                     except KeyError:
                         accept_amount_requested=0.0
                     try:
@@ -594,6 +590,21 @@ def check_mastercoin_transaction(t):
                         info('accept offer from missing seller '+to_addr)
                         mark_tx_invalid(tx_hash, 'accept offer of missing sell offer')
                         return False
+
+                    # required fee calculation
+                    try:
+                        required_fee=float(sell_offer_tx['formatted_required_fee'])
+                    except KeyError:
+                        required_fee=0.0
+                    try:
+                        accept_fee=float(t['formatted_fee'])
+                    except KeyError:
+                        accept_fee=0.0
+                    if accept_fee<required_fee:
+                        info('accept offer without minimal fee on tx: '+tx_hash)
+                        mark_tx_invalid(tx_hash, 'accept offer without required fee')
+                        return False
+
                     try:
                         formatted_price_per_coin=sell_offer_tx['formatted_price_per_coin']
                     except KeyError:
@@ -607,14 +618,16 @@ def check_mastercoin_transaction(t):
                     t['sell_offer_txid']=sell_offer_tx['tx_hash']
                     t['btc_offer_txid']='unknown'
 
-                    spot_accept=min(sell_offer,accept_amount_requested)   # the accept is on min of all
+                    spot_accept=min(float(sell_offer),float(accept_amount_requested))   # the accept is on min of all
                     if spot_accept > 0: # ignore 0 or negative accepts
                         t['formatted_amount_accepted']=spot_accept
                         t['payment_done']=False
                         t['payment_expired']=False
                         payment_timeframe=int(sell_offer_tx['formatted_block_time_limit'])
                         add_alarm(t,payment_timeframe)
+                        # accomulate the spot accept on the seller side
                         update_addr_dict(from_addr, True, c, accept=spot_accept, accept_tx=t)
+
                         # update icon colors of sell
                         if sell_offer > spot_accept:
                             sell_offer_tx['color']='bgc-new-accepted'
@@ -622,6 +635,7 @@ def check_mastercoin_transaction(t):
                         else:
                             sell_offer_tx['color']='bgc-accepted'
                             sell_offer_tx['icon_text']='Sell offer accepted'
+
                         # and update the sorted list
                         update_sorted_currency_tx_list(sell_offer_tx)
                     else:
