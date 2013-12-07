@@ -81,6 +81,7 @@ def check_alarm(t, last_block, current_block):
                     a['payment_expired']=True
                     a['color']='bgc-expired'
                     a['icon_text']='Payment expired'
+                    a['formatted_amount_bought']='0.0'
                     a['status']='Expired'
                 else:
                     debug('accept offer done '+str(a['tx_hash']))  
@@ -117,6 +118,7 @@ def check_bitcoin_payment(t):
                     debug('for sell offer: '+sell_offer_tx['tx_hash'])
                     try:
                         required_btc=float(sell_offer_tx['formatted_bitcoin_amount_desired'])
+                        whole_sell_amount=float(sell_offer_tx['formatted_amount'])
                         block_time_limit=int(sell_offer_tx['formatted_block_time_limit'])
                     except KeyError:
                         error('sell offer with missing details: '+sell_offer_tx['tx_hash'])
@@ -136,11 +138,11 @@ def check_bitcoin_payment(t):
                                 # mark deal as closed
                                 # calculate the spot accept
                                 spot_accept=float(sell_accept_tx['formatted_amount_accepted'])
-                                spot_closed=min((part_bought*float(spot_accept)+0.000000005), spot_accept)
+                                spot_closed=min((part_bought*float(whole_sell_amount)+0.000000005), spot_accept)
                                 # update sold tx
-                                update_addr_dict(address, True, c, balance=-spot_closed, sold=spot_closed, offer=-spot_closed, sold_tx=sell_accept_tx)
-                                # update bough tx
-                                update_addr_dict(from_address, True, c, balance=spot_closed, bought=spot_closed, accept=-spot_closed, bought_tx=sell_accept_tx)
+                                update_addr_dict(address, True, c, balance=-spot_closed, sold=spot_closed, offer=-spot_closed, accept=-spot_closed, sold_tx=sell_accept_tx)
+                                # update bought tx
+                                update_addr_dict(from_address, True, c, balance=spot_closed, bought=spot_closed, bought_tx=sell_accept_tx)
                                 # update sell offer
                                 sell_offer_tx['amount_available']=addr_dict[address][c]['offer']
                                 sell_offer_tx['formatted_amount_available']=formatted_decimal(sell_offer_tx['amount_available'])
