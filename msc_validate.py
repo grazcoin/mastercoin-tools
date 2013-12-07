@@ -299,27 +299,34 @@ def add_modified_sell_tx(key, t):
 # go over modified tx and update the required tx + create bids json
 def update_modified_tx_and_bids():
 
-    # first deal with general tx
+    # first deal with non distributed exchange tx
     for tx_hash in modified_tx_dict.keys():
         # get tx dict from the filesystem
         tmp_dict=load_dict_from_file('tx/'+tx_hash+'.json','r')
-        try:
-            # hack to remove []
-            tmp_dict=tmp_dict[0]
-        except IndexError:
-            pass
+        if type(tmp_dict)=='dict':
+            fs_dict=tmp_dict
+        else:
+            fs_dict=tmp_dict[0]
         # get updated data from modified dict
         t=modified_tx_dict[tx_hash]
+        if type(t)=='dict':
+            running_dict=t
+        else:
+            running_dict=t[0]
+        # if same icon text - no need to update:
         try:
-            # hack to remove []
-            t=t[0]
-        except IndexError:
+            if fs_dict['icon_text']==running_dict['icon_text']:
+                continue
+        except KeyError:
             pass
-        for k in tmp_dict.keys():
-            # run over with new value
-            tmp_dict[k]=t[k]
+        for k in running_dict.keys():
+            try:
+                # run over with new value
+                fs_dict[k]=running_dict[k]
+            except KeyError:
+                debug('key '+k+' missing in tx: '+tx_hash)
         # save back to filesystem
-        atomic_json_dump(tmp_dict, 'tx/'+tx_hash+'.json')
+        atomic_json_dump(fs_dict, 'tx/'+tx_hash+'.json')
 
     # then update sell/accept tx files
     # FIXME: make sure modifications include alarms
@@ -472,6 +479,10 @@ def check_mastercoin_transaction(t):
     currency=t['currency_str']
     tx_hash=t['tx_hash']
     tx_age=int(last_height) - int(t['block'])
+    try:
+        prev_icon_text=t['icon_text']
+    except KeyError:
+        prev_icon_text=''
 
     if from_addr == 'exodus': # assume exodus does not do sell offer/accept
         # exodus purchase
@@ -487,10 +498,14 @@ def check_mastercoin_transaction(t):
         t['color']='bgc-done'
         t['icon_text']='Exodus'
 
+        # mark to update the tx on filesystem if required
+        if prev_icon_text!=t['icon_text']:
+            add_modified_tx(t['tx_hash'],t)
+
         # tx belongs to mastercoin and test mastercoin
         for c in coins_list:
             sorted_currency_tx_list[c].append(t)
-        return True 
+        return True
     else:
         c=currency
         if c!='Mastercoin' and c!='Test Mastercoin':
@@ -508,8 +523,8 @@ def check_mastercoin_transaction(t):
             else:
                 pass # left are new simple send with color new
 
-            # to update the general
-            if tx_age <= blocks_consider_new+1: # FIXME: verify that no un-updated tx are left
+            # mark to update the tx on filesystem if required
+            if prev_icon_text!=t['icon_text']:
                 add_modified_tx(t['tx_hash'],t)
  
             # the normal transfer case
