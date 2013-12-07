@@ -300,20 +300,31 @@ def add_modified_sell_tx(key, t):
 def update_modified_tx_and_bids():
 
     # first deal with non distributed exchange tx
+    # check previous snapshot
+    icon_text_per_tx_hash = load_dict_from_file('general/icon_text_per_tx_hash.json','r')
+    if type(icon_text_per_tx_hash)=='dict':
+        icon_text_per_tx_hash_dict=icon_text_per_tx_hash
+    else:
+        icon_text_per_tx_hash_dict=icon_text_per_tx_hash[0]
     for tx_hash in modified_tx_dict.keys():
-        # get tx dict from the filesystem
-        tmp_dict=load_dict_from_file('tx/'+tx_hash+'.json','r')
-        if type(tmp_dict)=='dict':
-            fs_dict=tmp_dict
-        else:
-            fs_dict=tmp_dict[0]
         # get updated data from modified dict
         t=modified_tx_dict[tx_hash]
         if type(t)=='dict':
             running_dict=t
         else:
             running_dict=t[0]
-        # if same icon text - no need to update:
+        # if icon_text identical to snapshot - no need to update:
+        try:
+            if running_dict['icon_text']==icon_text_per_tx_hash_dict[tx_hash]:
+                continue
+        except KeyError:
+            pass
+        # if not: get tx dict from the filesystem for comparison
+        tmp_dict=load_dict_from_file('tx/'+tx_hash+'.json','r')
+        if type(tmp_dict)=='dict':
+            fs_dict=tmp_dict
+        else:
+            fs_dict=tmp_dict[0]
         try:
             if fs_dict['icon_text']==running_dict['icon_text']:
                 continue
@@ -478,7 +489,7 @@ def check_mastercoin_transaction(t):
     amount_transfer=to_satoshi(t['formatted_amount'])
     currency=t['currency_str']
     tx_hash=t['tx_hash']
-    tx_age=int(last_height) - int(t['block'])
+    tx_age=int(last_height) - int(t['block'])+1
     try:
         prev_icon_text=t['icon_text']
     except KeyError:
@@ -681,6 +692,15 @@ def validate():
 
     # generate address pages and last tx pages
     generate_api_jsons()
+
+    # write icon_text_per_tx_hash dict
+    icon_text_per_tx_hash={}
+    for t in sorted_tx_list:
+        try:
+            icon_text_per_tx_hash[t['tx_hash']]=t['icon_text']
+        except KeyError:
+            pass
+    atomic_json_dump(icon_text_per_tx_hash,'general/icon_text_per_tx_hash.json')
 
     info('validation done')
 
