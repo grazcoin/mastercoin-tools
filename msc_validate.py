@@ -557,12 +557,16 @@ def check_mastercoin_transaction(t):
                 # add to list to be shown on general
                 offer_amount=float(t['formatted_amount'])
                 update_addr_dict(from_addr, True, c, offer=offer_amount, offer_tx=t)
+                # mark to update the tx on filesystem if required
+                if prev_icon_text!=t['icon_text']:
+                    add_modified_tx(t['tx_hash'],t)
                 sorted_currency_tx_list[c].append(t)
                 return True
             else:
                 # sell accept
                 if t['tx_type_str']==transaction_type_dict['00000016']:
                     debug('sell accept: '+tx_hash)
+                    t['icon_text']='Sell Accept (active)'
                     # verify corresponding sell offer exists and partial balance
                     # partially fill and update balances and sell offer
                     # add to list to be shown on general
@@ -614,6 +618,9 @@ def check_mastercoin_transaction(t):
                     # add to current bids (which appear on seller tx)
                     key=sell_offer_tx['tx_hash']
                     add_modified_sell_tx(key, t)
+                    # mark to update the tx on filesystem if required
+                    if prev_icon_text!=t['icon_text']:
+                        add_modified_tx(t['tx_hash'],t)
                     sorted_currency_tx_list[c].append(t)    # add per currency tx
                     return True
                 else:
