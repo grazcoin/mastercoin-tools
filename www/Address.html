@@ -259,7 +259,6 @@
                                         <th>Receiving address</th>
                                         <th>Amount</th>
                                         <th>Block time</th>
-                                        <th>Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -269,7 +268,6 @@
 					<td><a ng-href="Address.html?addr={{trans.to_address}}&currency={{currency}}">{{trans.to_address}}</a></td>
                                         <td>{{trans.formatted_amount}}</td>
                                         <td>{{trans.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
-					<td class="{{trans.invalid|truefalsesearch}}ValidState"></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -288,7 +286,6 @@
                                         <th>Receiving address</th>
                                         <th>Amount</th>
                                         <th>Block time</th>
-                                        <th>Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -298,7 +295,6 @@
 					<td><a ng-href="Address.html?addr={{trans.to_address}}&currency={{currency}}">{{trans.to_address}}</a></td>
                                         <td>{{trans.formatted_amount}}</td>
                                         <td>{{trans.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
-					<td class="{{trans.invalid|truefalsesearch}}ValidState"></td>
                                     </tr>
                                 </tbody>
                             </table>
