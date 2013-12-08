@@ -101,15 +101,26 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
 
     # collect all "from addresses" (normally only a single one)
     from_address=''
+    all_from_address=''
     try:
         inputs=json_tx['inputs']
         for i in inputs:
             if i['address'] != None:
-                if from_address != '':
-                    from_address+=';'
-                from_address+=i['address']
+                if all_from_address != '':
+                    all_from_address+=';'
+                all_from_address+=i['address']
             else:
+                all_from_address='not signed'
                 from_address='not signed'
+
+        if from_address=='':
+            all_from_address_list=all_from_address.split(';')
+            from_address=all_from_address_list[0]
+            for input_address in all_from_address_list:
+                if input_address != from_address:
+                    # different from addresses are not allowed
+                    info('invalid mastercoin tx (multiple different input addresses) '+tx_hash)
+                    return {'invalid':(True,'multiple different input addresses'), 'tx_hash':tx_hash}
 
         # sort outputs according to dataSequenceNum to find the reference (n) and data (n+1)
         outputs_list_no_exodus.sort(key=get_dataSequenceNum)
