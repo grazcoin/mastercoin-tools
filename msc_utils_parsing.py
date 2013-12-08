@@ -139,27 +139,19 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
 
     # collect all "from addresses" (normally only a single one)
     from_address=''
-    all_from_address=''
     try:
         inputs=json_tx['inputs']
+        inputs_values_dict={}
         for i in inputs:
-            if i['address'] != None:
-                if all_from_address != '':
-                    all_from_address+=';'
-                all_from_address+=i['address']
+            input_value=get_value_from_output(i['previous_output'])
+            input_address=i['address']
+            if inputs_values_dict.has_key(input_address):
+                inputs_values_dict[input_address]+=int(input_value)
             else:
-                all_from_address='not signed'
-                from_address='not signed'
+                inputs_values_dict[input_address]=int(input_value)
 
-        if from_address=='':
-            all_from_address_list=all_from_address.split(';')
-            from_address=all_from_address_list[0]
-            for input_address in all_from_address_list:
-                if input_address != from_address:
-                    # different from addresses are not allowed
-                    # FIXME: consider allowing when largest input is the from_address
-                    info('invalid mastercoin tx (multiple different input addresses) '+tx_hash)
-                    return {'invalid':(True,'multiple different input addresses'), 'tx_hash':tx_hash}
+        # the from address is the one with the highest value
+        from_address=max(inputs_values_dict, key=inputs_values_dict.get)
 
         # sort outputs according to dataSequenceNum to find the reference (n) and data (n+1)
         outputs_list_no_exodus.sort(key=get_dataSequenceNum)
