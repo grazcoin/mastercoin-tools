@@ -93,6 +93,44 @@ def parse_bitcoin_payment(tx, tx_hash='unknown'):
     parse_dict['invalid']=(True,'bitcoin payment')
     return parse_dict
 
+# note: outputs_list_no_exodus must be sorted by seq number
+def peek_and_decode(outputs_list_no_exodus, different_outputs_values):
+    # there are 1 or 2 output values
+    # remove change (in the case that there are 2)
+    change=None
+    for value in different_outputs_values.keys():
+        if len(different_outputs_values[value])==1:
+            # this is the change
+            change=different_outputs_values[value][0]
+            break
+    outputs=[]
+    if change != None:
+        for o in outputs_list_no_exodus:
+            if o != change:
+                outputs.append(o)
+    else:
+        outputs=outputs_list_no_exodus
+
+    good_data=None
+    good_reference=None
+    maybe=0
+    # check the outputs to see if one or more look like data
+    l=len(outputs)
+    for i in range(l):
+        data=outputs[i]
+        reference=outputs[(i+1)%l]
+        data_script=data['script'].split()[3].zfill(42)
+        if data_script[4:20]=='0000000000000001' \
+            or data_script[4:20]=='0000000000000002':
+            maybe+=1
+            good_data=data
+            good_reference=reference
+    if maybe != 1: # permit only if one output looks like a data address
+        found = False
+    else:
+        found = True
+    return (found, good_data, good_reference)
+
 def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
     json_tx=get_json_tx(tx)
     outputs_list=json_tx['outputs']
@@ -119,6 +157,7 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
             for input_address in all_from_address_list:
                 if input_address != from_address:
                     # different from addresses are not allowed
+                    # FIXME: consider allowing when largest input is the from_address
                     info('invalid mastercoin tx (multiple different input addresses) '+tx_hash)
                     return {'invalid':(True,'multiple different input addresses'), 'tx_hash':tx_hash}
 
@@ -160,19 +199,27 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
                 info('invalid mastercoin tx (non following 2 seq numbers '+str(seq_list)+') '+tx_hash)
                 return {'invalid':(True,'non following 2 seq numbers '+str(seq_list)), 'tx_hash':tx_hash}
 
+        # handle special cases of perfect seq and ambiguous seq using 'peek and decode'
+        found=True # may change only in one of the below special cases
+        reason=''
         if(len(seq_list)==3):
-            # If there is a perfect sequence (i.e. 3,4,5), mark invalid
+            # If there is a perfect sequence (i.e. 3,4,5), try peek and decode
             if (seq_list[seq_start_index]+1)%256==(seq_list[(seq_start_index+1)%3])%256 and \
                 (seq_list[(seq_start_index-1)%3]+1)%256==(seq_list[seq_start_index])%256:
-                info('invalid mastercoin tx (perfect sequence '+str(seq_list)+') '+tx_hash)
-                return {'invalid':(True,'perfect sequence '+str(seq_list)), 'tx_hash':tx_hash}
-
-            # If there is an ambiguous sequence (i.e. 3,4,4), mark invalid
+                reason='perfect sequence '+str(seq_list)
+                    
+            # If there is an ambiguous sequence (i.e. 3,4,4), try peek and decode
             if seq_list[seq_start_index]==seq_list[(seq_start_index+2)%3] or \
                 seq_list[(seq_start_index+1)%3]==seq_list[(seq_start_index+2)%3] or \
                 seq_list[(seq_start_index)]==seq_list[(seq_start_index+1)%3]:
-                info('invalid mastercoin tx (ambiguous sequence '+str(seq_list)+') '+tx_hash)
-                return {'invalid':(True,'ambiguous sequence '+str(seq_list)), 'tx_hash':tx_hash}
+                reason='ambiguous sequence '+str(seq_list)
+
+            if reason != '': # one of the above special cases
+                (found, data, reference)=peek_and_decode(outputs_list_no_exodus, different_outputs_values)
+
+        if not found:
+            info('invalid mastercoin tx ('+reason+') '+tx_hash)
+            return {'invalid':(True,reason), 'tx_hash':tx_hash}
 
         to_address=reference['address']
         data_script=data['script'].split()[3].zfill(42)
