@@ -140,11 +140,15 @@ def check_bitcoin_payment(t):
                                 spot_accept=float(sell_accept_tx['formatted_amount_accepted'])
                                 spot_closed=min((part_bought*float(whole_sell_amount)+0.000000005), spot_accept)
                                 # update sold tx
-                                update_addr_dict(address, True, c, balance=-spot_closed, sold=spot_closed, offer=-spot_closed, accept=-spot_closed, sold_tx=sell_accept_tx)
+                                update_addr_dict(address, True, c, balance=-spot_closed, sold=spot_closed, \
+                                    offer=-spot_closed, accept=-spot_closed, sold_tx=sell_accept_tx)
                                 # update bought tx
                                 update_addr_dict(from_address, True, c, balance=spot_closed, bought=spot_closed, bought_tx=sell_accept_tx)
-                                # update sell offer
-                                sell_offer_tx['amount_available']=addr_dict[address][c]['offer']
+                                # update sell available: min between original sell amount, the remaining offer, and the current balance
+                                info(sell_offer_tx['formatted_amount'])
+                                sell_offer_tx['amount_available']=min(float(sell_offer_tx['formatted_amount']), \
+                                    from_satoshi(addr_dict[from_address][c]['offer']),from_satoshi(addr_dict[from_address][c]['balance']))
+                                info(sell_offer_tx['amount_available'])
                                 sell_offer_tx['formatted_amount_available']=formatted_decimal(sell_offer_tx['amount_available'])
                                 # if not more left in the offer - close sell
                                 if addr_dict[address][c]['offer'] == 0:
@@ -565,6 +569,13 @@ def check_mastercoin_transaction(t):
                 # add to list to be shown on general
                 offer_amount=float(t['formatted_amount'])
                 update_addr_dict(from_addr, True, c, offer=offer_amount, offer_tx=t)
+
+                # update sell available: min between original sell amount and the current balance
+                info(t['formatted_amount'])
+                t['amount_available']=min(float(t['formatted_amount']), from_satoshi(addr_dict[from_addr][c]['balance']))
+                info(t['amount_available'])
+                t['formatted_amount_available']=formatted_decimal(t['amount_available'])
+
                 # mark to update the tx on filesystem if required
                 if prev_icon_text!=t['icon_text']:
                     add_modified_tx(t['tx_hash'],t)
