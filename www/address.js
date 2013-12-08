@@ -3,6 +3,10 @@ function AdressController($scope, $http) {
 
     $scope.footer = "FOOTER";
     $scope.title = "TITLE";
+    
+    $scope.createIconPopup = function () {
+        $('.iconPopupInit').popover({ trigger: "hover" });           
+    };
 
     $scope.paymentsReceivedSum = function (currencyId) {
         var length = $scope.addressInformation.received_transactions.length;

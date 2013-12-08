@@ -156,7 +156,15 @@
                                 </thead>
                                 <tbody>
                                     <tr ng-repeat="trans in addressInformation.exodus_transactions">
-					<td><img class="icon24 round-corner {{trans.color}}" src="ico/{{trans.icon}}24t.png" alt="{{trans.icon}}" /> <a ng-href="exodus.html?tx={{trans.tx_hash}}&currency={{currency}}">{{trans.tx_hash | characters:10}}</a></td>
+										<td>
+											<img class="icon24 round-corner {{trans.color}} iconPopupInit"
+												src="ico/{{trans.icon}}24t.png"
+												ng-init="createIconPopup()"
+												data-content="{{trans.icon_text}}" rel="popover"
+                                        		data-placement="bottom"
+												alt="" />
+											<a ng-href="exodus.html?tx={{trans.tx_hash}}&currency={{currency}}">{{trans.tx_hash | characters:10}}</a>
+										</td>
                                         <td>{{trans.formatted_amount}}</td>
                                         <td>{{trans.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
                                     </tr>
@@ -177,7 +185,15 @@
                                 </thead>
                                 <tbody>
                                     <tr ng-repeat="trans in addressInformation.sold_transactions">
-					<td><img class="icon24 round-corner {{trans.color}}" src="ico/{{trans.icon}}24t.png" alt="{{trans.icon}}" /> <a ng-href="selloffer.html?tx={{trans.tx_hash}}&currency={{currency}}">{{trans.tx_hash | characters:10}}</a></td>
+										<td>
+
+										<img class="icon24 round-corner {{trans.color}} iconPopupInit"
+												src="ico/{{trans.icon}}24t.png"
+												ng-init="createIconPopup()"
+												data-content="{{trans.icon_text}}" rel="popover"
+												data-placement="bottom"
+												alt="" />
+											<a ng-href="selloffer.html?tx={{trans.tx_hash}}&currency={{currency}}">{{trans.tx_hash | characters:10}}</a></td>
                                         <td>{{trans.formatted_amount}}</td>
                                         <td>{{trans.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
                                     </tr>
@@ -198,7 +214,14 @@
                                 </thead>
                                 <tbody>
                                     <tr ng-repeat="trans in addressInformation.bought_transactions">
-					<td><img class="icon24 round-corner {{trans.color}}" src="ico/{{trans.icon}}24t.png" alt="{{trans.icon}}" />  <a ng-href="sellaccept.html?tx={{trans.tx_hash}}&currency={{currency}}">{{trans.tx_hash | characters:10}}</a></td>
+										<td>
+										<img class="icon24 round-corner {{trans.color}} iconPopupInit"
+												src="ico/{{trans.icon}}24t.png"
+												ng-init="createIconPopup()"
+												data-content="{{trans.icon_text}}" rel="popover"
+												data-placement="bottom"
+												alt="" />
+										<a ng-href="sellaccept.html?tx={{trans.tx_hash}}&currency={{currency}}">{{trans.tx_hash | characters:10}}</a></td>
                                         <td>{{trans.formatted_amount}}</td>
                                         <td>{{trans.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
                                     </tr>
@@ -219,7 +242,14 @@
                                 </thead>
                                 <tbody>
                                     <tr ng-repeat="trans in addressInformation.offer_transactions">
-					<td><img class="icon24 round-corner {{trans.color}}" src="ico/{{trans.icon}}24t.png" alt="{{trans.icon}}" /> <a ng-href="selloffer.html?tx={{trans.tx_hash}}&currency={{currency}}">{{trans.tx_hash | characters:10}}</a></td>
+										<td>
+											<img class="icon24 round-corner {{trans.color}} iconPopupInit"
+												src="ico/{{trans.icon}}24t.png"
+												ng-init="createIconPopup()"
+												data-content="{{trans.icon_text}}" rel="popover"
+												data-placement="bottom"
+												alt="" />
+											<a ng-href="selloffer.html?tx={{trans.tx_hash}}&currency={{currency}}">{{trans.tx_hash | characters:10}}</a></td>
                                         <td>{{trans.formatted_amount}}</td>
                                         <td>{{trans.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
                                     </tr>
@@ -240,7 +270,14 @@
                                 </thead>
                                 <tbody>
                                     <tr ng-repeat="trans in addressInformation.accept_transactions">
-					<td><img class="icon24 round-corner {{trans.color}}" src="ico/{{trans.icon}}24t.png" alt="{{trans.icon}}" /> <a ng-href="sellaccept.html?tx={{trans.tx_hash}}&currency={{currency}}">{{trans.tx_hash | characters:10}}</a></td>
+										<td>
+											<img class="icon24 round-corner {{trans.color}} iconPopupInit"
+												src="ico/{{trans.icon}}24t.png"
+												ng-init="createIconPopup()"
+												data-content="{{trans.icon_text}}" rel="popover"
+												data-placement="bottom"
+												alt="" />
+											<a ng-href="sellaccept.html?tx={{trans.tx_hash}}&currency={{currency}}">{{trans.tx_hash | characters:10}}</a></td>
                                         <td>{{trans.formatted_amount}}</td>
                                         <td>{{trans.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
                                     </tr>
@@ -263,7 +300,14 @@
                                 </thead>
                                 <tbody>
                                     <tr ng-repeat="trans in addressInformation.received_transactions">
-					<td><img class="icon24 round-corner {{trans.color}}" src="ico/{{trans.icon}}24t.png" alt="{{trans.icon}}" /> <a ng-href="simplesend.html?tx={{trans.tx_hash}}&currency={{currency}}">{{trans.tx_hash | characters:10}}</a></td>
+					<td>
+						<img class="icon24 round-corner {{trans.color}} iconPopupInit"
+							src="ico/{{trans.icon}}24t.png"
+							ng-init="createIconPopup()"
+							data-content="{{trans.icon_text}}" rel="popover"
+							data-placement="bottom"
+							alt="" />
+						<a ng-href="simplesend.html?tx={{trans.tx_hash}}&currency={{currency}}">{{trans.tx_hash | characters:10}}</a></td>
 					<td><a ng-href="Address.html?addr={{trans.from_address}}&currency={{currency}}">{{trans.from_address}}</a></td>
 					<td><a ng-href="Address.html?addr={{trans.to_address}}&currency={{currency}}">{{trans.to_address}}</a></td>
                                         <td>{{trans.formatted_amount}}</td>
@@ -290,7 +334,14 @@
                                 </thead>
                                 <tbody>
                                     <tr ng-repeat="trans in addressInformation.sent_transactions">
-					<td><img class="icon24 round-corner {{trans.color}}" src="ico/{{trans.icon}}24t.png" alt="{{trans.icon}}" /> <a ng-href="simplesend.html?tx={{trans.tx_hash}}&currency={{currency}}">{{trans.tx_hash | characters:10}}</a></td>
+					<td>
+						<img class="icon24 round-corner {{trans.color}} iconPopupInit"
+							src="ico/{{trans.icon}}24t.png"
+							ng-init="createIconPopup()"
+							data-content="{{trans.icon_text}}" rel="popover"
+							data-placement="bottom"
+							alt="" />
+						<a ng-href="simplesend.html?tx={{trans.tx_hash}}&currency={{currency}}">{{trans.tx_hash | characters:10}}</a></td>
 					<td><a ng-href="Address.html?addr={{trans.from_address}}&currency={{currency}}">{{trans.from_address}}</a></td>
 					<td><a ng-href="Address.html?addr={{trans.to_address}}&currency={{currency}}">{{trans.to_address}}</a></td>
                                         <td>{{trans.formatted_amount}}</td>
