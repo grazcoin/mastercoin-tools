@@ -5,6 +5,9 @@ function SellofferController($scope, $http) {
     $scope.footer = "FOOTER";
     $scope.title = "TITLE";
 
+    $scope.createIconPopup = function () {
+        $('.iconPopupInit').popover({ trigger: "hover" });           
+    };
 
     $scope.getSellofferData = function () {
 
