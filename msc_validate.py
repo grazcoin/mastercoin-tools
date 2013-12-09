@@ -167,7 +167,7 @@ def check_bitcoin_payment(t):
                                 sell_accept_tx['btc_offer_txid']=t['tx_hash']
                                 sell_accept_tx['status']='Closed'
                                 sell_accept_tx['payment_done']=True
-                                sell_accept_tx['formatted_amount_bought']=spot_closed
+                                sell_accept_tx['formatted_amount_bought']=from_satoshi(satoshi_spot_closed)
                                 sell_accept_tx['color']='bgc-done'
                                 sell_offer_tx['icon_text']='Accept offer paid'
                                 add_modified_sell_tx(key,sell_accept_tx)
@@ -626,7 +626,9 @@ def check_mastercoin_transaction(t):
                         formatted_price_per_coin='price missing'
                     t['formatted_price_per_coin']=formatted_price_per_coin
                     try:
-                        bitcoin_required=sell_offer_tx['formatted_bitcoin_amount_desired']
+                        # need to pay the part of the sell offer which got accepted
+                        part=float(t['formatted_amount_accepted'])/float(sell_offer_tx['formatted_amount'])
+                        bitcoin_required=float(sell_offer_tx['formatted_bitcoin_amount_desired'])*part
                     except KeyError:
                         bitcoin_required='missing required btc'
                     t['bitcoin_required']=bitcoin_required
