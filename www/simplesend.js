@@ -4,6 +4,10 @@ function TransactionController($scope, $http) {
     $scope.title = "TITLE";
     $scope.reason = "unknown";
 
+    $scope.createIconPopup = function () {
+        $('.iconPopupInit').popover({ trigger: "hover" });           
+    };
+
     //Function for creating popup
     $scope.makePopup = function () {
 	//Popup for valid/invalid 
