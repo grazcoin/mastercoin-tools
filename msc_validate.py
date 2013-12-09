@@ -140,10 +140,12 @@ def check_bitcoin_payment(t):
                                 spot_accept=float(sell_accept_tx['formatted_amount_accepted'])
                                 spot_closed=min((part_bought*float(whole_sell_amount)+0.000000005), spot_accept)
                                 # update sold tx
-                                update_addr_dict(address, True, c, balance=-spot_closed, sold=spot_closed, \
-                                    offer=-spot_closed, accept=-spot_closed, sold_tx=sell_accept_tx)
+                                satoshi_spot_closed=to_satoshi(spot_closed)
+                                update_addr_dict(address, True, c, balance=-satoshi_spot_closed, sold=satoshi_spot_closed, \
+                                    offer=-satoshi_spot_closed, accept=-satoshi_spot_closed, sold_tx=sell_accept_tx)
                                 # update bought tx
-                                update_addr_dict(from_address, True, c, balance=spot_closed, bought=spot_closed, bought_tx=sell_accept_tx)
+                                update_addr_dict(from_address, True, c, balance=satoshi_spot_closed, \
+                                    bought=satoshi_spot_closed, bought_tx=sell_accept_tx)
                                 # update sell available: min between original sell amount, the remaining offer, and the current balance
                                 info(sell_offer_tx['formatted_amount'])
                                 sell_offer_tx['amount_available']=min(float(sell_offer_tx['formatted_amount']), \
@@ -234,12 +236,12 @@ def update_addr_dict(addr, accomulate, *arguments, **keywords):
             if accomulate == True: # just add the tx or value
                 if kw.endswith('_tx'):
                     addr_dict[addr][c][kw].append(keywords[kw])
-                else:
+                else: # values are in satoshi
                     addr_dict[addr][c][kw]+=int(keywords[kw])
             else:
                 if kw.endswith('_tx'): # replace the tx or value
                     addr_dict[addr][c][kw]=[keywords[kw]]
-                else:
+                else: # values are in satoshi
                     addr_dict[addr][c][kw]=int(keywords[kw])
 
 
@@ -567,7 +569,7 @@ def check_mastercoin_transaction(t):
                 # update details of sell offer
                 # update single allowed tx for sell offer
                 # add to list to be shown on general
-                offer_amount=float(t['formatted_amount'])
+                offer_amount=to_satoshi(t['formatted_amount'])
                 update_addr_dict(from_addr, True, c, offer=offer_amount, offer_tx=t)
 
                 # update sell available: min between original sell amount and the current balance
@@ -639,7 +641,7 @@ def check_mastercoin_transaction(t):
                         payment_timeframe=int(sell_offer_tx['formatted_block_time_limit'])
                         add_alarm(t,payment_timeframe)
                         # accomulate the spot accept on the seller side
-                        update_addr_dict(from_addr, True, c, accept=spot_accept, accept_tx=t)
+                        update_addr_dict(from_addr, True, c, accept=to_satoshi(spot_accept), accept_tx=t)
 
                         # update icon colors of sell
                         if sell_offer > spot_accept:
