@@ -316,9 +316,9 @@ def update_modified_tx_and_bids():
             running_dict=t
         else:
             running_dict=t[0]
-        # if icon_text identical to snapshot - no need to update:
+        # if prev icon_text identical to snapshot - no need to update:
         try:
-            if running_dict['icon_text']==icon_text_per_tx_hash_dict[tx_hash]:
+            if running_dict['prev_icon_text']==icon_text_per_tx_hash_dict[tx_hash]:
                 continue
         except KeyError:
             pass
@@ -329,14 +329,15 @@ def update_modified_tx_and_bids():
         else:
             fs_dict=tmp_dict[0]
         try:
-            if fs_dict['icon_text']==running_dict['icon_text']:
+            if fs_dict['icon_text']==running_dict['prev_icon_text']:
                 continue
         except KeyError:
             pass
         for k in running_dict.keys():
             try:
                 # run over with new value
-                fs_dict[k]=running_dict[k]
+                if k != 'prev_icon_text':
+                    fs_dict[k]=running_dict[k]
             except KeyError:
                 debug('key '+k+' missing in tx: '+tx_hash)
         # save back to filesystem
@@ -362,7 +363,8 @@ def update_modified_tx_and_bids():
             tmp_accept_dict=load_dict_from_file('tx/'+t['tx_hash']+'.json')
             for k in t.keys():
                 # run over with new value
-                tmp_accept_dict[k]=t[k]
+                if k != 'prev_icon_text':
+                    tmp_accept_dict[k]=t[k]
             # write updated accept tx
             atomic_json_dump(tmp_accept_dict, 'tx/'+t['tx_hash']+'.json')
 
@@ -514,6 +516,7 @@ def check_mastercoin_transaction(t):
 
         # mark to update the tx on filesystem if required
         if prev_icon_text!=t['icon_text']:
+            t['prev_icon_text']=prev_icon_text
             add_modified_tx(t['tx_hash'],t)
 
         # tx belongs to mastercoin and test mastercoin
@@ -539,6 +542,7 @@ def check_mastercoin_transaction(t):
 
             # mark to update the tx on filesystem if required
             if prev_icon_text!=t['icon_text']:
+                t['prev_icon_text']=prev_icon_text
                 add_modified_tx(t['tx_hash'],t)
  
             # the normal transfer case
@@ -580,6 +584,7 @@ def check_mastercoin_transaction(t):
 
                 # mark to update the tx on filesystem if required
                 if prev_icon_text!=t['icon_text']:
+                    t['prev_icon_text']=prev_icon_text
                     add_modified_tx(t['tx_hash'],t)
                 sorted_currency_tx_list[c].append(t)
                 return True
@@ -662,6 +667,7 @@ def check_mastercoin_transaction(t):
                     add_modified_sell_tx(key, t)
                     # mark to update the tx on filesystem if required
                     if prev_icon_text!=t['icon_text']:
+                        t['prev_icon_text']=prev_icon_text
                         add_modified_tx(t['tx_hash'],t)
                     sorted_currency_tx_list[c].append(t)    # add per currency tx
                     return True
@@ -724,9 +730,15 @@ def validate():
     # generate address pages and last tx pages
     generate_api_jsons()
 
+    # convert modified_tx_dict and modified_sell_tx_dict to one list
+    modified_tx_list=[]
+    for key, value in modified_tx_dict.iteritems():
+         modified_tx_list.append(value[0])
+    for key, value in modified_sell_tx_dict.iteritems():
+         modified_tx_list.append(value[0])
     # write icon_text_per_tx_hash dict
     icon_text_per_tx_hash={}
-    for t in sorted_tx_list:
+    for t in sorted_tx_list+modified_tx_list:
         try:
             icon_text_per_tx_hash[t['tx_hash']]=t['icon_text']
         except KeyError:
