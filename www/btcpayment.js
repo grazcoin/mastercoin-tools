@@ -1,9 +1,13 @@
-﻿function BtcPaymentController($scope, $http) {
+function BtcPaymentController($scope, $http) {
     $scope.transactionInformation;
     $scope.fees;
 
     $scope.footer = "FOOTER";
     $scope.title = "TITLE";
+    
+    $scope.createIconPopup = function () {
+    	$('.iconPopupInit').popover({ trigger: "hover" });           
+    };
 
     $scope.getBtcPaymentData = function () {
 
@@ -27,8 +31,18 @@
             console.log(toAddressArray);
             data[0].to_address = toAddressArray;
             $scope.transactionInformation = data[0];
+            $scope.setDefaults();
             console.log(data);
         });
 
+    }
+    
+    $scope.setDefaults = function() {
+	if (!$scope.transactionInformation.icon_text) {
+		$scope.transactionInformation.icon_text = "Bitcoin payment";
+	}
+	if (!$scope.transactionInformation.color) {
+	$scope.transactionInformation.color = "bgc-default";
+	}
     }
 }

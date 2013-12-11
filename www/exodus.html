@@ -45,7 +45,14 @@
             </button>
 
             <a class="navbar-brand" href="/"><img src="img/logo.png" alt="mastercoin"></a>
-            <span class="navbar-brand"><img class="icon24 round-corner {{transactionInformation.color}}" src="ico/{{transactionInformation.icon}}32t.png" alt="{{transactionInformation.tx_type_str}}" /></span>
+            <span class="navbar-brand">
+            <img class="round-corner {{transactionInformation.color}} iconPopupInit"
+				src="ico/exodus32t.png"
+				ng-init="createIconPopup()"
+				data-content="{{transactionInformation.icon_text}}" rel="popover"
+				data-placement="bottom"
+				alt="" />
+            </span>
           </div>
           <div class="navbar-collapse collapse">
             <ul class="nav navbar-nav navbar-right">
@@ -94,7 +101,14 @@
                                <tbody>
                                    <tr>
                                        <td>Transaction type</td>
-                                       <td><img class="icon24 round-corner bgc-default {{transactionInformation.color}}" src="ico/{{transactionInformation.icon}}24t.png" alt="{{transactionInformation.tx_type_str}}" /> {{transactionInformation.tx_type_str}}</td>
+                                       <td>
+                                       <img class="round-corner {{transactionInformation.color}} iconPopupInit"
+											src="ico/exodus24t.png"
+											ng-init="createIconPopup()"
+											data-content="{{transactionInformation.icon_text}}" rel="popover"
+											data-placement="bottom"
+											alt="" />
+                                       {{transactionInformation.tx_type_str}}</td>
                                    </tr>
                                    <tr>
                                        <td>Transaction ID</td>

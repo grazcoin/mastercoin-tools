@@ -32,7 +32,7 @@
     <![endif]-->
 </head>
 <body>
-    <div id="wrap">
+    <div id="wrap" ng-controller="BtcPaymentController" ng-init="getBtcPaymentData()">
         <div ng-controller="NavigationController" ng-init="getNavData()">
             <!-- Fixed navbar -->
             <div class="navbar navbar-default navbar-fixed-top">
@@ -46,7 +46,14 @@
 
                         <a class="navbar-brand" href="/">
                             <img src="img/logo.png" alt="mastercoin"></a>
-                        <span class="navbar-brand"><img class="icon32 round-corner bgc-default" src="ico/bitcoin32t.png" alt="{{transactionInformation.tx_type_str}}" /></span>
+                        <span class="navbar-brand">
+                        <img class="round-corner {{transactionInformation.color}} iconPopupInit"
+							src="ico/bitcoin32t.png"
+							ng-init="createIconPopup()"
+							data-content="{{transactionInformation.icon_text}}" rel="popover"
+							data-placement="bottom"
+							alt="" />
+                        </span>
                     </div>
                     <div class="navbar-collapse collapse">
                         <ul class="nav navbar-nav navbar-right">
@@ -64,7 +71,7 @@
             <div class="container page-container">
                 <div class="row">
                     <div class="no-fixed col-sm-9 col-sm-push-3 col-md-10 col-md-push-2">
-                        <div class="transactionContainer" ng-controller="BtcPaymentController" ng-init="getBtcPaymentData()">
+                        <div class="transactionContainer">
                             <div class="col-md-6">
                                 <table class="table table-striped table-hover table-condensed">
                                     <caption>Bitcoin payment details</caption>
@@ -107,7 +114,14 @@
                                     <tbody>
                                         <tr>
                                             <td>Transaction type</td>
-                                            <td><img class="icon24 round-corner bgc-default" src="ico/bitcoin24t.png" alt="{{transactionInformation.tx_type_str}}" /> Bitcoin payment</td>
+                                            <td>
+                                            <img class="round-corner {{transactionInformation.color}} iconPopupInit"
+												src="ico/bitcoin24t.png"
+												ng-init="createIconPopup()"
+												data-content="{{transactionInformation.icon_text}}" rel="popover"
+												data-placement="bottom"
+												alt="" />
+                                            Bitcoin payment</td>
                                         </tr>
                                         <tr>
                                             <td>Transaction ID</td>
