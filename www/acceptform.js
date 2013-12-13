@@ -153,179 +153,185 @@ BTNClientContext.Signing.Verify = function () {
     console.log("verify function");
     var buyer = $("input.select.optional.form-control.form-control30px.combobox").val();
 
-    var dataToSend = { 'buyer': buyer };
+var params = { buyer: buyer, buyer2: buyer + "," + buyer };
 
-    var ok = true;
-    $.post('/wallet/verifybuyer', dataToSend, function (data) {
-        console.log('success');
-        console.log(data);
+$.ajax
+    ({
+        type: "POST",
+        url: '/wallet/verifybuyer/',
+        dataType: 'json',
+        async: false,
+        //json object to sent to the authentication url
+        data: params,
+        traditional: true,
+        success: function (data) {
 
-        if (data.status == 'OK') {
-            $('#verifyMessage').text('OK');
-            $('#verifyMessage').addClass('greenText');
-
-
-            $('#verifyMessage').show();
-
-            return ok;
+         console.log(data);
         }
-        else {
-            $('#verifyMessage').text('non valid');
-            $('#verifyMessage').addClass('redText');
-
-            ok = false;
-
-
-            $('#verifyMessage').show();
-
-            return ok;
-        }
-	// TODO This should be changed - Currently always fail as there is no server
-    }).fail(function () { //Every time is failing right now because there is no server, so I am using that for testing the return of the server
-
-        console.log('fail');
-        //This should be changed, only for testing
-        $('#verifyMessage').text('non valid');
-        $('#verifyMessage').addClass('redText');
-
-
-        //$('#verifyMessage').text('OK');
-        //$('#verifyMessage').addClass('greenText');
-
-        ok = false;
-
-        $('#verifyMessage').show();
-
-        return ok;
     });
 
+var ok = true;
+$.post('/wallet/verifybuyer/', params, function (data) {
+console.log('success');
+console.log(data);
 
-  
+if (data.status == 'OK') {
+    $('#verifyMessage').text('OK');
+    $('#verifyMessage').addClass('greenText');
+
+
+    $('#verifyMessage').show();
+
+    return ok;
+}
+else {
+    $('#verifyMessage').text('non valid');
+    $('#verifyMessage').addClass('redText');
+    ok = false;
+    $('#verifyMessage').show();
+    return ok;
+}
+// TODO This should be changed - Currently always fail as there is no server
+}).fail(function () {
+
+console.log('fail');
+$('#verifyMessage').text('ping?');
+$('#verifyMessage').addClass('redText');
+
+ok = false;
+
+$('#verifyMessage').show();
+
+return ok;
+});
+
+
+
 };
 
 BTNClientContext.Signing.SingSource = function () {
-    var hashType = 1;
+var hashType = 1;
 
-    //Source Script for signing
-    var sourceScript = [];
-    var sourceScriptString = $('#sourceScript').val().split(';');
-    $.each(sourceScriptString, function (i, val) {
-        sourceScript[i] = new BTNClientContext.parseScript(val);
-        console.log(val);
-        console.log($.toJSON(sourceScript[i]));
-        console.log(BTNClientContext.dumpScript(sourceScript[i]));
-    });
+//Source Script for signing
+var sourceScript = [];
+var sourceScriptString = $('#sourceScript').val().split(';');
+$.each(sourceScriptString, function (i, val) {
+sourceScript[i] = new BTNClientContext.parseScript(val);
+console.log(val);
+console.log($.toJSON(sourceScript[i]));
+console.log(BTNClientContext.dumpScript(sourceScript[i]));
+});
 
-    //create transaction object from BBE JSON
-    // var transactionBBE = $('#transactionBBE').val();
-    var transactionBBE = BTNClientContext.Signing.ConvertRaw();
-    var sendTx = BTNClientContext.fromBBE(transactionBBE);
+//create transaction object from BBE JSON
+// var transactionBBE = $('#transactionBBE').val();
+var transactionBBE = BTNClientContext.Signing.ConvertRaw();
+var sendTx = BTNClientContext.fromBBE(transactionBBE);
 
-    //signature section
-    var eckey = BTNClientContext.GetEckey($('#privateKey').val()); //ECDSA
-    console.log($('#privateKey').val());
-    console.log(Crypto.util.bytesToHex(eckey.getPubKeyHash()));
-    for (var i = 0; i < sendTx.ins.length; i++) { //for each input in the transaction -- sign it with the Key
+//signature section
+var eckey = BTNClientContext.GetEckey($('#privateKey').val()); //ECDSA
+console.log($('#privateKey').val());
+console.log(Crypto.util.bytesToHex(eckey.getPubKeyHash()));
+for (var i = 0; i < sendTx.ins.length; i++) { //for each input in the transaction -- sign it with the Key
 
-        //console.log($.toJSON(sendTx));
-        //console.log($.toJSON(sourceScript[i]));
+//console.log($.toJSON(sendTx));
+//console.log($.toJSON(sourceScript[i]));
 
-        var hash = sendTx.hashTransactionForSignature(sourceScript[i], i, hashType); //Get hash of the transaction applying the soure script
-        console.log(Crypto.util.bytesToHex(hash));
+var hash = sendTx.hashTransactionForSignature(sourceScript[i], i, hashType); //Get hash of the transaction applying the soure script
+console.log(Crypto.util.bytesToHex(hash));
 
-        var signature = eckey.sign(hash); //<---SIGN HERE
-        signature.push(parseInt(hashType, 10)); //add white space
-        var pubKey = eckey.getPub();			//public key
+var signature = eckey.sign(hash); //<---SIGN HERE
+signature.push(parseInt(hashType, 10)); //add white space
+var pubKey = eckey.getPub();			//public key
 
-        //creating new in sript signature
-        var script = new Bitcoin.Script();
-        script.writeBytes(signature);
-        script.writeBytes(pubKey);
-        //write sript signature
-        sendTx.ins[i].script = script;
-    }
+//creating new in sript signature
+var script = new Bitcoin.Script();
+script.writeBytes(signature);
+script.writeBytes(pubKey);
+//write sript signature
+sendTx.ins[i].script = script;
+}
 
-    return BTNClientContext.toBBE(sendTx);
+return BTNClientContext.toBBE(sendTx);
 };
 //Should re sign transaction -- need to call all BC functions
 BTNClientContext.Signing.ReSignTransaction = function () {
-   var reSigned = BTNClientContext.Signing.SingSource();
+var reSigned = BTNClientContext.Signing.SingSource();
 
-    //show re-signed transaction
-   $('#signedTransactionBBE').val(reSigned);
+//show re-signed transaction
+$('#signedTransactionBBE').val(reSigned);
 
-    //show hidden
-    $('#reSignClickedForm').show();
+//show hidden
+$('#reSignClickedForm').show();
 };
 
 BTNClientContext.Signing.SendTransaction = function () {
 
-    var signedTransaction = $('#signedTransactionBBE').val();
+var signedTransaction = $('#signedTransactionBBE').val();
 
-    //Maybe I need to convert to object from json string???
+//Maybe I need to convert to object from json string???
 
-    var dataToSend = { 'signedTransaction': signedTransaction };
-    console.log(dataToSend);
+var dataToSend = { 'signedTransaction': signedTransaction };
+console.log(dataToSend);
 
-    // Ajax call to /wallet/accept
-    $.post('/wallet/acceptsigned', dataToSend, function (data) {
-        console.log('success');
-        console.log(data);
+// Ajax call to /wallet/accept
+$.post('/wallet/acceptsigned', dataToSend, function (data) {
+console.log('success');
+console.log(data);
 
 
-    }).fail(function () {
+}).fail(function () {
 
-        // TODO  This should be changed - Currently always fail as there is no server
+// TODO  This should be changed - Currently always fail as there is no server
 
-    });
+});
 };
 
 BTNClientContext.Signing.GetRawTransaction = function () {
 
 
-    var myURLParams = BTCUtils.getQueryStringArgs();
-    var buyer = myURLParams['tx'];
+var myURLParams = BTCUtils.getQueryStringArgs();
+var buyer = myURLParams['tx'];
 
 
-    var amount = $('#amount').val();
-    var tx = $('#seller').val();
+var amount = $('#amount').val();
+var tx = $('#seller').val();
 
-    var dataToSend = { 'buyer': buyer, 'amount': amount, 'tx': tx };
-    console.log(dataToSend);
+var dataToSend = { 'buyer': buyer, 'amount': amount, 'tx': tx };
+console.log(dataToSend);
 
-    // Ajax call to /wallet/accept
-    $.post('/wallet/accept', dataToSend, function (data) {
-        console.log('success');
-        console.log(data);
+// Ajax call to /wallet/accept
+$.post('/wallet/accept', dataToSend, function (data) {
+console.log('success');
+console.log(data);
 
-        BTNClientContext.Signing.GetRawTransactionResponse(data);
+BTNClientContext.Signing.GetRawTransactionResponse(data);
 
-    }).fail(function () {
+}).fail(function () {
 
-        // TODO This should be changed - Currently always fail as there is no server
+// TODO This should be changed - Currently always fail as there is no server
 
-        console.log('fail');
-        var testResponse = {
-            'sourceScript': 'OP_DUP OP_HASH160 4ae99c09a1944717ed4ebce399d44538023809c1 OP_EQUALVERIFY OP_CHECKSIG',
-            'transaction': '01000000017a06ea98cd40ba2e3288262b28638cec5337c1456aaf5eedc8e9e5a20f062bdf000000008a4730440220569b1ad609dcad5f17fd372533a51472771c5ea9e4aca6654d1c864e59b083e902207a8e2dedb07cee1fce92562fd3c072a0e9152e0d69b9ab436dd70f4662c487f4014104e0ba531dc5d2ad13e2178196ade1a23989088cfbeddc7886528412087f4bff2ebc19ce739f25a63056b6026a269987fcf5383131440501b583bab70a7254b09effffffff01b02e052a010000001976a9142dbde30815faee5bf221d6688ebad7e12f7b2b1a88ac00000000'
-        };
-        BTNClientContext.Signing.GetRawTransactionResponse(testResponse);
+console.log('fail');
+var testResponse = {
+    'sourceScript': 'OP_DUP OP_HASH160 4ae99c09a1944717ed4ebce399d44538023809c1 OP_EQUALVERIFY OP_CHECKSIG',
+    'transaction': '01000000017a06ea98cd40ba2e3288262b28638cec5337c1456aaf5eedc8e9e5a20f062bdf000000008a4730440220569b1ad609dcad5f17fd372533a51472771c5ea9e4aca6654d1c864e59b083e902207a8e2dedb07cee1fce92562fd3c072a0e9152e0d69b9ab436dd70f4662c487f4014104e0ba531dc5d2ad13e2178196ade1a23989088cfbeddc7886528412087f4bff2ebc19ce739f25a63056b6026a269987fcf5383131440501b583bab70a7254b09effffffff01b02e052a010000001976a9142dbde30815faee5bf221d6688ebad7e12f7b2b1a88ac00000000'
+};
+BTNClientContext.Signing.GetRawTransactionResponse(testResponse);
 
-    });
+});
 };
 
 BTNClientContext.Signing.GetRawTransactionResponse = function (data) {
 
 
-    BTNClientContext.Signing.Transaction = data.transaction;
+BTNClientContext.Signing.Transaction = data.transaction;
 
-    //Init fields values
-    //data should have fields sourceScript and transaction
-    $('#sourceScript').val(data.sourceScript);
-    $('#transactionBBE').val(data.transaction);
+//Init fields values
+//data should have fields sourceScript and transaction
+$('#sourceScript').val(data.sourceScript);
+$('#transactionBBE').val(data.transaction);
 
-    //Showing the fields
-    $('#createRawResponseForm').show();
+//Showing the fields
+$('#createRawResponseForm').show();
 
 };
 
@@ -334,8 +340,8 @@ BTNClientContext.Signing.GetRawTransactionResponse = function (data) {
 // HISTORY of Buyer address or public key
 
 BTNClientContext.Signing.supportsStorage = function () {
-    try {
-        return 'localStorage' in window && window['localStorage'] !== null;
+try {
+return 'localStorage' in window && window['localStorage'] !== null;
     } catch (e) {
         return false;
     }
