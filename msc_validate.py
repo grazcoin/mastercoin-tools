@@ -9,11 +9,28 @@ alarm={}
 
 # create address dict that holds all details per address
 addr_dict={}
+tx_dict={}
 
 # prepare lists for mastercoin and test
 sorted_currency_tx_list={'Mastercoin':[],'Test Mastercoin':[]} # list 0 for mastercoins, list 1 for test mastercoins
 sorted_currency_sell_tx_list={'Mastercoin':[],'Test Mastercoin':[]} # list 0 for mastercoins, list 1 for test mastercoins
 sorted_currency_accept_tx_list={'Mastercoin':[],'Test Mastercoin':[]} # list 0 for mastercoins, list 1 for test mastercoins
+
+# all available properties of a transaction
+tx_properties=\
+    ['tx_hash', 'invalid', 'tx_time', \
+     'amount', 'formatted_amount', \
+     'from_address', 'to_address', 'transactionType', \
+     'icon', 'icon_text', 'color', \
+     'block', 'index', \
+     'details', 'tx_type_str', \
+     'baseCoin', 'dataSequenceNum', 'method', 'tx_method_str', \
+     'bitcoin_amount_desired', 'block_time_limit', 'fee', \
+     'sell_offer_txid', 'accept_tx_id', 'btc_offer_txid', 'payment_txid', \
+     'formatted_amount_accepted', 'formatted_amount_bought', \
+     'formatted_amount_requested', 'formatted_price_per_coin', 'bitcoin_required', \
+     'payment_done', 'payment_expired', \
+     'status']
 
 # all available properties of a currency in address
 addr_properties=['balance', 'received', 'sent', 'bought', 'sold', 'offer', 'accept',\
@@ -36,27 +53,25 @@ def sorted_ls(path):
     mtime = lambda f: os.stat(os.path.join(path, f)).st_mtime
     return list(sorted(os.listdir(path), key=mtime))
 
+def initial_tx_dict_load():
+    # run on all files in tx
+    tx_files=sorted_ls('tx')
+
+    # load dict of each
+    for filename in tx_files:
+        if filename.endswith('.json'):
+            tx_hash=filename.split('.')[0]
+            update_tx_dict(tx_hash, False)
+    # FIXME: exodus has multiple tx in one file
+
 def get_sorted_tx_list():
     # run on all files in tx
     tx_files=sorted_ls('tx')
 
     # load dict of each
     tx_list=[]
-    for filename in tx_files:
-        if filename.endswith('.json'):
-            f=open('tx/'+filename)
-            t_list=json.load(f)
-            try:
-                t=t_list[0] # normally take only first tx from list
-            except (KeyError, IndexError):
-                info('failed getting first tx from '+filename)
-            tx_list.append(t)
-            try: # for exodus
-                if t['tx_type_str'] == 'exodus':
-                    tx_list.append(t_list[1])
-            except:
-                pass
-            f.close()
+    for k in tx_dict.keys():
+        tx_list+=tx_dict[k] # append the list of tx for each key (incl. exodus)
     # sort according to time
     return sorted(tx_list, key=lambda k: (k['block'],k['index'])) 
 
@@ -76,21 +91,16 @@ def check_alarm(t, last_block, current_block):
             for a in alarm[b]:
                 debug('verify payment for tx '+str(a['tx_hash']))
                 # mark invalid and update standing accept value
+                tx_hash=a['tx_hash']
                 if a['btc_offer_txid']=='unknown': # accept with no payment
-                    debug('accept offer expired '+str(a['tx_hash']))
-                    a['payment_expired']=True
-                    a['color']='bgc-expired'
-                    a['icon_text']='Payment expired'
-                    a['formatted_amount_bought']='0.0'
-                    a['status']='Expired'
+                    debug('accept offer expired '+tx_hash)
+                    update_tx_dict(tx_hash, True, payment_expired=True, color='bgc-expired', \
+                        icon_text='Payment expired', formatted_amount_bought='0.0', status='Expired')
                 else:
-                    debug('accept offer done '+str(a['tx_hash']))  
-                    a['payment_done']=True
-                    a['color']='bgc-done'
-                    a['icon_text']='Payment done'
-                    a['status']='Closed'
-                add_modified_sell_tx(a['tx_hash'],a)
-                update_sorted_currency_tx_list(a)
+                    debug('accept offer done '+tx_hash)  
+                    update_tx_dict(tx_hash, True, payment_done=True, color='bgc-done', \
+                        icon_text='Payment done', status='Closed')
+                update_sorted_currency_tx_list(tx_dict[tx_hash])
 
 def check_bitcoin_payment(t):
     if t['invalid']==[True, 'bitcoin payment']:
@@ -116,6 +126,12 @@ def check_bitcoin_payment(t):
                 if sell_offer_tx != None:
                     debug('bitcoin payment: '+t['tx_hash'])
                     debug('for sell offer: '+sell_offer_tx['tx_hash'])
+
+# stopped here
+# I want to have tx only in tx_dict, and in addr_dict only tx_hash's
+# Can introduce (sorted)json hash, hash of hashes, and this push to blockchain for suported parser versions.
+# auto verify that parsing is correct
+
                     try:
                         required_btc=float(sell_offer_tx['formatted_bitcoin_amount_desired'])
                         whole_sell_amount=float(sell_offer_tx['formatted_amount'])
@@ -169,7 +185,7 @@ def check_bitcoin_payment(t):
                                 sell_accept_tx['payment_done']=True
                                 sell_accept_tx['formatted_amount_bought']=from_satoshi(satoshi_spot_closed)
                                 sell_accept_tx['color']='bgc-done'
-                                sell_offer_tx['icon_text']='Accept offer paid'
+                                sell_accept_tx['icon_text']='Accept offer paid'
                                 add_modified_sell_tx(key,sell_accept_tx)
                                 update_sorted_currency_tx_list(sell_accept_tx)
                                 # update sell and accept offer in bitcoin payment
@@ -203,6 +219,46 @@ def new_addr_entry():
     return entry
 
 
+# update the main tx database
+# example call:
+# update_tx_dict(tx_hash, True, icon='simplesend', color='bgc_done')
+# mark_modified True means set update_fs flag if some field has changed
+# mark_modified False is for initial tx load
+def update_tx_dict(tx_hash, mark_modified, *arguments, **keywords):
+    # tx_hash is first arg
+    # mark_modified is the second arg
+    # then come the keywords and values to be modified
+
+    # is there already entry for this tx_hash?
+    if not addr_dict.has_key(tx_hash):
+        # no - so create a new one
+        # remark: loading all tx for that tx_hash
+        # for simplesend which is exodus, the last one is simplesend (#1)
+        tx_dict[tx_hash]=load_dict_from_file('tx/'+tx_hash+'.json', all_list=True)
+
+    # get the update_fs from tx_dict for that tx
+    if tx_dict[tx_hash][-1].has_key('update_fs'):
+        update_fs=tx_dict[tx_hash][-1]['update_fs']
+    else:
+        update_fs=False
+    
+    # update all given fields with new values
+    keys = sorted(keywords.keys())
+    # allow only keys from addr_properties
+    for kw in keys:
+        try:
+            prop_index=tx_properties.index(kw)
+        except ValueError:
+            error('unsupported property of tx: '+kw)
+        # set update_fs flag if necessary (if something really changed)
+        update_fs = tx_dict[tx_hash][-1][kw]!=keywords[kw] or update_fs
+        tx_dict[tx_hash][-1][kw]=keywords[kw]
+
+    # write update_fs to tx_dict if mark_modified given
+    if mark_modified:
+        tx_dict[tx_hash][-1]['update_fs']=update_fs
+
+
 # update the main address database
 # example call:
 # update_addr_dict('1address', True, 'Mastercoin', balance=10, bought=2, bought_tx=t)
@@ -210,39 +266,39 @@ def new_addr_entry():
 # accomulate False means replace previous values
 def update_addr_dict(addr, accomulate, *arguments, **keywords):
 
-        # update specific currency fields within address
-        # address is first arg
-        # currency is second arg:
-        # 'Mastercoin', 'Test Mastercoin' or 'exodus' for exodus purchases
-        # then come the keywords and values to be updated
-        c=arguments[0]
-        if c!='Mastercoin' and c!='Test Mastercoin' and c!='exodus':
-            error('update_addr_dict called with unsupported currency: '+c)
+    # update specific currency fields within address
+    # address is first arg
+    # currency is second arg:
+    # 'Mastercoin', 'Test Mastercoin' or 'exodus' for exodus purchases
+    # then come the keywords and values to be updated
+    c=arguments[0]
+    if c!='Mastercoin' and c!='Test Mastercoin' and c!='exodus':
+        error('update_addr_dict called with unsupported currency: '+c)
 
-        # is there already entry for this address?
-        if not addr_dict.has_key(addr):
-            # no - so create a new one
-            addr_dict[addr]=new_addr_entry()
+    # is there already entry for this address?
+    if not addr_dict.has_key(addr):
+        # no - so create a new one
+        addr_dict[addr]=new_addr_entry()
 
-        # update all given fields with new values
-        keys = sorted(keywords.keys())
-        # allow only keys from addr_properties
-        for kw in keys:
-            try:
-                prop_index=addr_properties.index(kw)
-            except ValueError:
-                error('unsupported property of addr: '+kw)
+    # update all given fields with new values
+    keys = sorted(keywords.keys())
+    # allow only keys from addr_properties
+    for kw in keys:
+        try:
+            prop_index=addr_properties.index(kw)
+        except ValueError:
+            error('unsupported property of addr: '+kw)
 
-            if accomulate == True: # just add the tx or value
-                if kw.endswith('_tx'):
-                    addr_dict[addr][c][kw].append(keywords[kw])
-                else: # values are in satoshi
-                    addr_dict[addr][c][kw]+=int(keywords[kw])
-            else:
-                if kw.endswith('_tx'): # replace the tx or value
-                    addr_dict[addr][c][kw]=[keywords[kw]]
-                else: # values are in satoshi
-                    addr_dict[addr][c][kw]=int(keywords[kw])
+        if accomulate == True: # just add the tx or value
+            if kw.endswith('_tx'):
+                addr_dict[addr][c][kw].append(keywords[kw])
+            else: # values are in satoshi
+                addr_dict[addr][c][kw]+=int(keywords[kw])
+        else:
+            if kw.endswith('_tx'): # replace the tx or value
+                addr_dict[addr][c][kw]=[keywords[kw]]
+            else: # values are in satoshi
+                addr_dict[addr][c][kw]=int(keywords[kw])
 
 
 def update_initial_icon_details(t):
@@ -305,14 +361,14 @@ def update_modified_tx_and_bids():
     # first deal with non distributed exchange tx
     # check previous snapshot
     icon_text_per_tx_hash = load_dict_from_file('general/icon_text_per_tx_hash.json','r')
-    if type(icon_text_per_tx_hash)=='dict':
+    if type(icon_text_per_tx_hash)==dict:
         icon_text_per_tx_hash_dict=icon_text_per_tx_hash
     else:
         icon_text_per_tx_hash_dict=icon_text_per_tx_hash[0]
     for tx_hash in modified_tx_dict.keys():
         # get updated data from modified dict
         t=modified_tx_dict[tx_hash]
-        if type(t)=='dict':
+        if type(t)==dict:
             running_dict=t
         else:
             running_dict=t[0]
@@ -324,7 +380,7 @@ def update_modified_tx_and_bids():
             pass
         # if not: get tx dict from the filesystem for comparison
         tmp_dict=load_dict_from_file('tx/'+tx_hash+'.json','r')
-        if type(tmp_dict)=='dict':
+        if type(tmp_dict)==dict:
             fs_dict=tmp_dict
         else:
             fs_dict=tmp_dict[0]
@@ -372,6 +428,11 @@ def update_modified_tx_and_bids():
         atomic_json_dump(bids, 'bids/bids-'+tx_hash+'.json', add_brackets=False)
 
 def update_sorted_currency_tx_list(t):
+    if type(t)==list:
+        t=t[0]
+    else:
+        if type(t)!=dict:
+            error('unexpected tx type '+str(type(t))+': '+str(t))
     tx_hash=t['tx_hash']
     try:
         currency=t['currency_str']
@@ -467,18 +528,18 @@ def generate_api_jsons():
     # create /mastercoin_verify/transactions/<ADDRESS>
     for addr in addr_dict.keys():
         single_addr_tx_dict={}
-        tx_dict={}
-        tx_list=[]
+        verify_tx_dict={}
+        verify_tx_list=[]
         for c in coins_list:
             for t in addr_dict[addr][c]['exodus_tx']+addr_dict[addr][c]['in_tx']+addr_dict[addr][c]['out_tx']:
                 if t['invalid']==False:
-                    tx_dict[t['tx_hash']]=True
+                    verify_tx_dict[t['tx_hash']]=True
                 else:
-                    tx_dict[t['tx_hash']]=False
+                    verify_tx_dict[t['tx_hash']]=False
         # collect all unique entries
-        for key, value in tx_dict.iteritems():
-            tx_list.append({'tx_hash':key, 'valid':value})
-        mastercoin_verify_tx_per_address={'address':addr, 'transactions':tx_list}
+        for key, value in verify_tx_dict.iteritems():
+            verify_tx_list.append({'tx_hash':key, 'valid':value})
+        mastercoin_verify_tx_per_address={'address':addr, 'transactions':verify_tx_list}
         atomic_json_dump(mastercoin_verify_tx_per_address, 'mastercoin_verify/transactions/'+addr, add_brackets=False)     
         
 
@@ -691,6 +752,10 @@ def validate():
     msc_globals.d=options.debug_mode
 
     info('starting validation process')
+
+    # load tx_dict
+    initial_tx_dict_load()
+    info(tx_dict['f993be9813e409ee1ce42b14c444af65b789350abe412fd2f8a289082b7b4870'][-1])
 
     # get all tx sorted
     sorted_tx_list=get_sorted_tx_list()
