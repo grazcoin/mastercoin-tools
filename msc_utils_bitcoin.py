@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import json
 import hashlib
+import re
 from ecdsa import curves, ecdsa
 # taken from https://github.com/warner/python-ecdsa
 from pycoin import encoding
@@ -99,9 +100,12 @@ def is_script_multisig(output):
     return is_script_output(output) and output.endswith('checkmultisig')
 
 def is_pubkey_valid(pubkey):
-    sec=encoding.binascii.unhexlify(pubkey)
-    public_pair=encoding.sec_to_public_pair(sec)
-    return curves.ecdsa.point_is_valid(ecdsa.generator_secp256k1, public_pair[0], public_pair[1])
+    try:
+        sec=encoding.binascii.unhexlify(pubkey)
+        public_pair=encoding.sec_to_public_pair(sec)
+        return curves.ecdsa.point_is_valid(ecdsa.generator_secp256k1, public_pair[0], public_pair[1])
+    except TypeError:
+        return False
 
 def get_compressed_pubkey_format(pubkey):
     public_pair=encoding.sec_to_public_pair(encoding.binascii.unhexlify(pubkey))
@@ -120,3 +124,24 @@ def get_nearby_valid_pubkey(pubkey):
         valid_pubkey = next.zfill(l)
     info("valid  "+valid_pubkey)
     return valid_pubkey
+
+def verify_bcaddress(value):
+    value = value.strip()
+    if re.match(r"[a-zA-Z1-9]{27,35}$", value) is None:
+      return None
+    version = get_bcaddress_version(value)
+    if version != None:
+        return value
+    return None
+
+def get_bcaddress_version(address):
+  """ Returns None if address is invalid. Otherwise returns integer version of address. """
+  addr = b58decode(address,25)
+  if addr is None: return None
+  version = addr[0]
+  checksum = addr[-4:]
+  vh160 = addr[:-4] # Version plus hash160 is what is checksummed
+  h3=hashlib.sha256(hashlib.sha256(vh160).digest()).digest()
+  if h3[0:4] == checksum:
+      return ord(version)
+  return None

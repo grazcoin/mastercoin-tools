@@ -176,22 +176,29 @@ console.log('success');
 console.log(data);
 
 if (data.status == 'OK') {
-    $('#verifyMessage').text('OK');
+    ok = true;
     $('#verifyMessage').addClass('greenText');
-
-
-    $('#verifyMessage').show();
-
-    return ok;
+    $('#verifyMessage').text('OK');
 }
 else {
-    $('#verifyMessage').text('non valid');
-    $('#verifyMessage').addClass('redText');
     ok = false;
-    $('#verifyMessage').show();
-    return ok;
+    if (data.status == 'invalid pubkey') {
+        $('#verifyMessage').text('invalid pubkey');
+    } else {
+        if (data.status == 'missing pubkey') {
+            $('#verifyMessage').text('no pubkey on blockchain');
+        } else {
+            if (data.status == 'invalid address') {
+                $('#verifyMessage').text('invalid address');
+            } else {
+                $('#verifyMessage').text('invalid');
+            }
+        }
+    }
+    $('#verifyMessage').addClass('redText');
 }
-// TODO This should be changed - Currently always fail as there is no server
+$('#verifyMessage').show();
+return ok;
 }).fail(function () {
 
 console.log('fail');
