@@ -251,7 +251,10 @@ def update_tx_dict(tx_hash, mark_modified, *arguments, **keywords):
         except ValueError:
             error('unsupported property of tx: '+kw)
         # set update_fs flag if necessary (if something really changed)
-        update_fs = tx_dict[tx_hash][-1][kw]!=keywords[kw] or update_fs
+        try:
+            update_fs = tx_dict[tx_hash][-1][kw]!=keywords[kw] or update_fs
+        except KeyError:
+            update_fs = True
         tx_dict[tx_hash][-1][kw]=keywords[kw]
 
     # write update_fs to tx_dict if mark_modified given
