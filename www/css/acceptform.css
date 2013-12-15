@@ -15,8 +15,7 @@
   .verifyMessage{
       display:none;
        position: absolute;
-    right: -120px;
-    margin-top: -30px;
+    margin-top: -32px;
   }
   .verifyLoader{
        display:none;
@@ -37,7 +36,8 @@
       height:24px;
       display:none;
   }
-@media only screen and (max-width: 970px) {
+@media only screen and (max-width: 991px) {
+    /*@media only screen and (max-width: 970px) {*/
     .amountWarning{
         position:relative;
         right:0;
@@ -49,19 +49,24 @@
         margin-top:5px;
   }
     .verifyMessage{
-     position:relative;
-        left:80px;
-        /*margin-top:5px;*/
+      margin-top: -27px;
   }
+  
+  .verifyLoader {
+        position: absolute;
+        /*right: -90px;*/
+        left: 80px;
+        margin-top: -30px;
+    }
 
 }
 
 
-  .custom-combobox {
+#buyerAddressOrPublicKeyDiv  .custom-combobox {
     position: relative;
     display: inline-block;
   }
-  .custom-combobox-toggle {
+#buyerAddressOrPublicKeyDiv  .custom-combobox-toggle {
     position: absolute;
     top: 0;
     bottom: 0;
@@ -71,7 +76,7 @@
     *height: 1.7em;
     *top: 0.1em;
   }
-  .custom-combobox-input {
+#buyerAddressOrPublicKeyDiv  .custom-combobox-input {
     margin: 0;
     padding: 0.3em;
   }
@@ -80,16 +85,17 @@
 
   }
 
-  .combobox-container .add-on{
-      height:34px !important;
-      width:30px;
-  }
-   .combobox-selected{
+#buyerAddressOrPublicKeyDiv .combobox-container .add-on {
+    height: 34px !important;
+    width: 30px;
+}
 
-  }
-  .combobox-selected .caret{
-      display:inline-block;
-  }
+.combobox-selected {
+}
+
+#buyerAddressOrPublicKeyDiv .combobox-selected .caret {
+    display: inline-block;
+}
 
 
 
