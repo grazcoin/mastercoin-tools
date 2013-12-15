@@ -69,11 +69,6 @@ function AcceptOfferController($scope, $http) {
 }
 
 
-
-
-
-
-
 //class for Context
 BTNClientContext = new function () {
 };
@@ -115,10 +110,12 @@ if (data.status == 'OK') {
     $('#verifyMessage').text('OK');
     $('#verifyMessage').show();
     BTNClientContext.Resize();
+    //Add address to history
+    BTNClientContext.Signing.addAddressToHistory();
     return ok;
 }
 else {
-    $('#verifyMessage').addClass('greenText');
+    $('#verifyMessage').addClass('redText');
     ok = false;
     if (data.status == 'invalid pubkey') {
         $('#verifyMessage').text('invalid pubkey');
@@ -126,7 +123,6 @@ else {
         if (data.status == 'missing pubkey') {
             $('#verifyMessage').text('no pubkey on blockchain');
         } else {
-	        $('#verifyMessage').addClass('redText');
             if (data.status == 'invalid address') {
                 $('#verifyMessage').text('invalid address');
             } else {
@@ -386,10 +382,6 @@ $(document).ready(function myfunction() {
         $('#createRawTransactionLoader').show();
 
         BTNClientContext.Signing.GetRawTransaction();
-
-
-        //Add address to history
-        BTNClientContext.Signing.addAddressToHistory();
 
         $('#createRawTransactionLoader').hide();
     });
