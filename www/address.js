@@ -97,4 +97,13 @@ function AdressController($scope, $http) {
             $scope.addressInformation = data[currencyNumber];
         });
     }
+
+    $scope.SendClick = function () {
+        var myURLParams = BTCUtils.getQueryStringArgs();
+        var url = "sendform.html?addr=";
+        url += myURLParams['addr'];
+        url += "&currency=";
+        url += myURLParams['currency'];
+        window.location = url;
+    }
 }

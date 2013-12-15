@@ -243,8 +243,8 @@ var buyer = $('#buyerAddressOrPublicKey').val();
 var dataToSend = { buyer: buyer, amount: amount, tx_hash: tx_hash };
 console.log(dataToSend);
 
-// Ajax call to /wallet/accept/
-$.post('/wallet/accept/', dataToSend, function (data) {
+// Ajax call to /wallet/send/
+$.post('/wallet/send/', dataToSend, function (data) {
 console.log('success');
 console.log(data);
 
