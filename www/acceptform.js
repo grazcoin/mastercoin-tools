@@ -102,10 +102,10 @@ BTNClientContext.Signing.Verify = function () {
     console.log("verify function");
     var buyer = $("input.select.optional.form-control.form-control30px.combobox").val();
 
-var params = { buyer: buyer, buyer2: buyer + "," + buyer };
+var dataToSend = { buyer: buyer };
 
 var ok = true;
-$.post('/wallet/verifybuyer/', params, function (data) {
+$.post('/wallet/verifybuyer/', dataToSend, function (data) {
 console.log('success');
 console.log(data);
 
@@ -216,11 +216,11 @@ var signedTransaction = $('#signedTransactionBBE').val();
 
 //Maybe I need to convert to object from json string???
 
-var dataToSend = { 'signedTransaction': signedTransaction };
+var dataToSend = { signedTransaction: signedTransaction };
 console.log(dataToSend);
 
-// Ajax call to /wallet/accept
-$.post('/wallet/acceptsigned', dataToSend, function (data) {
+// Ajax call to /wallet/acceptsigned/
+$.post('/wallet/acceptsigned/', dataToSend, function (data) {
 console.log('success');
 console.log(data);
 
@@ -236,17 +236,15 @@ BTNClientContext.Signing.GetRawTransaction = function () {
 
 
 var myURLParams = BTCUtils.getQueryStringArgs();
-var buyer = myURLParams['tx'];
-
-
+var tx_hash = myURLParams['tx'];
 var amount = $('#amount').val();
-var tx = $('#seller').val();
+var buyer = $('#buyerAddressOrPublicKey').val();
 
-var dataToSend = { 'buyer': buyer, 'amount': amount, 'tx': tx };
+var dataToSend = { buyer: buyer, amount: amount, tx_hash: tx_hash };
 console.log(dataToSend);
 
-// Ajax call to /wallet/accept
-$.post('/wallet/accept', dataToSend, function (data) {
+// Ajax call to /wallet/accept/
+$.post('/wallet/accept/', dataToSend, function (data) {
 console.log('success');
 console.log(data);
 
