@@ -20,7 +20,7 @@
     <script src="js/angular.js"></script>
     <script src="btcutils.js"></script>
     <script src="masterPage.js"></script>
-    <script src="acceptform.js"></script>
+    <script src="sendform.js"></script>
     <script src="js/truncate.js"></script>
     <script src="js/BTCClientContext.js"></script>
 
@@ -136,7 +136,7 @@
 
                                     <label class="string optional" for="amount">Amount</label>
                                     <input class="string optional form-control" id="amount"
-                                        ng-model="transactionInformation.formatted_amount"
+                                        ng-model="amount"
                                         ng-change="AmountChanged()"
                                         step="{{step}}"
                                         type="number">
@@ -150,14 +150,14 @@
                                 <div class="input string optional">
                                     <label class="string optional" for="recipient">To</label>
                                     <input class="string optional form-control" readonly="readonly" id="recipient"
-                                        ng-model="transactionInformation.to_address"
+                                        ng-model="toAddress"
                                         type="text">
                                 </div>
 
                                 <div class="input string optional">
                                     <label class="string optional" for="currency">Currency</label>
                                     <input class="string optional form-control" readonly="readonly" id="currency"
-                                        ng-model="transactionInformation.currency_str"
+                                        ng-model="currency"
                                         type="text">
                                 </div>
 

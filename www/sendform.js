@@ -5,9 +5,11 @@ function AcceptOfferController($scope, $http) {
     $scope.footer = "FOOTER";
     $scope.title = "TITLE";
 
-    $scope.step = 3;
-
+    $scope.step = 0.1;
+    $scope.amount = "0.1";
     $scope.key = "";
+    $scope.currency = "";
+    $scope.toAddress = "";
 
     $scope.keyChange = function () {
 
@@ -23,34 +25,9 @@ function AcceptOfferController($scope, $http) {
 
         // parse tx from url parameters
         var myURLParams = BTCUtils.getQueryStringArgs();
-        var file = 'tx/' + myURLParams['tx'] + '.json';
-
-        // Make the http request and process the result
-
-        $http.get(file, {}).success(function (data, status, headers, config) {
-            $scope.transactionInformation = data[0];
-
-            $scope.transactionInformation.formatted_amount = parseFloat($scope.transactionInformation.formatted_amount);
-            initialAmount = $scope.transactionInformation.formatted_amount;
-
-            $scope.transactionInformation.to_address = 11;
-            //Create step for input type number
-            var amount = $scope.transactionInformation.formatted_amount.toString();
-            //Whole number
-            if (amount.indexOf(".") == -1) {
-                console.log('Whole number');
-                $scope.step = "1";
-            }
-            else {//Decimal number
-                var decimalN = amount.substr(amount.indexOf(".") + 1);
-                var step = "0.";
-                for (var i = 0; i < decimalN.length - 1; i++) {
-                    step += "0";
-                }
-                step += "1";
-                $scope.step = step;
-            }
-        });
+        //var file = 'tx/' + myURLParams['tx'] + '.json';
+	$scope.currency = myURLParams['currency'];
+	$scope.toAddress = myURLParams['addr'];
       
     }
 
@@ -60,11 +37,6 @@ function AcceptOfferController($scope, $http) {
 
     $scope.AmountChanged = function () {
         $('#amountWarning').hide();
-        if (initialAmount < $scope.transactionInformation.formatted_amount) {
-            // Amount higher than offer - Should tell the user that 
-            console.log("blue warning");
-            $('#amountWarning').show();
-        }
     }
 }
 
