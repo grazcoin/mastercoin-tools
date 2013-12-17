@@ -187,12 +187,13 @@ BTNClientContext.Signing.SendTransaction = function () {
 var signedTransaction = $('#signedTransactionBBE').val();
 
 //Maybe I need to convert to object from json string???
-
-var dataToSend = { signedTransaction: signedTransaction };
+var sendTx = BTNClientContext.fromBBE(signedTransaction);
+var rawTx = Crypto.util.bytesToHex(sendTx.serialize());
+var dataToSend = { signedTransaction: rawTx };
 console.log(dataToSend);
 
-// Ajax call to /wallet/signed/
-$.post('/wallet/signed/', dataToSend, function (data) {
+// Ajax call to /wallet/pushtx/
+$.post('/wallet/pushtx/', dataToSend, function (data) {
 console.log('success');
 console.log(data);
 
@@ -208,11 +209,13 @@ BTNClientContext.Signing.GetRawTransaction = function () {
 
 
 var myURLParams = BTCUtils.getQueryStringArgs();
-var tx_hash = myURLParams['tx'];
+var to_address = myURLParams['addr'];
+var from_address = $("input.select.optional.form-control.form-control30px.combobox").val();
 var amount = $('#amount').val();
-var buyer = $('#buyerAddressOrPublicKey').val();
+var currency = $('#currency').val();
+//var fee = $('#fee').val();
 
-var dataToSend = { buyer: buyer, amount: amount, tx_hash: tx_hash };
+var dataToSend = { from_address: from_address, to_address: to_address, amount: amount, currency: currency };
 console.log(dataToSend);
 
 // Ajax call to /wallet/send/
