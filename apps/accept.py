@@ -26,7 +26,7 @@ def accept_response(response_dict):
         else:
             response_status='invalid pubkey'
     else:   
-        if verify_bcaddress(buyer) == None:
+        if is_valid_bitcoin_address(buyer) == None:
             response_status='invalid address'
         else:
             buyer_pubkey=get_pubkey(buyer)

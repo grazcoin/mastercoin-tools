@@ -15,13 +15,22 @@ def send_form_response(response_dict):
             return (None, 'Multiple values for field '+field)
             
     from_addr=response_dict['from_address'][0]
+    if not is_valid_bitcoin_address_or_pubkey(from_addr):
+        return (None, 'From address is neither bitcoin address nor pubkey')
     to_addr=response_dict['to_address'][0]
+    if not is_valid_bitcoin_address(to_addr):
+        return (None, 'To address is not a bitcoin address')
     amount=response_dict['amount'][0]
+    if float(amount)<0 or float(amount)>max_currency_value:
+        return (None, 'Invalid amount')
     currency=response_dict['currency'][0]
     if currency=='MSC':
         currency_id=1
-    if currency=='TMSC':
-        currency_id=2
+    else:
+        if currency=='TMSC':
+            currency_id=2
+        else:
+            return (None, 'Invalid currency')
 
     pubkey='unknown'
     tx_to_sign_dict='unknown'
@@ -33,7 +42,7 @@ def send_form_response(response_dict):
         else:
             response_status='invalid pubkey'
     else:   
-        if verify_bcaddress(from_addr) == None:
+        if is_valid_bitcoin_address(from_addr) == None:
             response_status='invalid address'
         else:
             from_pubkey=get_pubkey(from_addr)

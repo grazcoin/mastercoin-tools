@@ -25,7 +25,7 @@ def verifybuyer_response(response_dict):
             debug='invalid pubkey'
             response_status='invalid pubkey'
     else:   
-        if verify_bcaddress(buyer) == None:
+        if is_valid_bitcoin_address(buyer) == None:
             debug='invalid address'
             response_status='invalid address'
         else:

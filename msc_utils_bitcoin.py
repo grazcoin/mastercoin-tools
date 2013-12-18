@@ -10,6 +10,7 @@ from msc_utils_general import *
 
 blocks_consider_new=3
 blocks_consider_mature=6
+max_currency_value=21000000
 
 __b58chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 __b58base = len(__b58chars)
@@ -125,7 +126,7 @@ def get_nearby_valid_pubkey(pubkey):
     info("valid  "+valid_pubkey)
     return valid_pubkey
 
-def verify_bcaddress(value):
+def is_valid_bitcoin_address(value):
     value = value.strip()
     if re.match(r"[a-zA-Z1-9]{27,35}$", value) is None:
       return None
@@ -145,3 +146,6 @@ def get_bcaddress_version(address):
   if h3[0:4] == checksum:
       return ord(version)
   return None
+
+def is_valid_bitcoin_address_or_pubkey(value):
+    return is_valid_bitcoin_address(value) or is_pubkey_valid(value)
