@@ -381,7 +381,8 @@ $(document).ready(function myfunction() {
     $('#send').click(function () {
         $('#sendLoader').show();
 
-        BTNClientContext.Signing.SendTransaction();
+        //BTNClientContext.Signing.SendTransaction();
+        BTNClientContext.txSend();
 
         $('#sendLoader').hide();
     });
@@ -432,3 +433,49 @@ BTNClientContext.Resize = function () {
 $(window).resize(function () {
     BTNClientContext.Resize();
 });
+
+function txSent(text) {
+alert(text ? text : 'No response!');
+}
+
+BTNClientContext.txSend = function() {
+        
+        var signedTransaction = $('#signedTransactionBBE').val();
+	var sendTx = BTNClientContext.fromBBE(signedTransaction);
+	var rawTx = Crypto.util.bytesToHex(sendTx.serialize());
+
+        //url = 'http://bitsend.rowit.co.uk/?transaction=' + tx;
+        url = 'http://blockchain.info/pushtx';
+        postdata = 'tx=' + rawTx;
+
+        if (url != null && url != "") {
+            BTNClientContext.tx_fetch(url, txSent, txSent, postdata);
+        }
+        return false;
+}
+
+// Some cross-domain magic (to bypass Access-Control-Allow-Origin)
+BTNClientContext.tx_fetch = function(url, onSuccess, onError, postdata) {
+    var useYQL = true;
+
+    if (useYQL) {
+        var q = 'select * from html where url="'+url+'"';
+        if (postdata) {
+            q = 'use "https://dev.masterchain.info/js/htmlpost.xml" as htmlpost; ';
+            q += 'select * from htmlpost where url="' + url + '" ';
+            q += 'and postdata="' + postdata + '" and xpath="//p"';
+        }
+        url = 'https://query.yahooapis.com/v1/public/yql?q=' + encodeURIComponent(q);
+    }
+
+    $.ajax({
+        url: url,
+        success: function(res) {
+            
+        },
+        error:function (xhr, opt, err) {
+            
+        }
+    });
+}
+
