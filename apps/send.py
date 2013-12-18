@@ -48,7 +48,7 @@ def send_form_response(response_dict):
     return (response, None)
 
 
-def prepare_tx_for_signing(from_address, to_address, currency_id, btc_amount, btc_fee=0.0001):
+def prepare_tx_for_signing(from_address, to_address, currency_id, btc_amount, btc_fee=0.0005):
 
     # create multisig tx
   
