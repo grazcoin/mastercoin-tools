@@ -146,6 +146,11 @@ table.table td{
   overflow:hidden;
   text-overflow:ellipsis;
 }
+
+.btnCell {
+  white-space:normal !important;
+}
+
 table.table td a{ padding: 0; margin: 0;  line-height: 1em;}
 table.table tr { height: 30px;}
 td.test{  
