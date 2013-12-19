@@ -33,7 +33,7 @@ def send_form_response(response_dict):
             return (None, 'Invalid currency')
 
     pubkey='unknown'
-    tx_to_sign_dict='unknown'
+    tx_to_sign_dict={'transaction':'','sourceScript':''}
     l=len(from_addr)
     if l == 66: # probably pubkey
         if is_pubkey_valid(from_addr):
