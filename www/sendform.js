@@ -57,17 +57,16 @@ BTNClientContext.Signing = new function () {
 
 BTNClientContext.Signing.Transaction = "";
 
-BTNClientContext.Signing.ConvertRaw = function () {
+BTNClientContext.Signing.ConvertRaw = function (jsonTransaction) {
 
-    var str = BTNClientContext.Signing.Transaction;
+    //var str = BTNClientContext.Signing.Transaction;
+    var str = jsonTransaction;
     str = str.replace(/[^0-9a-fA-f]/g, '');
-  //  $('#transactionRaw').val(str);
     var bytes = Crypto.util.hexToBytes(str);
     var sendTx = BTNClientContext.Signing.deserialize(bytes);
     var text = BTNClientContext.toBBE(sendTx);
 
     return text;
-    //$('#transactionBBE').val(text);
 }
 
 BTNClientContext.Signing.ConvertJSON = function (signedTransaction) {
@@ -160,7 +159,7 @@ console.log(BTNClientContext.dumpScript(sourceScript[i]));
 
 //create transaction object from BBE JSON
 // var transactionBBE = $('#transactionBBE').val();
-var transactionBBE = BTNClientContext.Signing.ConvertRaw();
+var transactionBBE = BTNClientContext.Signing.ConvertRaw(BTNClientContext.Signing.Transaction);
 
 try {
 $('.invalidTransaction').hide();
@@ -204,6 +203,10 @@ BTNClientContext.Signing.TransactionBBE = reSigned;
 
 //show re-signed transaction
 $('#signedTransactionBBE').val(reSigned);
+BTNClientContext.Signing.RawChecked = false;
+BTNClientContext.ToRawSigned();
+$('#RawRadioBtnSigned').addClass('active');
+$('#JsonRadioBtnSigned').removeClass('active');
 
 //show hidden
 $('#reSignClickedForm').show();
@@ -458,7 +461,7 @@ $(document).ready(function myfunction() {
         //    $('#transactionBBE').val(converted);
         //});
         $('#JsonRadioBtn').click(function () {
-            var converted = BTNClientContext.Signing.ConvertRaw();
+            var converted = BTNClientContext.Signing.ConvertRaw(BTNClientContext.Signing.Transaction);
             $('#transactionBBE').val(converted);
         });
         $('#RawRadioBtn').click(function () {
@@ -469,35 +472,17 @@ $(document).ready(function myfunction() {
     
         $('#JsonRadioBtnSigned').click(function () {
             if (BTNClientContext.Signing.RawChecked == true) {
-    
+            	var rawTransaction = $('#signedTransactionBBE').val();
+    		var converted = BTNClientContext.Signing.ConvertRaw(rawTransaction);
+            	$('#signedTransactionBBE').val(converted);
                 $('#signedTransactionBBE').attr('readonly', false);
-                console.log('JSON');
-                var converted = BTNClientContext.Signing.TransactionBBE;
-                $('#signedTransactionBBE').val(converted);
                 BTNClientContext.Signing.RawChecked = false;
             }
         });
     
-        BTNClientContext.Signing.RawChecked = false;
+        BTNClientContext.Signing.RawChecked = true;
         $('#RawRadioBtnSigned').click(function () {
-            if (BTNClientContext.Signing.RawChecked == false) {
-                var converted = "";
-                try {
-                    var signedTransaction = $('#signedTransactionBBE').val();
-                    converted = BTNClientContext.Signing.ConvertJSON(signedTransaction);
-                    $('#signedTransactionBBE').attr('readonly', true);
-                    BTNClientContext.Signing.RawChecked = true;
-                }
-                catch (e) {
-                    converted = $('#signedTransactionBBE').val();
-    
-                    $('#RawRadioBtnSigned').removeClass('active');
-                    $('#JsonRadioBtnSigned').addClass('active');
-    
-                  
-                }
-                $('#signedTransactionBBE').val(converted);
-            }
+            BTNClientContext.ToRawSigned();
             if ($('.invalidTransaction').is(":visible")) {
                 console.log('Json is invalid');
                 $('#RawRadioBtnSigned').removeClass('active');
@@ -507,6 +492,27 @@ $(document).ready(function myfunction() {
         });
     
 });
+
+BTNClientContext.ToRawSigned = function() {
+	if (BTNClientContext.Signing.RawChecked == false) {
+		var converted = "";
+		try {
+		    var signedTransaction = $('#signedTransactionBBE').val();
+		    converted = BTNClientContext.Signing.ConvertJSON(signedTransaction);
+		    $('#signedTransactionBBE').attr('readonly', false);
+		    BTNClientContext.Signing.RawChecked = true;
+		}
+		catch (e) {
+		    converted = $('#signedTransactionBBE').val();
+
+		    $('#RawRadioBtnSigned').removeClass('active');
+		    $('#JsonRadioBtnSigned').addClass('active');
+
+
+		}
+		$('#signedTransactionBBE').val(converted);
+	}
+}
 
 BTNClientContext.Resize = function () {
     // console.log($('#amount').width());
@@ -528,9 +534,13 @@ alert(text ? text : 'No response!');
 
 BTNClientContext.txSend = function() {
         
-        var signedTransaction = $('#signedTransactionBBE').val();
-	var sendTx = BTNClientContext.fromBBE(signedTransaction);
-	var rawTx = Crypto.util.bytesToHex(sendTx.serialize());
+        BTNClientContext.ToRawSigned();
+	$('#RawRadioBtnSigned').addClass('active');
+	$('#JsonRadioBtnSigned').removeClass('active');
+        
+        var rawTx = $('#signedTransactionBBE').val();
+	//var sendTx = BTNClientContext.fromBBE(signedTransaction);
+	//var rawTx = Crypto.util.bytesToHex(sendTx.serialize());
 
         //url = 'http://bitsend.rowit.co.uk/?transaction=' + tx;
         url = 'http://blockchain.info/pushtx';

@@ -3,7 +3,7 @@
   padding:10px 15px;
 }
 
-a.navbar-brand img {
+a.navbar-brand img:first-of-type {
    height: 32px;
 }
 
