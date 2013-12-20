@@ -2,6 +2,11 @@
 .navbar .navbar-brand{
   padding:10px 15px;
 }
+
+a.navbar-brand img {
+   height: 32px;
+}
+
 .navbar a.navbar-title{
   padding-top: 15px;
   padding-left:10px;

@@ -36,6 +36,19 @@
       height:24px;
       display:none;
   }
+.invalidKey {
+    display: none;
+    position: absolute;
+    right: -60px;
+    margin-top: -27px;
+}
+
+.invalidTransaction {
+    /*display:none;*/
+    position: absolute;
+    right: -105px;
+    margin-top: -130px;
+}
 @media only screen and (max-width: 991px) {
     /*@media only screen and (max-width: 970px) {*/
     .amountWarning{
@@ -59,8 +72,22 @@
         margin-top: -30px;
     }
 
+    .invalidKey {
+        position: relative;
+        right: 0px;
+        margin-top: 0px;
+    }
+
+    .invalidTransaction {
+        position: relative;
+        right: 0px;
+        margin-top: 0px;
+    }
 }
 
+ .textareaScroll[readonly] {
+        cursor:default !important;
+    }
 
 #buyerAddressOrPublicKeyDiv  .custom-combobox {
     position: relative;
@@ -106,9 +133,13 @@
   }
  
 
-  #rawJsonRadio{
-      margin-top:4px;
-  }
+#rawJsonRadio {
+    margin-top: 4px;
+}
+
+#rawJsonRadioSigned {
+    margin-top: 4px;
+}
 
 
   .input.string.optional{

@@ -38,6 +38,8 @@ function AcceptOfferController($scope, $http) {
     $scope.AmountChanged = function () {
         $('#amountWarning').hide();
     }
+    
+    $('.invalidKey').hide();
 }
 
 
@@ -68,6 +70,22 @@ BTNClientContext.Signing.ConvertRaw = function () {
     //$('#transactionBBE').val(text);
 }
 
+BTNClientContext.Signing.ConvertJSON = function (signedTransaction) {
+
+    try {
+        $('.invalidTransaction').hide();
+        var sendTx = BTNClientContext.fromBBE(signedTransaction);
+
+    }
+    catch (e) {
+        $('.invalidTransaction').show();
+    }
+
+
+    var rawTx = Crypto.util.bytesToHex(sendTx.serialize());
+
+    return rawTx;
+};
 
 
 BTNClientContext.Signing.Verify = function () {
@@ -143,7 +161,15 @@ console.log(BTNClientContext.dumpScript(sourceScript[i]));
 //create transaction object from BBE JSON
 // var transactionBBE = $('#transactionBBE').val();
 var transactionBBE = BTNClientContext.Signing.ConvertRaw();
-var sendTx = BTNClientContext.fromBBE(transactionBBE);
+
+try {
+$('.invalidTransaction').hide();
+    var sendTx = BTNClientContext.fromBBE(transactionBBE);
+}
+catch (e) {
+    $('.invalidTransaction').show();
+    return;
+}
 
 //signature section
 var eckey = BTNClientContext.GetEckey($('#privateKey').val()); //ECDSA
@@ -174,6 +200,7 @@ return BTNClientContext.toBBE(sendTx);
 //Should re sign transaction -- need to call all BC functions
 BTNClientContext.Signing.ReSignTransaction = function () {
 var reSigned = BTNClientContext.Signing.SingSource();
+BTNClientContext.Signing.TransactionBBE = reSigned;
 
 //show re-signed transaction
 $('#signedTransactionBBE').val(reSigned);
@@ -369,13 +396,26 @@ $(document).ready(function myfunction() {
         $('#createRawTransactionLoader').hide();
     });
 
-    $('#reSign').click(function () {
-
-        $('#reSignLoader').show();
-
-        BTNClientContext.Signing.ReSignTransaction();
-
-        $('#reSignLoader').hide();
+     $('#reSign').click(function () {
+    
+            $('.invalidKey').hide();
+            $('.invalidTransaction').hide();
+    
+            $('#reSignLoader').show();
+            try {
+                BTNClientContext.Signing.ReSignTransaction();
+            }
+            catch (e) {
+                console.log(e);
+                $('.invalidKey').show();
+                $('.invalidTransaction').show();
+    
+    
+                //If the key is invalid the resigned transaction form is hidden again
+                $('#reSignClickedForm').hide();
+    
+            }
+            $('#reSignLoader').hide();
     });
 
     $('#send').click(function () {
@@ -404,20 +444,68 @@ $(document).ready(function myfunction() {
         $('#verifyLoader').hide();
     });
 
-    $("#rawJsonRadio").click(function () {
-
-        console.log(BTNClientContext.Signing.Transaction);
-        var converted = "";
-        if ($('#RawRadioBtn').hasClass('active')) { //It raw has class active it means that the json state is selected now
-            converted = BTNClientContext.Signing.ConvertRaw();
-        }
-        else { //the raw state is selected now
-            converted = BTNClientContext.Signing.Transaction;
-        }
-
-        $('#transactionBBE').val(converted);
-    });
-
+    //$("#rawJsonRadio").click(function () {
+    
+        //    console.log(BTNClientContext.Signing.Transaction);
+        //    var converted = "";
+        //    if ($('#RawRadioBtn').hasClass('active')) { //It raw has class active it means that the json state is selected now
+        //        converted = BTNClientContext.Signing.ConvertRaw();
+        //    }
+        //    else { //the raw state is selected now
+        //        converted = BTNClientContext.Signing.Transaction;
+        //    }
+    
+        //    $('#transactionBBE').val(converted);
+        //});
+        $('#JsonRadioBtn').click(function () {
+            var converted = BTNClientContext.Signing.ConvertRaw();
+            $('#transactionBBE').val(converted);
+        });
+        $('#RawRadioBtn').click(function () {
+            var converted = BTNClientContext.Signing.Transaction;
+            $('#transactionBBE').val(converted);
+        });
+    
+    
+        $('#JsonRadioBtnSigned').click(function () {
+            if (BTNClientContext.Signing.RawChecked == true) {
+    
+                $('#signedTransactionBBE').attr('readonly', false);
+                console.log('JSON');
+                var converted = BTNClientContext.Signing.TransactionBBE;
+                $('#signedTransactionBBE').val(converted);
+                BTNClientContext.Signing.RawChecked = false;
+            }
+        });
+    
+        BTNClientContext.Signing.RawChecked = false;
+        $('#RawRadioBtnSigned').click(function () {
+            if (BTNClientContext.Signing.RawChecked == false) {
+                var converted = "";
+                try {
+                    var signedTransaction = $('#signedTransactionBBE').val();
+                    converted = BTNClientContext.Signing.ConvertJSON(signedTransaction);
+                    $('#signedTransactionBBE').attr('readonly', true);
+                    BTNClientContext.Signing.RawChecked = true;
+                }
+                catch (e) {
+                    converted = $('#signedTransactionBBE').val();
+    
+                    $('#RawRadioBtnSigned').removeClass('active');
+                    $('#JsonRadioBtnSigned').addClass('active');
+    
+                  
+                }
+                $('#signedTransactionBBE').val(converted);
+            }
+            if ($('.invalidTransaction').is(":visible")) {
+                console.log('Json is invalid');
+                $('#RawRadioBtnSigned').removeClass('active');
+                $('#JsonRadioBtnSigned').addClass('active');
+    
+            }
+        });
+    
 });
 
 BTNClientContext.Resize = function () {
