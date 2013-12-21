@@ -26,7 +26,8 @@ tx_properties=\
      'details', 'tx_type_str', \
      'baseCoin', 'dataSequenceNum', 'method', 'tx_method_str', \
      'bitcoin_amount_desired', 'block_time_limit', 'fee', \
-     'sell_offer_txid', 'accept_tx_id', 'btc_offer_txid', 'payment_txid', \
+     'sell_offer_txid', 'accept_txid', 'btc_offer_txid', 'payment_txid', \
+     'amount_available', 'formatted_amount_available', \
      'formatted_amount_accepted', 'formatted_amount_bought', \
      'formatted_amount_requested', 'formatted_price_per_coin', 'bitcoin_required', \
      'payment_done', 'payment_expired', \
@@ -43,8 +44,7 @@ coins_short_name_dict={'Mastercoin':'MSC','Test Mastercoin':'TMSC'}
 coins_reverse_short_name_dict=dict((v,k) for k, v in coins_short_name_dict.iteritems())
 
 # create modified tx dict which would be used to modify tx files
-modified_tx_dict={}
-modified_sell_tx_dict={}
+bids_dict={}
 
 # global last block on the net
 last_height=get_last_height()
@@ -62,7 +62,6 @@ def initial_tx_dict_load():
         if filename.endswith('.json'):
             tx_hash=filename.split('.')[0]
             update_tx_dict(tx_hash, False)
-    # FIXME: exodus has multiple tx in one file
 
 def get_sorted_tx_list():
     # run on all files in tx
@@ -73,9 +72,10 @@ def get_sorted_tx_list():
     for k in tx_dict.keys():
         tx_list+=tx_dict[k] # append the list of tx for each key (incl. exodus)
     # sort according to time
-    return sorted(tx_list, key=lambda k: (k['block'],k['index'])) 
+    return sorted(tx_list, key=lambda k: (int(k['block']),int(k['index']))) 
 
-def add_alarm(t, payment_timeframe):
+def add_alarm(tx_hash, payment_timeframe):
+    t=tx_dict[tx_hash][-1] # last tx on the list
     tx_block=int(t['block'])
     alarm_block=tx_block+payment_timeframe
     if alarm.has_key(alarm_block):
@@ -92,7 +92,7 @@ def check_alarm(t, last_block, current_block):
                 debug('verify payment for tx '+str(a['tx_hash']))
                 # mark invalid and update standing accept value
                 tx_hash=a['tx_hash']
-                if a['btc_offer_txid']=='unknown': # accept with no payment
+                if not a.has_key('btc_offer_txid') or a['btc_offer_txid']=='unknown': # accept with no payment
                     debug('accept offer expired '+tx_hash)
                     update_tx_dict(tx_hash, True, payment_expired=True, color='bgc-expired', \
                         icon_text='Payment expired', formatted_amount_bought='0.0', status='Expired')
@@ -100,7 +100,6 @@ def check_alarm(t, last_block, current_block):
                     debug('accept offer done '+tx_hash)  
                     update_tx_dict(tx_hash, True, payment_done=True, color='bgc-done', \
                         icon_text='Payment done', status='Closed')
-                update_sorted_currency_tx_list(tx_dict[tx_hash])
 
 def check_bitcoin_payment(t):
     if t['invalid']==[True, 'bitcoin payment']:
@@ -153,47 +152,43 @@ def check_bitcoin_payment(t):
                             if part_bought>0:
                                 # mark deal as closed
                                 # calculate the spot accept
-                                spot_accept=float(sell_accept_tx['formatted_amount_accepted'])
+                                try:
+                                    spot_accept=float(sell_accept_tx['formatted_amount_accepted'])
+                                except KeyError:
+                                    debug('continue to next accept, since no formatted_amount_accepted on '+sell_accept_tx['tx_hash'])
+                                    # this was not the right accept
+                                    continue
                                 spot_closed=min((part_bought*float(whole_sell_amount)+0.000000005), spot_accept)
+
                                 # update sold tx
                                 satoshi_spot_closed=to_satoshi(spot_closed)
                                 update_addr_dict(address, True, c, balance=-satoshi_spot_closed, sold=satoshi_spot_closed, \
                                     offer=-satoshi_spot_closed, accept=-satoshi_spot_closed, sold_tx=sell_accept_tx)
+
                                 # update bought tx
                                 update_addr_dict(from_address, True, c, balance=satoshi_spot_closed, \
                                     bought=satoshi_spot_closed, bought_tx=sell_accept_tx)
+
                                 # update sell available: min between original sell amount, the remaining offer, and the current balance
-                                info(sell_offer_tx['formatted_amount'])
-                                sell_offer_tx['amount_available']=min(float(sell_offer_tx['formatted_amount']), \
-                                    from_satoshi(addr_dict[from_address][c]['offer']),from_satoshi(addr_dict[from_address][c]['balance']))
-                                info(sell_offer_tx['amount_available'])
-                                sell_offer_tx['formatted_amount_available']=formatted_decimal(sell_offer_tx['amount_available'])
+                                update_tx_dict(sell_offer_tx['tx_hash'], True, amount_available=min(float(sell_offer_tx['formatted_amount']), \
+                                    from_satoshi(addr_dict[from_address][c]['offer']),from_satoshi(addr_dict[from_address][c]['balance'])))
+                                update_tx_dict(sell_offer_tx['tx_hash'], True, formatted_amount_available=formatted_decimal(sell_offer_tx['amount_available']))
+
                                 # if not more left in the offer - close sell
                                 if addr_dict[address][c]['offer'] == 0:
-                                    sell_offer_tx['color']='bgc-done'
-                                    sell_offer_tx['icon_text']='Sell offer done'
+                                    update_tx_dict(sell_accept_tx['tx_hash'], True, color='bgc-done', icon_text='Sell offer done')
                                 else:
-                                    sell_offer_tx['color']='bgc-accepted-done'
-                                    sell_offer_tx['icon_text']='Sell offer partially done'
-                                # FIXME: add_modified_sell_tx here?
-                                update_sorted_currency_tx_list(sell_offer_tx)
-                                # update bitcoin payment in accept tx
-                                key=sell_accept_tx['tx_hash']
-                                info('modify accept: '+key)
-                                sell_accept_tx['btc_offer_txid']=t['tx_hash']
-                                sell_accept_tx['status']='Closed'
-                                sell_accept_tx['payment_done']=True
-                                sell_accept_tx['formatted_amount_bought']=from_satoshi(satoshi_spot_closed)
-                                sell_accept_tx['color']='bgc-done'
-                                sell_accept_tx['icon_text']='Accept offer paid'
-                                add_modified_sell_tx(key,sell_accept_tx)
-                                update_sorted_currency_tx_list(sell_accept_tx)
+                                    update_tx_dict(sell_accept_tx['tx_hash'], True, color='bgc-accepted-done', icon_text='Sell offer partially done')
+
+                                # update sell accept tx (with bitcoin payment etc)
+                                update_tx_dict(sell_accept_tx['tx_hash'], True, btc_offer_txid=t['tx_hash'], status='Closed', \
+                                    payment_done=True, formatted_amount_bought=from_satoshi(satoshi_spot_closed),  \
+                                    color='bgc-done', icon_text='Accept offer paid')
+
                                 # update sell and accept offer in bitcoin payment
-                                t['sell_tx_id']=sell_offer_tx['tx_hash']
-                                t['accept_tx_id']=sell_accept_tx['tx_hash']
-                                key=t['tx_hash']
-                                add_modified_sell_tx(key,t)
-                                update_sorted_currency_tx_list(sell_offer_tx)
+                                update_tx_dict(t['tx_hash'], True, sell_offer_txid=sell_offer_tx['tx_hash'], accept_txid=sell_accept_tx['tx_hash'])
+
+                                # update the sorted currency tx list
                                 return True # hidden assumption: payment is for a single accept
                             else:
                                 error('non positive part bought on bitcoin payment: '+t['tx_hash'])
@@ -236,10 +231,15 @@ def update_tx_dict(tx_hash, mark_modified, *arguments, **keywords):
         # for simplesend which is exodus, the last one is simplesend (#1)
         tx_dict[tx_hash]=load_dict_from_file('tx/'+tx_hash+'.json', all_list=True)
 
+    # the last tx on the list is the one to modify
+    n=-1
+
     # get the update_fs from tx_dict for that tx
-    if tx_dict[tx_hash][-1].has_key('update_fs'):
-        update_fs=tx_dict[tx_hash][-1]['update_fs']
+    if tx_dict[tx_hash][n].has_key('update_fs'):
+        update_fs=tx_dict[tx_hash][n]['update_fs']
     else:
+        # start with default "no need to update fs"
+        tx_dict[tx_hash][n]['update_fs']=False
         update_fs=False
     
     # update all given fields with new values
@@ -252,14 +252,14 @@ def update_tx_dict(tx_hash, mark_modified, *arguments, **keywords):
             error('unsupported property of tx: '+kw)
         # set update_fs flag if necessary (if something really changed)
         try:
-            update_fs = tx_dict[tx_hash][-1][kw]!=keywords[kw] or update_fs
+            update_fs = tx_dict[tx_hash][n][kw]!=keywords[kw] or update_fs
         except KeyError:
             update_fs = True
-        tx_dict[tx_hash][-1][kw]=keywords[kw]
+        tx_dict[tx_hash][n][kw]=keywords[kw]
 
     # write update_fs to tx_dict if mark_modified given
     if mark_modified:
-        tx_dict[tx_hash][-1]['update_fs']=update_fs
+        tx_dict[tx_hash][n]['update_fs']=update_fs
 
 
 # update the main address database
@@ -309,25 +309,20 @@ def update_initial_icon_details(t):
     t['color']='bgc-new'
     try:
         if t['transactionType']=='00000000':
-            t['icon']='simplesend'
-            t['details']=t['to_address']
+            update_tx_dict(t['tx_hash'], True, icon='simplesend', details=t['to_address'])
         else:
             if t['transactionType']=='00000014':
-                t['icon']='selloffer'
-                t['details']=t['formatted_price_per_coin']
+                update_tx_dict(t['tx_hash'], True, icon='selloffer', details=t['formatted_price_per_coin'])
             else:
                 if t['transactionType']=='00000016':
-                    t['icon']='sellaccept'
-                    t['details']='unknown_price'
+                    update_tx_dict(t['tx_hash'], True, icon='sellaccept', details='unknown_price')
                 else:
-                   t['icon']='unknown'
-                   t['details']='unknown'
+                    update_tx_dict(t['tx_hash'], True, icon='unknown', details='unknown')
     except KeyError as e:
         # The only *valid* mastercoin tx without transactionType is exodus
         if t['tx_type_str']=='exodus':
-            t['icon']='exodus'
             try:
-                t['details']=t['to_address']
+                update_tx_dict(t['tx_hash'], True, icon='exodus', details=t['to_address'])
             except KeyError:
                 error('exodus tx with no to_address: '+str(t))
         else:
@@ -336,114 +331,32 @@ def update_initial_icon_details(t):
 
 def mark_tx_invalid(tx_hash, reason):
     # mark tx as invalid
-    tmp_dict=load_dict_from_file('tx/'+tx_hash+'.json')
-    if int(tmp_dict['block']) < last_exodus_bootstrap_block:
-        debug('skip invalidating exodus tx '+tx_hash+' and reason '+reason)
-    else:
-        tmp_dict['invalid']=(True,reason)
-        tmp_dict['color']='bgc-invalid'
-        atomic_json_dump(tmp_dict,'tx/'+tx_hash+'.json')
-
-# add another general tx to the modified dict
-def add_modified_tx(key, t):
-    if modified_tx_dict.has_key(key):
-        modified_tx_dict[key].append(t)
-    else:
-        modified_tx_dict[key]=[t]
+    update_tx_dict(tx_hash, True, invalid=(True,reason), color='bgc-invalid')
 
 # add another sell tx to the modified dict
-def add_modified_sell_tx(key, t):
-    if modified_sell_tx_dict.has_key(key):
-        modified_sell_tx_dict[key].append(t)
+def add_bids(key, t):
+    if bids_dict.has_key(key):
+        bids_dict[key].append(t)
     else:
-        modified_sell_tx_dict[key]=[t]
+        bids_dict[key]=[t]
 
-# go over modified tx and update the required tx + create bids json
-def update_modified_tx_and_bids():
 
-    # first deal with non distributed exchange tx
-    # check previous snapshot
-    icon_text_per_tx_hash = load_dict_from_file('general/icon_text_per_tx_hash.json','r')
-    if type(icon_text_per_tx_hash)==dict:
-        icon_text_per_tx_hash_dict=icon_text_per_tx_hash
-    else:
-        icon_text_per_tx_hash_dict=icon_text_per_tx_hash[0]
-    for tx_hash in modified_tx_dict.keys():
-        # get updated data from modified dict
-        t=modified_tx_dict[tx_hash]
-        if type(t)==dict:
-            running_dict=t
-        else:
-            running_dict=t[0]
-        # if prev icon_text identical to snapshot - no need to update:
-        try:
-            if running_dict['prev_icon_text']==icon_text_per_tx_hash_dict[tx_hash]:
-                continue
-        except KeyError:
-            pass
-        # if not: get tx dict from the filesystem for comparison
-        tmp_dict=load_dict_from_file('tx/'+tx_hash+'.json','r')
-        if type(tmp_dict)==dict:
-            fs_dict=tmp_dict
-        else:
-            fs_dict=tmp_dict[0]
-        try:
-            if fs_dict['icon_text']==running_dict['prev_icon_text']:
-                continue
-        except KeyError:
-            pass
-        for k in running_dict.keys():
-            try:
-                # run over with new value
-                if k != 'prev_icon_text':
-                    fs_dict[k]=running_dict[k]
-            except KeyError:
-                debug('key '+k+' missing in tx: '+tx_hash)
-        # save back to filesystem
-        atomic_json_dump(fs_dict, 'tx/'+tx_hash+'.json')
+# write back to fs all tx which got modified
+def write_back_modified_tx():
+    n=-1 # relevant is last tx on the list
+    for k in tx_dict.keys():
+        if tx_dict[k][n]['update_fs'] == True:
+            # remove update fs marker
+            del tx_dict[k][n]['update_fs']
+            # save back to filesystem
+            atomic_json_dump(tx_dict[k], 'tx/'+k+'.json', add_brackets=False)
 
-    # then update sell/accept tx files
-    # FIXME: make sure modifications include alarms
-    for tx_hash in modified_sell_tx_dict.keys():
-        # get tx dict
-        tmp_sell_dict=load_dict_from_file('tx/'+tx_hash+'.json','r')
-
-        # update orig tx (status?)
-        updated_tx=[tmp_sell_dict]
-
-        # update bids
-        bids=[]
-
-        # go over all related tx
-        for t in modified_sell_tx_dict[tx_hash]:
-            # add bid tx to sell offer
-            bids.append(t)
-            # update purchase accepts
-            tmp_accept_dict=load_dict_from_file('tx/'+t['tx_hash']+'.json')
-            for k in t.keys():
-                # run over with new value
-                if k != 'prev_icon_text':
-                    tmp_accept_dict[k]=t[k]
-            # write updated accept tx
-            atomic_json_dump(tmp_accept_dict, 'tx/'+t['tx_hash']+'.json')
-
+# create bids json
+def update_bids():
+    for tx_hash in bids_dict.keys():
         # write updated bids
-        atomic_json_dump(bids, 'bids/bids-'+tx_hash+'.json', add_brackets=False)
+        atomic_json_dump(bids_dict[tx_hash], 'bids/bids-'+tx_hash+'.json', add_brackets=False)
 
-def update_sorted_currency_tx_list(t):
-    if type(t)==list:
-        t=t[0]
-    else:
-        if type(t)!=dict:
-            error('unexpected tx type '+str(type(t))+': '+str(t))
-    tx_hash=t['tx_hash']
-    try:
-        currency=t['currency_str']
-    except KeyError:
-        error(t)
-    for n,i in enumerate(sorted_currency_tx_list[currency]):
-        if i['tx_hash']==tx_hash:
-            sorted_currency_tx_list[currency][n]=t
 
 # generate api json
 # address
@@ -483,10 +396,26 @@ def generate_api_jsons():
         atomic_json_dump(addr_dict_api, 'addr/'+addr+'.json', add_brackets=False)
 
     # create files for msc and files for test_msc
-    chunk=10
-    sorted_currency_tx_list['Mastercoin'].reverse()
-    sorted_currency_tx_list['Test Mastercoin'].reverse()
+    for k in tx_dict.keys():
+        # take all tx list for this txid
+        for t in tx_dict[k]:
+            if t['invalid'] != False:
+                continue
+            if t['tx_type_str']=='exodus':
+                sorted_currency_tx_list['Mastercoin'].append(t)
+                sorted_currency_tx_list['Test Mastercoin'].append(t)
+            else:
+                if t['currencyId']==reverse_currency_type_dict['Mastercoin']:
+                    sorted_currency_tx_list['Mastercoin'].append(t)
+                else:
+                    if t['currencyId']==reverse_currency_type_dict['Test Mastercoin']:
+                        sorted_currency_tx_list['Test Mastercoin'].append(t)
+    # and reverse sort
+    for c in coins_list:
+        sorted_currency_tx_list[c]=sorted(sorted_currency_tx_list[c], \
+            key=lambda k: (-int(k['block']),-int(k['index'])))
 
+    chunk=10
     # create the latest transactions pages
     pages={'Mastercoin':0, 'Test Mastercoin':0}
     for c in coins_list:
@@ -575,18 +504,7 @@ def check_mastercoin_transaction(t):
         update_addr_dict(exodus_address, True, 'Test Mastercoin', balance=ten_percent, exodus_tx=t)
 
         # all exodus are done
-        t['color']='bgc-done'
-        t['icon_text']='Exodus'
-
-        # mark to update the tx on filesystem if required
-        if prev_icon_text!=t['icon_text']:
-            t['prev_icon_text']=prev_icon_text
-            add_modified_tx(t['tx_hash'],t)
-
-        # tx belongs to mastercoin and test mastercoin
-        for c in coins_list:
-            sorted_currency_tx_list[c].append(t)
-        return True
+        update_tx_dict(t['tx_hash'], True, color='bgc-done', icon_text='Exodus')
     else:
         c=currency
         if c!='Mastercoin' and c!='Test Mastercoin':
@@ -594,20 +512,13 @@ def check_mastercoin_transaction(t):
             return False
         # left are normal transfer and sell offer/accept
         if t['tx_type_str']==transaction_type_dict['00000000']:
-            t['icon_text']='Simple send ('+str(tx_age)+' confirms)'
-            if tx_age > blocks_consider_new:
-                if tx_age < blocks_consider_mature:
-                    t['color']='bgc-new-done'
-                else:
-                    t['color']='bgc-done'
-                    t['icon_text']='Simple send'
+            if tx_age <= blocks_consider_new:
+                update_tx_dict(t['tx_hash'], True, color='bgc-new', icon_text='Simple send ('+str(tx_age)+' confirms)')
             else:
-                pass # left are new simple send with color new
-
-            # mark to update the tx on filesystem if required
-            if prev_icon_text!=t['icon_text']:
-                t['prev_icon_text']=prev_icon_text
-                add_modified_tx(t['tx_hash'],t)
+                if tx_age < blocks_consider_mature:
+                    update_tx_dict(t['tx_hash'], True, color='bgc-new-done', icon_text='Simple send ('+str(tx_age)+' confirms)')
+                else:
+                    update_tx_dict(t['tx_hash'], True, color='bgc-done', icon_text='Simple send')
  
             # the normal transfer case
             if not addr_dict.has_key(from_addr):
@@ -625,38 +536,32 @@ def check_mastercoin_transaction(t):
                     update_addr_dict(to_addr, True, c, balance=amount_transfer, received=amount_transfer, in_tx=t)
                     # update from_addr
                     update_addr_dict(from_addr, True, c, balance=-amount_transfer, sent=amount_transfer, out_tx=t)
-                    # update msc list
-                    sorted_currency_tx_list[c].append(t)
                     return True
         else:
             # sell offer
             if t['tx_type_str']==transaction_type_dict['00000014']:
                 debug('sell offer: '+tx_hash)
-                t['icon_text']='Sell Offer ('+str(tx_age)+' confirms)'
+                # update sell available: min between original sell amount and the current balance
+                try:
+                    seller_balance=from_satoshi(addr_dict[from_addr][c]['balance'])
+                except KeyError: # no such address
+                    seller_balance=0.0
+                amount_available=min(float(t['formatted_amount']), seller_balance)
+                update_tx_dict(t['tx_hash'], True, icon_text='Sell Offer ('+str(tx_age)+' confirms)', \
+                    amount_available=amount_available, formatted_amount_available=formatted_decimal(amount_available))
                 # sell offer from empty or non existing address is allowed
                 # update details of sell offer
                 # update single allowed tx for sell offer
                 # add to list to be shown on general
                 offer_amount=to_satoshi(t['formatted_amount'])
                 update_addr_dict(from_addr, True, c, offer=offer_amount, offer_tx=t)
-
-                # update sell available: min between original sell amount and the current balance
-                info(t['formatted_amount'])
-                t['amount_available']=min(float(t['formatted_amount']), from_satoshi(addr_dict[from_addr][c]['balance']))
-                info(t['amount_available'])
-                t['formatted_amount_available']=formatted_decimal(t['amount_available'])
-
-                # mark to update the tx on filesystem if required
-                if prev_icon_text!=t['icon_text']:
-                    t['prev_icon_text']=prev_icon_text
-                    add_modified_tx(t['tx_hash'],t)
-                sorted_currency_tx_list[c].append(t)
                 return True
             else:
                 # sell accept
                 if t['tx_type_str']==transaction_type_dict['00000016']:
                     debug('sell accept: '+tx_hash)
-                    t['icon_text']='Sell Accept (active)'
+
+                    update_tx_dict(t['tx_hash'], True, icon_text='Sell Accept (active)')
                     # verify corresponding sell offer exists and partial balance
                     # partially fill and update balances and sell offer
                     # add to list to be shown on general
@@ -700,40 +605,30 @@ def check_mastercoin_transaction(t):
                         bitcoin_required=float(sell_offer_tx['formatted_bitcoin_amount_desired'])*part
                     except KeyError:
                         bitcoin_required='missing required btc'
-                    t['bitcoin_required']=bitcoin_required
-                    t['sell_offer_txid']=sell_offer_tx['tx_hash']
-                    t['btc_offer_txid']='unknown'
+
+                    update_tx_dict(t['tx_hash'], True, bitcoin_required=bitcoin_required, sell_offer_txid=sell_offer_tx['tx_hash'], \
+                        btc_offer_txid='unknown')
 
                     spot_accept=min(float(sell_offer),float(accept_amount_requested))   # the accept is on min of all
                     if spot_accept > 0: # ignore 0 or negative accepts
-                        t['formatted_amount_accepted']=spot_accept
-                        t['payment_done']=False
-                        t['payment_expired']=False
+
+                        update_tx_dict(t['tx_hash'], True, formatted_amount_accepted=spot_accept, payment_done=False, payment_expired=False)
                         payment_timeframe=int(sell_offer_tx['formatted_block_time_limit'])
-                        add_alarm(t,payment_timeframe)
+                        add_alarm(t['tx_hash'], payment_timeframe)
+
                         # accomulate the spot accept on the seller side
                         update_addr_dict(from_addr, True, c, accept=to_satoshi(spot_accept), accept_tx=t)
 
                         # update icon colors of sell
                         if sell_offer > spot_accept:
-                            sell_offer_tx['color']='bgc-new-accepted'
-                            sell_offer_tx['icon_text']='Sell offer partially accepted'
+                            update_tx_dict(sell_offer_tx['tx_hash'], True, color='bgc-new-accepted', icon_text='Sell offer partially accepted')
                         else:
-                            sell_offer_tx['color']='bgc-accepted'
-                            sell_offer_tx['icon_text']='Sell offer accepted'
-
-                        # and update the sorted list
-                        update_sorted_currency_tx_list(sell_offer_tx)
+                            update_tx_dict(sell_offer_tx['tx_hash'], True, color='bgc-accepted', icon_text='Sell offer accepted')
                     else:
                         mark_tx_invalid(t['tx_hash'],'non positive spot accept')
                     # add to current bids (which appear on seller tx)
                     key=sell_offer_tx['tx_hash']
-                    add_modified_sell_tx(key, t)
-                    # mark to update the tx on filesystem if required
-                    if prev_icon_text!=t['icon_text']:
-                        t['prev_icon_text']=prev_icon_text
-                        add_modified_tx(t['tx_hash'],t)
-                    sorted_currency_tx_list[c].append(t)    # add per currency tx
+                    add_bids(key, t)
                     return True
                 else:
                     info('unknown tx type: '+t['tx_type_str']+' in '+tx_hash)
@@ -758,7 +653,6 @@ def validate():
 
     # load tx_dict
     initial_tx_dict_load()
-    info(tx_dict['f993be9813e409ee1ce42b14c444af65b789350abe412fd2f8a289082b7b4870'][-1])
 
     # get all tx sorted
     sorted_tx_list=get_sorted_tx_list()
@@ -792,26 +686,14 @@ def validate():
         except OSError:
             error('error on tx '+t['tx_hash'])
 
-    # update changed tx and create json for bids
-    update_modified_tx_and_bids()
+    # create json for bids
+    update_bids()
+
+    # update changed tx
+    write_back_modified_tx()
 
     # generate address pages and last tx pages
     generate_api_jsons()
-
-    # convert modified_tx_dict and modified_sell_tx_dict to one list
-    modified_tx_list=[]
-    for key, value in modified_tx_dict.iteritems():
-         modified_tx_list.append(value[0])
-    for key, value in modified_sell_tx_dict.iteritems():
-         modified_tx_list.append(value[0])
-    # write icon_text_per_tx_hash dict
-    icon_text_per_tx_hash={}
-    for t in sorted_tx_list+modified_tx_list:
-        try:
-            icon_text_per_tx_hash[t['tx_hash']]=t['icon_text']
-        except KeyError:
-            pass
-    atomic_json_dump(icon_text_per_tx_hash,'general/icon_text_per_tx_hash.json')
 
     info('validation done')
 
