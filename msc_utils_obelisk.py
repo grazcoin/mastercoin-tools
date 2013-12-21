@@ -100,6 +100,8 @@ def get_value_from_output(tx_and_number):
         return None
     rawtx=get_raw_tx(txid)
     json_tx=get_json_tx(rawtx)
+    if json_tx == None:
+        error('json_tx is None')
     try:
         all_outputs=json_tx['outputs']
     except TypeError: # obelisk can give None
