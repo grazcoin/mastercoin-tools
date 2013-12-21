@@ -175,52 +175,61 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
 
         # all outputs has to be the same (except for change)
         if len(different_outputs_values) > 2:
-            if after_bootstrap: # bitcoin payments are possible
-                info('bitcoin payment tx (different output values) '+tx_hash)
-                return parse_bitcoin_payment(tx, tx_hash)
+            # last resort: let's try to peek and decode
+            (found, data, reference)=peek_and_decode(outputs_list_no_exodus, different_outputs_values)
+            if found:
+                debug('different outputs resolved using peek and decode on '+tx_hash)
             else:
-                info('invalid mastercoin tx (different output values) '+tx_hash)
-                return {'invalid':(True,'different output values'), 'tx_hash':tx_hash}
+                if after_bootstrap: # bitcoin payments are possible
+                    info('bitcoin payment tx (different output values) '+tx_hash)
+                    return parse_bitcoin_payment(tx, tx_hash)
+                else:
+                    info('invalid mastercoin tx (different output values) '+tx_hash)
+                    return {'invalid':(True,'different output values'), 'tx_hash':tx_hash}
 
-        # currently support only the simple send (a single data packet)
-        # if broken sequence (i.e. 3,4,8), then the odd-man-out is the change address
-        for s in seq_list:
-            if (s+1)%256 == int(seq_list[(seq_list.index(s)+1)%len(seq_list)]):
-                seq_start_index=seq_list.index(s)
-                data=outputs_list_no_exodus[seq_list.index(s)]
-                reference=outputs_list_no_exodus[(seq_list.index(s)+1)%len(seq_list)]
+        else:
+            # currently support only the simple send (a single data packet)
+            # if broken sequence (i.e. 3,4,8), then the odd-man-out is the change address
+            for s in seq_list:
+                if (s+1)%256 == int(seq_list[(seq_list.index(s)+1)%len(seq_list)]):
+                    seq_start_index=seq_list.index(s)
+                    data=outputs_list_no_exodus[seq_list.index(s)]
+                    reference=outputs_list_no_exodus[(seq_list.index(s)+1)%len(seq_list)]
 
-        # no change case:
-        if(len(seq_list)==2):
-            diff=abs(seq_list[0]-seq_list[1])
-            if diff != 1 and diff != 255:
-                info('invalid mastercoin tx (non following 2 seq numbers '+str(seq_list)+') '+tx_hash)
-                return {'invalid':(True,'non following 2 seq numbers '+str(seq_list)), 'tx_hash':tx_hash}
+            # no change case:
+            if(len(seq_list)==2):
+                diff=abs(seq_list[0]-seq_list[1])
+                if diff != 1 and diff != 255:
+                    info('invalid mastercoin tx (non following 2 seq numbers '+str(seq_list)+') '+tx_hash)
+                    return {'invalid':(True,'non following 2 seq numbers '+str(seq_list)), 'tx_hash':tx_hash}
 
-        # handle special cases of perfect seq and ambiguous seq using 'peek and decode'
-        found=True # may change only in one of the below special cases
-        reason=''
-        if(len(seq_list)==3):
-            # If there is a perfect sequence (i.e. 3,4,5), try peek and decode
-            if (seq_list[seq_start_index]+1)%256==(seq_list[(seq_start_index+1)%3])%256 and \
-                (seq_list[(seq_start_index-1)%3]+1)%256==(seq_list[seq_start_index])%256:
-                reason='perfect sequence '+str(seq_list)
+            # handle special cases of perfect seq and ambiguous seq using 'peek and decode'
+            found=True # may change only in one of the below special cases
+            reason=''
+            if(len(seq_list)==3):
+                # If there is a perfect sequence (i.e. 3,4,5), try peek and decode
+                if (seq_list[seq_start_index]+1)%256==(seq_list[(seq_start_index+1)%3])%256 and \
+                    (seq_list[(seq_start_index-1)%3]+1)%256==(seq_list[seq_start_index])%256:
+                    reason='perfect sequence '+str(seq_list)
                     
-            # If there is an ambiguous sequence (i.e. 3,4,4), try peek and decode
-            if seq_list[seq_start_index]==seq_list[(seq_start_index+2)%3] or \
-                seq_list[(seq_start_index+1)%3]==seq_list[(seq_start_index+2)%3] or \
-                seq_list[(seq_start_index)]==seq_list[(seq_start_index+1)%3]:
-                reason='ambiguous sequence '+str(seq_list)
+                # If there is an ambiguous sequence (i.e. 3,4,4), try peek and decode
+                if seq_list[seq_start_index]==seq_list[(seq_start_index+2)%3] or \
+                    seq_list[(seq_start_index+1)%3]==seq_list[(seq_start_index+2)%3] or \
+                    seq_list[(seq_start_index)]==seq_list[(seq_start_index+1)%3]:
+                    reason='ambiguous sequence '+str(seq_list)
 
-            if reason != '': # one of the above special cases
-                (found, data, reference)=peek_and_decode(outputs_list_no_exodus, different_outputs_values)
+                if reason != '': # one of the above special cases
+                    (found, data, reference)=peek_and_decode(outputs_list_no_exodus, different_outputs_values)
 
         if not found:
             info('invalid mastercoin tx ('+reason+') '+tx_hash)
             return {'invalid':(True,reason), 'tx_hash':tx_hash}
 
         if reference==None:
-            error('reference is None')
+            debug('could not find reference using seq numbers. trying peek and decode')
+            (found, data, reference)=peek_and_decode(outputs_list_no_exodus, different_outputs_values)
+            if not found:
+                error('reference is None on '+tx_hash)
 
         to_address=reference['address']
         data_script=data['script'].split()[3].zfill(42)
