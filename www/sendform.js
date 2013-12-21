@@ -10,6 +10,7 @@ function AcceptOfferController($scope, $http) {
     $scope.key = "";
     $scope.currency = "";
     $scope.toAddress = "";
+    $scope.toAddrReadOnly = true;
 
     $scope.keyChange = function () {
 
@@ -28,6 +29,8 @@ function AcceptOfferController($scope, $http) {
         //var file = 'tx/' + myURLParams['tx'] + '.json';
 	$scope.currency = myURLParams['currency'];
 	$scope.toAddress = myURLParams['addr'];
+	
+	$scope.toAddrReadOnly = ($scope.toAddress && $scope.toAddress.length > 0);
       
     }
 
@@ -239,7 +242,7 @@ BTNClientContext.Signing.GetRawTransaction = function () {
 
 
 var myURLParams = BTCUtils.getQueryStringArgs();
-var to_address = myURLParams['addr'];
+var to_address = $("#recipient").val();
 var from_address = $("input.select.optional.form-control.form-control30px.combobox").val();
 var amount = $('#amount').val();
 var currency = $('#currency').val();
