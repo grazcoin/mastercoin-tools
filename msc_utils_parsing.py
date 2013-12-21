@@ -1,7 +1,13 @@
 #!/usr/bin/python
-from msc_utils_validating import *
+from msc_utils_obelisk import *
 
 currency_type_dict={'00000001':'Mastercoin','00000002':'Test Mastercoin'}
+reverse_currency_type_dict={'Mastercoin':'00000001','Test Mastercoin':'00000002'}
+transaction_type_dict={'00000000':'Simple send', '00000014':'Sell offer', '00000016':'Sell accept'}
+exodus_address='1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P'
+first_exodus_bootstrap_block=249498
+last_exodus_bootstrap_block=255365
+exodus_bootstrap_deadline=1377993600
 multisig_simple_disabled=True
 multisig_disabled=False
 dust_limit=5430
@@ -213,6 +219,9 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
             info('invalid mastercoin tx ('+reason+') '+tx_hash)
             return {'invalid':(True,reason), 'tx_hash':tx_hash}
 
+        if reference==None:
+            error('reference is None')
+
         to_address=reference['address']
         data_script=data['script'].split()[3].zfill(42)
         data_dict=parse_data_script(data_script)
@@ -227,8 +236,8 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
             parse_dict['tx_method_str']='basic'
             # FIXME: checksum?
             return parse_dict
-    except (KeyError, IndexError, TypeError):
-        info('invalid mastercoin tx '+tx_hash)
+    except (KeyError, IndexError, TypeError) as e:
+        info('invalid mastercoin tx ('+str(e)+') at tx '+tx_hash)
         return {'invalid':(True,'bad parsing'), 'tx_hash':tx_hash}
 
 def parse_multisig_simple(tx, tx_hash='unknown'):
