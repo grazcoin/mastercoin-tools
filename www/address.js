@@ -1,6 +1,6 @@
 function AdressController($scope, $http) {
     $scope.addressInformation = {};
-
+    $scope.theAddress = "";
     $scope.footer = "FOOTER";
     $scope.title = "TITLE";
     
@@ -84,6 +84,12 @@ function AdressController($scope, $http) {
 
         // parse addr from url parameters
 	var myURLParams = BTCUtils.getQueryStringArgs();
+	$scope.theAddress = myURLParams['addr'];
+	$('#qrcode').qrcode({
+		width: 130,
+		height: 130,
+		text: myURLParams['addr']
+		});
 	var file = 'addr/' + myURLParams['addr'] + '.json';	
 	var currencyName = myURLParams['currency'];
         if (currencyName == 'MSC') {

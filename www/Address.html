@@ -15,6 +15,7 @@
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/bootstrap-theme.css" rel="stylesheet">
     <script src="js/jquery-1.10.1.min.js"></script>
+    <script src="js/jquery.qrcode.min.js"></script>
     <script src="js/angular.js"></script>
     <script src="btcutils.js"></script>
     <script src="js/truncate.js"></script>
@@ -60,6 +61,24 @@
         <div class="row">
           <div class="no-fixed col-sm-9 col-sm-push-3 col-md-10 col-md-push-2">
             <div class="inner" ng-controller="AdressController" ng-init="getAddressData()">
+            <div class="row">
+				<div class="col-xs-12 col-md-8">
+					<table class="table table-striped table-hover table-condensed">
+                        <tr>
+                            <td>Address</td>
+                            <td><a ng-href="Address.html?addr={{theAddress}}&currency={{currency}}">{{theAddress}}</a></td>
+                        </tr>
+                        <tr>
+							<td>Tools</td>
+							<td class="btnCell">
+							<button type="button" class="btc-tbl-btn pull-right btn btn-success btn-xs">My wallet</button>
+							<button type="button" ng-click="SendClick()" class="btc-tbl-btn pull-right btn btn-success btn-xs">Send here</button>
+							</td>
+                        </tr>
+                    </table>
+				</div>
+				<div class="qrcode-address col-xs-6 col-md-4"><div id="qrcode" style="float:right;"></div></div>
+            </div>
 	      <div class="row">
 		<div class="col-md-6">
 		    <table class="table table-striped table-hover table-condensed">
@@ -67,9 +86,8 @@
                             <tbody>
                                 <tr>
                                     <td>Final balance</td>
-                                    <td class="btnCell"><strong>{{addressInformation.balance}}</strong>
-					<button type="button" ng-click="SendClick()" class="pull-right btn btn-success btn-xs">Send here</button>
-				    </td>
+                                    <td><strong>{{addressInformation.balance}}</strong>
+				    				</td>
                                 </tr>
                                 <tr>
                                     <td>Bought via Exodus</td>

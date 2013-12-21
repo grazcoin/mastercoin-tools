@@ -378,3 +378,13 @@ ul.pagination li a{
     background: linear-gradient(to bottom, #ff3236 50%,#7db9e8 50%); /* W3C */
     filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ff3236', endColorstr='#7db9e8',GradientType=0 ); /* IE6-9 */
 }
+
+/* qrcode */
+
+.qrcode-address {
+    height: 145px;
+}
+
+.btc-tbl-btn {
+    margin-left: 8px;
+}
