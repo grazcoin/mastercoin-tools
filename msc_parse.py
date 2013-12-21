@@ -4,6 +4,11 @@ from optparse import OptionParser
 from msc_utils_parsing import *
 
 def parse():
+
+    ######################################
+    # reading and setting options values #
+    ######################################
+
     msc_globals.init()
 
     parser = OptionParser("usage: %prog [options]")
@@ -20,6 +25,9 @@ def parse():
     d=options.debug_mode
     single_tx=options.single_tx
     requested_block_height=options.starting_block_height
+
+
+    # find which block to start with
     if requested_block_height == None:
         # which block to start with?
         revision_block_height=0 # init with 0
@@ -81,6 +89,10 @@ def parse():
         history=[]
         history.append(t1)
 
+    ###########################
+    ### parsing starts here ###
+    ###########################
+
     # go over transaction from all history of 1EXoDus address
     last_block=0
     for tx_dict in history:
@@ -108,29 +120,11 @@ def parse():
             error('failed getting block None or index None for '+tx_hash)
         if last_block < int(block):
             last_block = int(block)
-        # examine the outputs
+
         outputs_list=json_tx['outputs']
-        # if we're here, then 1EXoDus is within the outputs. Remove it, but ...
-        outputs_list_no_exodus=[]
-        outputs_to_exodus=[]
-        different_outputs_values={}
-        for o in outputs_list:
-            if o['address']!=exodus_address:
-                outputs_list_no_exodus.append(o)
-            else:
-                outputs_to_exodus.append(o)
-            output_value=o['value']
-            if different_outputs_values.has_key(output_value):
-                different_outputs_values[output_value]+=1
-            else:
-                different_outputs_values[output_value]=1
-        # take care if multiple 1EXoDus exist (for the case that someone sends msc
-        # to 1EXoDus, or have 1EXoDus as change address)
-        if len(outputs_to_exodus) != 1:
-            # add all but the marker outputs
-            info("not implemented tx with multiple 1EXoDus outputs: "+tx_hash)
-            continue
+        (outputs_list_no_exodus, outputs_to_exodus, different_outputs_values)=examine_outputs(outputs_list, tx_hash, raw_tx)
         num_of_outputs=len(outputs_list)
+
         (block_timestamp, err)=get_block_timestamp(int(block))
         if block_timestamp == None:
             error('failed getting block timestamp of '+str(block)+': '+err)

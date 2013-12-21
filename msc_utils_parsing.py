@@ -140,7 +140,7 @@ def peek_and_decode(outputs_list_no_exodus, different_outputs_values):
 def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
     json_tx=get_json_tx(tx)
     outputs_list=json_tx['outputs']
-    (outputs_list_no_exodus, outputs_to_exodus, different_outputs_values)=examine_outputs(outputs_list)
+    (outputs_list_no_exodus, outputs_to_exodus, different_outputs_values)=examine_outputs(outputs_list, tx_hash, tx)
     num_of_outputs=len(outputs_list)
 
     # collect all "from addresses" (normally only a single one)
@@ -291,7 +291,7 @@ def parse_multisig(tx, tx_hash='unknown'):
                 error('Bad multiple inputs on: '+tx_hash)
                 return {}
     all_outputs=parsed_json_tx['outputs']
-    (outputs_list_no_exodus, outputs_to_exodus, different_outputs_values)=examine_outputs(all_outputs, tx_hash)
+    (outputs_list_no_exodus, outputs_to_exodus, different_outputs_values)=examine_outputs(all_outputs, tx_hash, tx)
     tx_dust=outputs_to_exodus[0]['value']
     dust_outputs=different_outputs_values[tx_dust]
     to_address='unknown'
@@ -406,7 +406,7 @@ def parse_multisig(tx, tx_hash='unknown'):
                 
     return parse_dict
 
-def examine_outputs(outputs_list, tx_hash='unknown'):
+def examine_outputs(outputs_list, tx_hash, raw_tx):
         # if we're here, then 1EXoDus is within the outputs. Remove it, but ...
         outputs_list_no_exodus=[]
         outputs_to_exodus=[]
@@ -422,15 +422,53 @@ def examine_outputs(outputs_list, tx_hash='unknown'):
             else:
                 different_outputs_values[output_value]=[o]
         # take care if multiple 1EXoDus exist (for the case that someone sends msc
-        # to 1EXoDus, or have 1EXoDus as change address)
+        # to 1EXoDus, or have 1EXoDus as change address, or sends from 1EXoDus)
         if len(outputs_to_exodus) != 1:
-            error("not implemented tx with multiple 1EXoDus outputs: "+tx_hash)
+            # support the special case of sending from 1EXoDus
+            json_tx=get_json_tx(raw_tx)
+            inputs_list=json_tx['inputs']
+            from_exodus=False
+            for i in inputs_list:
+                if i['address']==exodus_address:
+                    from_exodus=True
+                    break
+            if not from_exodus:
+                error("not implemented tx with multiple 1EXoDus outputs not from 1EXoDus: "+tx_hash)
+            else: # 1EXoDus has sent this tx
+                # Maximal 2 values are valid (dust and change)
+                if len(different_outputs_values.keys()) > 2:
+                    error("tx sent by exodus with more than 2 different values: "+tx_hash)
+                # move the dust exodus from outputs_to_exodus list to the outputs_list_no_exodus one
+                if len(different_outputs_values.keys()) == 1: # change is identical to marker
+                    debug("tx sent by exodus with single value")
+                    # move one item from exodus to no exodus list
+                    o=outputs_to_exodus.pop()
+                    outputs_list_no_exodus.append(o)
+                else:
+                    debug("tx sent by exodus with 2 values to exodus")
+                    # as there is a signle change, dust_value belongs to list with non single item
+                    output_values=different_outputs_values.keys()
+                    if len(different_outputs_values[output_values[0]])==1:
+                        dust_value=output_values[1]
+                    else:
+                        dust_value=output_values[0]
+                    # move the dust item from exodus to no exodus list
+                    dust_outputs_to_exodus=[]
+                    non_dust_outputs_to_exodus=[]
+                    for o in outputs_to_exodus:
+                        if o['value']==dust_value:
+                            dust_outputs_to_exodus.append(o)
+                        else:
+                            non_dust_outputs_to_exodus.append(o)
+                    # move the item
+                    outputs_list_no_exodus+=[dust_outputs_to_exodus[0]]
+                    outputs_to_exodus=non_dust_outputs_to_exodus+dust_outputs_to_exodus[1:]
         return (outputs_list_no_exodus, outputs_to_exodus, different_outputs_values)
 
 def get_tx_method(tx, tx_hash='unknown'): # multisig_simple, multisig, multisig_invalid, basic
         json_tx=get_json_tx(tx)
         outputs_list=json_tx['outputs']
-        (outputs_list_no_exodus, outputs_to_exodus, different_outputs_values)=examine_outputs(outputs_list, tx_hash)
+        (outputs_list_no_exodus, outputs_to_exodus, different_outputs_values)=examine_outputs(outputs_list, hx_hash, tx)
         num_of_outputs=len(outputs_list)
 
         # check if basic or multisig
