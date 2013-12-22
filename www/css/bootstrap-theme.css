@@ -38,6 +38,17 @@ body {
 	}
 }
 
+@media screen and (max-width: 991px) {
+    #qrcode {
+    	float: none !important;
+    	display: table;
+    	margin: 0 auto;
+    }
+    .qrcode-address {
+    	width: 100%;
+    }
+}
+
 /*
 @media (max-width: 1000px)
 .navbar > .container .navbar-brand {
@@ -387,4 +398,8 @@ ul.pagination li a{
 
 .btc-tbl-btn {
     margin-left: 8px;
+}
+
+td.captionTd1 {
+    width: 62px;
 }
