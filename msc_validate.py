@@ -470,11 +470,11 @@ def generate_api_jsons():
         
 
 # validate a matercoin transaction
-def check_mastercoin_transaction(t):
+def check_mastercoin_transaction(t, index=-1):
 
     # update icon and details
     update_initial_icon_details(t)
-    t=tx_dict[t['tx_hash']][-1]
+    t=tx_dict[t['tx_hash']][index]
 
     # get general data from tx
     to_addr=t['to_address']
@@ -484,11 +484,11 @@ def check_mastercoin_transaction(t):
     tx_hash=t['tx_hash']
     tx_age=int(last_height) - int(t['block'])+1
     try:
-        prev_icon_text=t['icon_text']
+        is_exodus=t['exodus']
     except KeyError:
-        prev_icon_text=''
+        is_exodus=False
 
-    if from_addr == 'exodus': # assume exodus does not do sell offer/accept
+    if is_exodus: # assume exodus does not do sell offer/accept
         # exodus purchase
         update_addr_dict(to_addr, True, 'Mastercoin', balance=amount_transfer, exodus_tx=t)
         update_addr_dict(to_addr, True, 'Test Mastercoin', balance=amount_transfer, exodus_tx=t)
@@ -671,7 +671,12 @@ def validate():
 
         try:
             if t['invalid'] == False: # normal valid mastercoin tx
-                check_mastercoin_transaction(t)
+                try:
+                    if t['exodus']==True:
+                        index=0 # for exodus take the first tx on the list
+                except KeyError:
+                    index=-1 # otherwise take the last tx in the list
+                check_mastercoin_transaction(t, index)
             else: # maybe bitcoin payment
                 if check_bitcoin_payment(t):
                     continue
