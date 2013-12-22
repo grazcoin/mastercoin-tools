@@ -13,6 +13,7 @@ multisig_disabled=False
 dust_limit=5430
 MAX_PUBKEY_IN_BIP11=3
 MAX_COMMAND_TRIES=3
+features_enable_dict={'distributed exchange':420000}
 
 # used as a key function for sorting outputs of msc tx
 def get_dataSequenceNum(item):
@@ -393,6 +394,20 @@ def parse_multisig(tx, tx_hash='unknown'):
                     parse_dict.pop('block_time_limit', None)
 
                 if data_dict['transactionType'] == '00000014': # Sell offer
+                    # check feature is enabled
+                    if currency_type_dict[data_dict['currencyId']]=='Mastercoin':
+                        (height,index)=get_tx_index(tx_hash)
+                        if height == -1:
+                            error('failed getting height of '+tx_hash)
+                        if int(features_enable_dict['distributed exchange']) > int(height):
+                            info('distributed exchange of msc is not yet enabled '+tx_hash)
+                            parse_dict['invalid']=(True, 'distributed exchange of msc is not yet enabled')
+                            parse_dict['color']='bgc-invalid'
+                            parse_dict['icon_text']='Invalid sell offer'
+                            parse_dict['from_address']=input_addr
+                            parse_dict['to_address']=to_address
+                            return parse_dict
+
                     bitcoin_amount_desired=int(data_dict['bitcoin_amount_desired'],16)/100000000.0
                     if amount > 0:
                         price_per_coin=bitcoin_amount_desired/amount
@@ -407,6 +422,20 @@ def parse_multisig(tx, tx_hash='unknown'):
                     parse_dict['formatted_block_time_limit']= str(int(data_dict['block_time_limit'],16))
 
                 if data_dict['transactionType'] == '00000016': # Sell accept
+                    # check feature is enabled
+                    if currency_type_dict[data_dict['currencyId']]=='Mastercoin':
+                        (height,index)=get_tx_index(tx_hash)
+                        if height == -1 or height == 'failed:':
+                            error('failed getting height of '+tx_hash)
+                        if int(features_enable_dict['distributed exchange']) > int(height):
+                            info('distributed exchange of msc is not yet enabled '+tx_hash)
+                            parse_dict['invalid']=(True, 'distributed exchange of msc is not yet enabled')
+                            parse_dict['color']='bgc-invalid'
+                            parse_dict['icon_text']='Invalid sell accept'
+                            parse_dict['from_address']=input_addr
+                            parse_dict['to_address']=to_address
+                            return parse_dict
+
                     # remove irrelevant keys
                     parse_dict.pop('bitcoin_amount_desired', None)
                     parse_dict.pop('block_time_limit', None)
