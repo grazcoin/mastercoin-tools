@@ -200,8 +200,12 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
             if(len(seq_list)==2):
                 diff=abs(seq_list[0]-seq_list[1])
                 if diff != 1 and diff != 255:
-                    info('invalid mastercoin tx (non following 2 seq numbers '+str(seq_list)+') '+tx_hash)
-                    return {'invalid':(True,'non following 2 seq numbers '+str(seq_list)), 'tx_hash':tx_hash}
+                    # let's try peek and decode here
+                    debug('non following 2 seq numbers '+str(seq_list)+') '+tx_hash+' trying peek and decode')
+                    (found, data, reference)=peek_and_decode(outputs_list_no_exodus, different_outputs_values)
+                    if not found:
+                        info('invalid mastercoin tx (non following 2 seq numbers '+str(seq_list)+') '+tx_hash)
+                        return {'invalid':(True,'non following 2 seq numbers '+str(seq_list)), 'tx_hash':tx_hash}
 
             # handle special cases of perfect seq and ambiguous seq using 'peek and decode'
             found=True # may change only in one of the below special cases
@@ -231,9 +235,32 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
             if not found:
                 error('reference is None on '+tx_hash)
 
-        to_address=reference['address']
+        # parsing 1st try
         data_script=data['script'].split()[3].zfill(42)
         data_dict=parse_data_script(data_script)
+
+        # sanity check of results
+        # list of tests
+        parsing_sanity_check_list=[(transaction_type_dict, 'transactionType'), \
+                                   (currency_type_dict, 'currencyId')]
+        # go over tests, one by one
+        for check in parsing_sanity_check_list:
+            try:
+                # is this value among the dictionary values?
+                # e.g. is specific transactionType within the transaction_type_dict keys?
+                check[0].keys().index(data_dict[check[1]])
+            except ValueError:
+                (found, data, reference)=peek_and_decode(outputs_list_no_exodus, different_outputs_values)
+                if not found:
+                    info('invalid '+check[1]+' '+data_dict[check[1]]+' on '+tx_hash)
+                    return {'invalid':(True,'invalid '+check[1]+' '+data_dict[check[1]]), 'tx_hash':tx_hash}
+                # parse again after peek and decode
+                data_script=data['script'].split()[3].zfill(42)
+                data_dict=parse_data_script(data_script)
+                # one time peek and decode is enough
+                break
+
+        to_address=reference['address']
         if len(data_dict) >= 6: # at least the basic 6 fields were parsed
             parse_dict=data_dict
             parse_dict['tx_hash']=tx_hash
@@ -245,6 +272,9 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
             parse_dict['tx_method_str']='basic'
             # FIXME: checksum?
             return parse_dict
+        else:
+            info('invalid mastercoin tx with less than 6 fields '+tx_hash)
+            return {'invalid':(True,'invalid mastercoin tx with less than 6 fields'), 'tx_hash':tx_hash}
     except (KeyError, IndexError, TypeError) as e:
         info('invalid mastercoin tx ('+str(e)+') at tx '+tx_hash)
         return {'invalid':(True,'bad parsing'), 'tx_hash':tx_hash}
