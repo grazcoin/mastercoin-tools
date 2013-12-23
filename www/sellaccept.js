@@ -3,12 +3,21 @@ function SellacceptController($scope, $http, $q) {
     $scope.sell_offer_tx;
     $scope.btc_payment;
     $scope.offers;
+    $scope.reason = "unknown";
 
     $scope.footer = "FOOTER";
     $scope.title = "TITLE";
 
     $scope.createIconPopup = function () {
             $('.iconPopupInit').popover({ trigger: "hover" });           
+    };
+    
+    //Function for creating popup
+    $scope.makePopup = function () {
+        //Popup for valid/invalid 
+        $('#validPopup').popover({ trigger: "hover" });
+        var navHeight = $('.navbar').height();
+        $('.page-container').css('paddingTop', navHeight + 20);
     };
     
     $scope.getSellacceptData = function () {
@@ -23,6 +32,7 @@ function SellacceptController($scope, $http, $q) {
 	        
 	$q.all([$scope.tInformation]).then(function(values) {
 	    $scope.transactionInformation = values[0].data[0];
+	    $scope.updateReason();
 	    
 	    var txfile = 'tx/' + values[0].data[0].sell_offer_txid + '.json';
 	    $scope.tInformation2 = $http.get(txfile, {cache: false});
@@ -36,8 +46,12 @@ function SellacceptController($scope, $http, $q) {
 		    $scope.btc_payment = values[0].data[0];
             });
         });
-        
-        
 
     };
+    
+    $scope.updateReason = function () {
+	if (!angular.isArray($scope.transactionInformation.invalid)) return;
+	if ($scope.transactionInformation.invalid.length < 2) return;
+	$scope.reason = $scope.transactionInformation.invalid[1];
+    }
 }
