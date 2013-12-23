@@ -432,7 +432,11 @@ def generate_api_jsons():
             accept_pages[c]+=1
 
     # update values.json
-    values_list=load_dict_from_file('www/values.json', all_list=True)
+    values_list=load_dict_from_file('www/values.json', all_list=True, skip_error=True)
+    # on missing values.json, take an empty default
+    if values_list=={}:
+        values_list=[{"currency": "MSC", "name": "Mastercoin", "name2": "", "pages": 1, "trend": "down", "trend2": "rgb(13,157,51)"}, \
+                     {"currency": "TMSC", "name": "Test MSC", "name2": "", "pages": 1, "trend": "up", "trend2": "rgb(212,48,48)"}]
     updated_values_list=[]
     for v in values_list:
         v['pages']=pages[coins_reverse_short_name_dict[v['currency']]]

@@ -16,7 +16,7 @@ touch $LOCK_FILE
 
 # parse until full success
 x=1 # assume failure
-echo -n > PARSE_LOG
+echo -n > $PARSE_LOG
 while [ "$x" != "0" ];
 do
   python msc_parse.py 2>&1 >> $PARSE_LOG
