@@ -112,10 +112,10 @@ BTNClientContext.Signing.Verify = function () {
     console.log("verify function");
     var buyer = $("input.select.optional.form-control.form-control30px.combobox").val();
 
-var dataToSend = { buyer: buyer };
+var dataToSend = { addr: buyer };
 
 var ok = true;
-$.post('/wallet/verifybuyer/', dataToSend, function (data) {
+$.post('/wallet/validateaddr/', dataToSend, function (data) {
 console.log('success');
 console.log(data);
 

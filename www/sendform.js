@@ -92,12 +92,12 @@ BTNClientContext.Signing.ConvertJSON = function (signedTransaction) {
 
 BTNClientContext.Signing.Verify = function () {
     console.log("verify function");
-    var buyer = $("input.select.optional.form-control.form-control30px.combobox").val();
+    var from_addr = $("input.select.optional.form-control.form-control30px.combobox").val();
 
-var dataToSend = { buyer: buyer };
+var dataToSend = { addr: from_addr };
 
 var ok = true;
-$.post('/wallet/verifybuyer/', dataToSend, function (data) {
+$.post('/wallet/validateaddr/', dataToSend, function (data) {
 console.log('success');
 console.log(data);
 
@@ -317,7 +317,7 @@ BTNClientContext.Signing.initHistoryCombobox = function () {
                 console.log(key);
                 console.log(value);
 
-                $('#buyerAddressOrPublicKey')
+                $('#fromAddressOrPublicKey')
                     .append($("<option></option>")
                     .attr("value", value)
                     .text(value));
@@ -327,7 +327,7 @@ BTNClientContext.Signing.initHistoryCombobox = function () {
             });
         }
 
-        $("#buyerAddressOrPublicKey").combobox();
+        $("#fromAddressOrPublicKey").combobox();
 
 
     }
