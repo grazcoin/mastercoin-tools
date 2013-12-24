@@ -145,6 +145,17 @@ def get_utxo(addr, value):
     else:
         return out
 
+def get_balance(addr):
+    out, err = run_command("sx balance "+addr)
+    if err != None:
+        return err
+    else:
+        try:
+            total=out.split('Paid balance:')[1].split('\n')[0].strip()
+        except IndexError as e:
+            return str(e)
+        return total
+
 def rawscript(script):
     out, err = run_command("sx rawscript "+script)
     if err != None:
