@@ -145,16 +145,16 @@ def get_utxo(addr, value):
     else:
         return out
 
-def get_balance(addr):
-    out, err = run_command("sx balance "+addr)
+def get_balance(addrs):
+    out, err = run_command("sx balance -j "+addrs)
     if err != None:
         return err
     else:
         try:
-            total=out.split('Paid balance:')[1].split('\n')[0].strip()
-        except IndexError as e:
-            return str(e)
-        return total
+            parsed_json_balance=simplejson.JSONDecoder().decode(out)
+        except simplejson.JSONDecodeError:
+            error('error parsing balance json')
+        return parsed_json_balance
 
 def rawscript(script):
     out, err = run_command("sx rawscript "+script)

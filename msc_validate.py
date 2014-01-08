@@ -201,7 +201,7 @@ def check_bitcoin_payment(t):
 def new_addr_entry():
     entry={}
     # for each currency
-    for c in coins_list:
+    for c in coins_list+['Bitcoin']:
         currency_dict={}
         # initialize all properties
         for property in addr_properties:
@@ -267,10 +267,10 @@ def update_addr_dict(addr, accomulate, *arguments, **keywords):
     # update specific currency fields within address
     # address is first arg
     # currency is second arg:
-    # 'Mastercoin', 'Test Mastercoin' or 'exodus' for exodus purchases
+    # 'Mastercoin', 'Test Mastercoin', 'Bitcoin' or 'exodus' for exodus purchases
     # then come the keywords and values to be updated
     c=arguments[0]
-    if c!='Mastercoin' and c!='Test Mastercoin' and c!='exodus':
+    if c!='Mastercoin' and c!='Test Mastercoin' and c!='exodus' and c!= 'Bitcoin':
         error('update_addr_dict called with unsupported currency: '+c)
 
     # is there already entry for this address?
@@ -351,15 +351,39 @@ def update_bids():
         # write updated bids
         atomic_json_dump(bids_dict[tx_hash], 'bids/bids-'+tx_hash+'.json', add_brackets=False)
 
+def update_bitcoin_balances():
+    chunk=100
+    addresses=addr_dict.keys()
 
+    # cut into chunks
+    for i in range(len(addresses)/chunk):
+        addr_batch=addresses[i*chunk:(i+1)*chunk]
+
+        # create the string of all addresses
+        addr_batch_str=''
+        for a in addr_batch:
+            addr_batch_str=addr_batch_str+a+' '
+
+        # get the balances
+        balances=get_balance(addr_batch_str)
+
+        # update addr_dict with bitcoin balance
+        for b in balances:
+            update_addr_dict(b['address'], False, 'Bitcoin', balance=b['paid'])
+       
+ 
 # generate api json
 # address
 # general files (10 in a page)
 # mastercoin_verify
 def generate_api_jsons():
 
+    # prepare updated snapshot of bitcoin balances for all addresses
+    update_bitcoin_balances()
+
     # create file for each address
     for addr in addr_dict.keys():
+        balances_list=[]
         addr_dict_api={}
         addr_dict_api['address']=addr
         for c in coins_list:
@@ -386,7 +410,10 @@ def generate_api_jsons():
             sub_dict['exodus_transactions']=addr_dict[addr][c]['exodus_tx']
             sub_dict['exodus_transactions'].reverse()
             sub_dict['total_exodus']=from_satoshi(addr_dict[addr]['exodus']['bought'])
+            balances_list.append({"symbol":coins_short_name_dict[c],"value":sub_dict['balance']})
             addr_dict_api[coins_dict[c]]=sub_dict
+        balances_list.append({"symbol":"BTC","value":from_satoshi(addr_dict[addr]['Bitcoin']['balance'])})
+        addr_dict_api['balance']=balances_list
         atomic_json_dump(addr_dict_api, 'addr/'+addr+'.json', add_brackets=False)
 
     # create files for msc and files for test_msc
@@ -648,6 +675,21 @@ def validate():
     msc_globals.init()
     msc_globals.d=options.debug_mode
 
+
+    # check if this block got already validated
+    try:
+        f=open(LAST_BLOCK_NUMBER_FILE,'r')
+        last_parsed_block=int(f.readline())
+        f.close()
+        f=open(LAST_VALIDATED_BLOCK_NUMBER_FILE,'r')
+        last_validated_block=int(f.readline())
+        f.close()
+        if last_validated_block == last_parsed_block:
+            info('block '+str(last_validated_block)+' is already validated')
+            exit(0)
+    except IOError:
+        pass
+
     info('starting validation process')
 
     # load tx_dict
@@ -698,6 +740,11 @@ def validate():
 
     # generate address pages and last tx pages
     generate_api_jsons()
+
+    # write last validated block
+    f=open(LAST_VALIDATED_BLOCK_NUMBER_FILE,'w')
+    f.write(str(last_block)+'\n')
+    f.close()
 
     info('validation done')
 
