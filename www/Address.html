@@ -22,6 +22,7 @@
     <script>var myApp = angular.module('myApp', ['truncate']);</script>
     <script src="masterPage.js"></script>
     <script src="address.js"></script>
+    <script src="wallet.js"></script>
     <script src="js/bootstrap.min.js"></script>
     <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -71,7 +72,7 @@
                         <tr>
 							<td class="captionTd1">Tools</td>
 							<td class="btnCell">
-							<button type="button" class="btc-tbl-btn pull-right btn btn-success btn-xs">My wallet</button>
+							<button type="button" ng-click="AddToWalletClick()" class="btc-tbl-btn pull-right btn btn-success btn-xs">Add to wallet</button>
 							<button type="button" ng-click="SendClick()" class="btc-tbl-btn pull-right btn btn-success btn-xs">Send here</button>
 							</td>
                         </tr>

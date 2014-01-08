@@ -112,4 +112,10 @@ function AdressController($scope, $http) {
         url += myURLParams['currency'];
         window.location = url;
     }
+    
+    $scope.AddToWalletClick = function () {
+        var myURLParams = BTCUtils.getQueryStringArgs();
+        var addr = myURLParams['addr'];
+        Wallet.AddAddress(addr);
+    }
 }
