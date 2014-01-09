@@ -675,37 +675,14 @@ def validate():
     msc_globals.init()
     msc_globals.d=options.debug_mode
 
-    # check if this block got already validated
-    revision_block_height=0 # init with 0
-    notes_block_height=0    # init with 0
-    # first check last block on revision.json
-    filename='www/revision.json'
-    try:
-        prev_revision_dict=load_dict_from_file(filename, all_list=True, skip_error=True)
-        revision_block_height=prev_revision_dict['last_block']
-    except KeyError:
-        info(filename+' does not have last_block entry')
-
-    # then check LAST_BLOCK_NUMBER_FILE
-    try:
-        f=open(LAST_BLOCK_NUMBER_FILE, 'r')
-        notes=f.readline()
-        f.close()
-        # FIXME: catch ValueError ?
-        if notes != '':
-            notes_block_height=int(notes)
-    except IOError:
-        info(LAST_BLOCK_NUMBER_FILE+' does not exist or has no integer.')
-
-    # take the latest block of all
-    last_parsed_block=max(revision_block_height,notes_block_height)
-
+    # don't bother validating if no new block was generated
+    last_validated_block=0
     try:
         f=open(LAST_VALIDATED_BLOCK_NUMBER_FILE,'r')
         last_validated_block=int(f.readline())
         f.close()
-        if last_validated_block == last_parsed_block:
-            info('block '+str(last_validated_block)+' is already validated')
+        if last_validated_block == int(last_height):
+            info('last validated block '+str(last_validated_block)+' is identical to current height')
             exit(0)
     except IOError:
         pass
@@ -766,7 +743,7 @@ def validate():
 
     # write last validated block
     f=open(LAST_VALIDATED_BLOCK_NUMBER_FILE,'w')
-    f.write(str(updated_last_validated_block)+'\n')
+    f.write(str(last_block)+'\n')
     f.close()
 
     info('validation done')
