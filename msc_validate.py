@@ -675,12 +675,32 @@ def validate():
     msc_globals.init()
     msc_globals.d=options.debug_mode
 
-
     # check if this block got already validated
+    revision_block_height=0 # init with 0
+    notes_block_height=0    # init with 0
+    # first check last block on revision.json
+    filename='www/revision.json'
     try:
-        f=open(LAST_BLOCK_NUMBER_FILE,'r')
-        last_parsed_block=int(f.readline())
+        prev_revision_dict=load_dict_from_file(filename, all_list=True, skip_error=True)
+        revision_block_height=prev_revision_dict['last_block']
+    except KeyError:
+        info(filename+' does not have last_block entry')
+
+    # then check LAST_BLOCK_NUMBER_FILE
+    try:
+        f=open(LAST_BLOCK_NUMBER_FILE, 'r')
+        notes=f.readline()
         f.close()
+        # FIXME: catch ValueError ?
+        if notes != '':
+            notes_block_height=int(notes)
+    except IOError:
+        info(LAST_BLOCK_NUMBER_FILE+' does not exist or has no integer.')
+
+    # take the latest block of all
+    last_parsed_block=max(revision_block_height,notes_block_height)
+
+    try:
         f=open(LAST_VALIDATED_BLOCK_NUMBER_FILE,'r')
         last_validated_block=int(f.readline())
         f.close()
@@ -697,6 +717,9 @@ def validate():
 
     # get all tx sorted
     sorted_tx_list=get_sorted_tx_list()
+
+    # keep the last block which will get validated
+    updated_last_validated_block=sorted_tx_list[-1]['block']
 
     # use an artificial empty last tx with last height as a trigger for alarm check
     sorted_tx_list.append({'invalid':(True,'fake tx'), 'block':last_height, 'tx_hash':'fake'})
@@ -743,7 +766,7 @@ def validate():
 
     # write last validated block
     f=open(LAST_VALIDATED_BLOCK_NUMBER_FILE,'w')
-    f.write(str(last_block)+'\n')
+    f.write(str(updated_last_validated_block)+'\n')
     f.close()
 
     info('validation done')
