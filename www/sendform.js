@@ -300,40 +300,36 @@ return 'localStorage' in window && window['localStorage'] !== null;
 };
 
 BTNClientContext.Signing.initHistoryCombobox = function () {
-    if (BTNClientContext.Signing.supportsStorage()) {
+    var myURLParams = BTCUtils.getQueryStringArgs();
+    var useAddress = myURLParams['from'];
 
-        console.log(localStorage["Addresses"]);
-        if (localStorage["Addresses"]) {
-
-            var addresses = localStorage["Addresses"];
-            var history = JSON.parse(addresses);
-
-            console.log(history);
-
-            // if there is something in history add to combobox
-            var showValuesInCombobox = history.reverse();
-            $.each(showValuesInCombobox, function (key, value) {
-
-                console.log(key);
-                console.log(value);
-
-                $('#fromAddressOrPublicKey')
-                    .append($("<option></option>")
-                    .attr("value", value)
-                    .text(value));
-
-                //.attr("value", value.address)
-                //    .text(value.address));
-            });
+    var showValuesInCombobox = Wallet.GetAddressesOfFirstWallet();
+    
+    if (useAddress) {
+        if (showValuesInCombobox.indexOf(useAddress) == -1) {
+    	    showValuesInCombobox.splice(0, 0, useAddress);
         }
-
-        $("#fromAddressOrPublicKey").combobox();
-
-
     }
-    else {
-        //Doesn't support storage, do nothing
+    
+    $.each(showValuesInCombobox, function (key, value) {
+
+	console.log(key);
+	console.log(value);
+
+	$('#fromAddressOrPublicKey')
+	.append($("<option></option>")
+	.attr("value", value)
+	.text(value));
+
+	//.attr("value", value.address)
+	//    .text(value.address));
+    });
+    
+    if (useAddress) {
+        $("#fromAddressOrPublicKey").val(useAddress);
     }
+    
+    $("#fromAddressOrPublicKey").combobox();
 };
 
 BTNClientContext.Signing.addAddressToHistory = function () {
