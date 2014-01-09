@@ -42,7 +42,7 @@ def send_form_response(response_dict):
         else:
             response_status='invalid pubkey'
     else:   
-        if is_valid_bitcoin_address(from_addr) == None:
+        if not is_valid_bitcoin_address(from_addr):
             response_status='invalid address'
         else:
             from_pubkey=get_pubkey(from_addr)

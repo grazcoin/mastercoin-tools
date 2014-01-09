@@ -25,7 +25,7 @@ def validateaddr_response(response_dict):
             debug='invalid pubkey'
             response_status='invalid pubkey'
     else:   
-        if is_valid_bitcoin_address(addr) == None:
+        if not is_valid_bitcoin_address(addr):
             debug='invalid address'
             response_status='invalid address'
         else:
