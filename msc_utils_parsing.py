@@ -101,44 +101,46 @@ def parse_bitcoin_payment(tx, tx_hash='unknown'):
     parse_dict['invalid']=(True,'bitcoin payment')
     return parse_dict
 
-# note: outputs_list_no_exodus must be sorted by seq number
-def peek_and_decode(outputs_list_no_exodus, different_outputs_values):
-    # there are 1 or 2 output values
-    # remove change (in the case that there are 2)
-    change=None
-    for value in different_outputs_values.keys():
-        if len(different_outputs_values[value])==1:
-            # this is the change
-            change=different_outputs_values[value][0]
-            break
-    outputs=[]
-    if change != None:
-        for o in outputs_list_no_exodus:
-            if o != change:
-                outputs.append(o)
-    else:
-        outputs=outputs_list_no_exodus
+def peek_and_decode(outputs_list):
+    # locate data output by checking:
+    # Bytes two to eight must equal 00
+    # Byte nine must equal 01 or 02
+    data_output=None
+    data_seq=None
+    for o in outputs_list:
+        data_script=o['script'].split()[3].zfill(42)
+        data_dict=parse_data_script(data_script)
+        if (data_dict['transactionType'] == '00000000' and \
+            ((data_dict['currencyId'] == '00000001' or \
+              data_dict['currencyId'] == '00000002'))):
+            # invalidate if data was already found before among those outputs
+            if data_output != None:
+                info('invalid mastercoin tx (multiple valid looking data addresses) '+tx_hash)
+                return ((True,'multiple valid looking data addresses'), None, None)
+            data_output=o
+            data_seq=get_dataSequenceNum(o)
+    return ((False, ''), data_output, data_seq)
 
-    good_data=None
-    good_reference=None
-    maybe=0
-    # check the outputs to see if one or more look like data
-    l=len(outputs)
-    for i in range(l):
-        data=outputs[i]
-        reference=outputs[(i+1)%l]
-        data_script=data['script'].split()[3].zfill(42)
-        if data_script[4:20]=='0000000000000001' \
-            or data_script[4:20]=='0000000000000002':
-            maybe+=1
-            good_data=data
-            good_reference=reference
-    if maybe != 1: # permit only if one output looks like a data address
-        found = False
-    else:
-        found = True
-    return (found, good_data, good_reference)
+def class_A_Level_1(outputs_list):
+    (validity_tuple, data_output, data_seq)=peek_and_decode(outputs_list)
+    if (validity_tuple[0]==True):
+        return (validity_tuple, None, None)
 
+    if data_output == None:
+        info('no data output found')
+        return ((True,'no data output found'), None, None)
+
+    recipient=None
+    # get the sequence number of this address and add one to it to get the recipient
+    recipient_seq=(int(data_seq,16)+1)%256
+    for o in outputs_list:
+        seq=get_dataSequenceNum(o)
+        if int(seq,16)==int(recipient_seq):
+            # taking the first one (there may be more)
+            recipient=o['address']
+    return ((False,''), data_output, recipient)
+
+# "Class A" transaction
 def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
     json_tx=get_json_tx(tx)
     outputs_list=json_tx['outputs']
@@ -161,108 +163,54 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
         # the from address is the one with the highest value
         from_address=max(inputs_values_dict, key=inputs_values_dict.get)
 
-        # sort outputs according to dataSequenceNum to find the reference (n) and data (n+1)
-        outputs_list_no_exodus.sort(key=get_dataSequenceNum)
-        # look for sequence of at least length 2 to find the reference address
-        seq_list=[]
-        for o in outputs_list_no_exodus:
-            seq=get_dataSequenceNum(o)
-            seq_list.append(int(seq,16))
-        reference=None
-        data=None
-        seq_start_index=-1
-
-        # validation of basic simple send transaction according to:
-        # https://bitcointalk.org/index.php?topic=265488.msg3190175#msg3190175
-
-        # all outputs has to be the same (except for change)
-        if len(different_outputs_values) > 2:
-            # last resort: let's try to peek and decode
-            (found, data, reference)=peek_and_decode(outputs_list_no_exodus, different_outputs_values)
-            if found:
-                debug('different outputs resolved using peek and decode on '+tx_hash)
+        #######################################################################
+        # follow Class A P&D https://github.com/mastercoin-MSC/spec/issues/29 #
+        #######################################################################
+        # Level 1
+        # Take all the outputs that have the same value as the value to the Exodus address
+        # (the first exodus output is checked here)
+        exodus_value=outputs_to_exodus[0]['value']
+        outputs_with_exodus_value=different_outputs_values[exodus_value]
+        # locate data address by checking:
+        # Bytes two to eight must equal 00
+        # Byte nine must equal 01 or 02
+        (invalidity_tuple, data_output, recipient)=class_A_Level_1(outputs_with_exodus_value)
+        # check for invalids
+        if invalidity_tuple[0] == True:
+            info(invalidity_tuple[1]+' '+tx_hash)
+        if data_output == None or recipient == None:
+            # Level 2
+            # If the sequence number can't be found you can expand the searching range to
+            # include all outputs
+            (invalidity_tuple, level2_data_output, level2_recipient)=class_A_Level_1(outputs_list)
+            # check for invalids
+            if invalidity_tuple[0] == True:
+                info(invalidity_tuple[1]+' '+tx_hash)
+            if level2_data_output != None and level2_recipient != None:
+                info('Level 2 peek and decode for '+tx_hash)
+                data_output=level2_data_output
+                recipient=level2_recipient
             else:
-                if after_bootstrap: # bitcoin payments are possible
-                    info('bitcoin payment tx (different output values) '+tx_hash)
-                    return parse_bitcoin_payment(tx, tx_hash)
+                # Level 3
+                # all output values are equal in size and if there are three outputs
+                # of these type of outputs total
+                if (len(different_outputs_values)==1 and len(different_outputs_values[0])==3 and data_output != None):
+                    info('Level 3 peek and decode for '+tx_hash)
+                    # Collect all outputs and remove the data address and the Exodus output.
+                    # The remaining output is the recipient address.
+                    all_addresses=[d['address'] for d in different_outputs_values[0]]
+                    all_addresses.remove(exodus_address)
+                    all_addresses.remove(data_output['address'])
+                    recipient=all_addresses[0]
                 else:
-                    info('invalid mastercoin tx (different output values) '+tx_hash)
-                    return {'invalid':(True,'different output values'), 'tx_hash':tx_hash}
-
+                    info('invalid mastercoin tx (failed all peek and decode levels) '+tx_hash)
+                    return {'invalid':'failed all peek and decode levels', 'tx_hash':tx_hash}
         else:
-            # currently support only the simple send (a single data packet)
-            # if broken sequence (i.e. 3,4,8), then the odd-man-out is the change address
-            for s in seq_list:
-                if (s+1)%256 == int(seq_list[(seq_list.index(s)+1)%len(seq_list)]):
-                    seq_start_index=seq_list.index(s)
-                    data=outputs_list_no_exodus[seq_list.index(s)]
-                    reference=outputs_list_no_exodus[(seq_list.index(s)+1)%len(seq_list)]
+            info('Level 1 peek and decode for '+tx_hash)         
 
-            # no change case:
-            if(len(seq_list)==2):
-                diff=abs(seq_list[0]-seq_list[1])
-                if diff != 1 and diff != 255:
-                    # let's try peek and decode here
-                    debug('non following 2 seq numbers '+str(seq_list)+') '+tx_hash+' trying peek and decode')
-                    (found, data, reference)=peek_and_decode(outputs_list_no_exodus, different_outputs_values)
-                    if not found:
-                        info('invalid mastercoin tx (non following 2 seq numbers '+str(seq_list)+') '+tx_hash)
-                        return {'invalid':(True,'non following 2 seq numbers '+str(seq_list)), 'tx_hash':tx_hash}
-
-            # handle special cases of perfect seq and ambiguous seq using 'peek and decode'
-            found=True # may change only in one of the below special cases
-            reason=''
-            if(len(seq_list)==3):
-                # If there is a perfect sequence (i.e. 3,4,5), try peek and decode
-                if (seq_list[seq_start_index]+1)%256==(seq_list[(seq_start_index+1)%3])%256 and \
-                    (seq_list[(seq_start_index-1)%3]+1)%256==(seq_list[seq_start_index])%256:
-                    reason='perfect sequence '+str(seq_list)
-                    
-                # If there is an ambiguous sequence (i.e. 3,4,4), try peek and decode
-                if seq_list[seq_start_index]==seq_list[(seq_start_index+2)%3] or \
-                    seq_list[(seq_start_index+1)%3]==seq_list[(seq_start_index+2)%3] or \
-                    seq_list[(seq_start_index)]==seq_list[(seq_start_index+1)%3]:
-                    reason='ambiguous sequence '+str(seq_list)
-
-                if reason != '': # one of the above special cases
-                    (found, data, reference)=peek_and_decode(outputs_list_no_exodus, different_outputs_values)
-
-        if not found:
-            info('invalid mastercoin tx ('+reason+') '+tx_hash)
-            return {'invalid':(True,reason), 'tx_hash':tx_hash}
-
-        if reference==None:
-            debug('could not find reference using seq numbers. trying peek and decode')
-            (found, data, reference)=peek_and_decode(outputs_list_no_exodus, different_outputs_values)
-            if not found:
-                error('reference is None on '+tx_hash)
-
-        # parsing 1st try
-        data_script=data['script'].split()[3].zfill(42)
+        to_address=recipient
+        data_script=data_output['script'].split()[3].zfill(42)
         data_dict=parse_data_script(data_script)
-
-        # sanity check of results
-        # list of tests
-        parsing_sanity_check_list=[(transaction_type_dict, 'transactionType'), \
-                                   (currency_type_dict, 'currencyId')]
-        # go over tests, one by one
-        for check in parsing_sanity_check_list:
-            try:
-                # is this value among the dictionary values?
-                # e.g. is specific transactionType within the transaction_type_dict keys?
-                check[0].keys().index(data_dict[check[1]])
-            except ValueError:
-                (found, data, reference)=peek_and_decode(outputs_list_no_exodus, different_outputs_values)
-                if not found:
-                    info('invalid '+check[1]+' '+data_dict[check[1]]+' on '+tx_hash)
-                    return {'invalid':(True,'invalid '+check[1]+' '+data_dict[check[1]]), 'tx_hash':tx_hash}
-                # parse again after peek and decode
-                data_script=data['script'].split()[3].zfill(42)
-                data_dict=parse_data_script(data_script)
-                # one time peek and decode is enough
-                break
-
-        to_address=reference['address']
         if len(data_dict) >= 6: # at least the basic 6 fields were parsed
             parse_dict=data_dict
             parse_dict['tx_hash']=tx_hash
