@@ -104,7 +104,11 @@
                                                 <td>
                                                     <a href="Address.html?addr={{addr.address}}">{{addr.address}}</a>
                                                 </td>
-                                                <td ng-repeat="balance in addr.balance">{{balance}}</td>
+                                                <td ng-repeat="balance in addr.balance">
+                                                    <a href="sendform.html?addr=&amount={{balance}}&from={{addr.address}}&currency={{currencies[$index].symbol}}"><button type="button" class="btc-tbl-btn btn btn-success btn-xs">Send</button> </a>
+                                                    <a href="sellform.html?addr=&amount={{balance}}&from={{addr.address}}&currency={{currencies[$index].symbol}}"><button type="button" class="btc-tbl-btn btn btn-success btn-xs">Sell</button> </a>
+						    {{balance}}
+						</td>
 
                                             </tr>
                                         </tbody>
