@@ -6,6 +6,10 @@ function WalletController($scope, $http, $q) {
     $scope.addressArray = [];
     $scope.uuid = '';
   
+    $scope.CreateNewWallet = function() {
+    	Wallet.CreateNewWallet();
+    }
+    
     $scope.getWalletData = function () {
     
     	var myURLParams = BTCUtils.getQueryStringArgs();
@@ -25,6 +29,7 @@ function WalletController($scope, $http, $q) {
             var wallet = Wallet.GetWallet();
 
             var addresses = wallet.addresses;
+            $scope.uuid = wallet.uuid;
 
             var prom = [];
             addresses.forEach(function (obj, i) {
@@ -139,20 +144,17 @@ Wallet.GetWallet = function () {
                     return wallets[i];
                 }
             }
-
-            return new Array();
-
             //Returning the first wallet
-          //  return wallets[0];
+            if (!uuid && wallets.length > 0)
+            	return wallets[0];
         }
-        else {
-            return new Array();
-        }
+        // No wallets - create one
+        Wallet.CreateNewWallet(uuid);
+        var wallets = JSON.parse(localStorage[Wallet.StorageKey]);
+        return wallets[0];
     }
-    else {
-        return new Array();
-    }
-};
+    return new Array();
+};
 
 Wallet.AddAddress = function (address) {
     if (Wallet.supportsStorage()) {
@@ -205,7 +207,8 @@ Wallet.GetAddressesOfFirstWallet = function () {
 };
 
 
-Wallet.CreateNewWallet = function () {
+Wallet.CreateNewWallet = function (in_uuid) {
+    var uuid = (in_uuid)? in_uuid : Wallet.GenerateUUID();
     if (Wallet.supportsStorage()) {
 
         var uuidToOpen = "";
@@ -214,7 +217,6 @@ Wallet.CreateNewWallet = function () {
             var wallets = JSON.parse(localStorage[Wallet.StorageKey]);
 
             //Create new wallet
-            var uuid = Wallet.GenerateUUID();
             var addresses = new Array();
             var wallet = {
                 uuid: uuid,
@@ -233,9 +235,6 @@ Wallet.CreateNewWallet = function () {
         }
         else {//Walets dont exists
             //Create new wallet and add this addr to it
-
-            //Create new uuid for the wallet
-            var uuid = Wallet.GenerateUUID();
 
             uuidToOpen = uuid;
 
