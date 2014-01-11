@@ -8,6 +8,7 @@ exodus_address='1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P'
 first_exodus_bootstrap_block=249498
 last_exodus_bootstrap_block=255365
 exodus_bootstrap_deadline=1377993600
+seconds_in_one_year=31556926
 multisig_simple_disabled=True
 multisig_disabled=False
 dust_limit=5430

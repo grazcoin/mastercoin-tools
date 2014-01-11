@@ -34,7 +34,7 @@ tx_properties=\
      'status']
 
 # all available properties of a currency in address
-addr_properties=['balance', 'received', 'sent', 'bought', 'sold', 'offer', 'accept',\
+addr_properties=['balance', 'received', 'sent', 'bought', 'sold', 'offer', 'accept', 'reward',\
             'in_tx', 'out_tx', 'bought_tx', 'sold_tx', 'offer_tx', 'accept_tx', 'exodus_tx']
 
 # coins and their numbers
@@ -406,7 +406,11 @@ def generate_api_jsons():
             sub_dict['total_bought']=from_satoshi(addr_dict[addr][c]['bought'])
             sub_dict['total_sell_accept']=from_satoshi(addr_dict[addr][c]['accept'])
             sub_dict['total_sell_offer']=from_satoshi(addr_dict[addr][c]['offer'])
-            sub_dict['balance']=from_satoshi(addr_dict[addr][c]['balance'])
+            if addr==exodus_address:
+                available_reward=get_available_reward(last_height)
+                sub_dict['balance']=from_satoshi(available_reward+addr_dict[addr][c]['balance'])
+            else:
+                sub_dict['balance']=from_satoshi(addr_dict[addr][c]['balance'])
             sub_dict['exodus_transactions']=addr_dict[addr][c]['exodus_tx']
             sub_dict['exodus_transactions'].reverse()
             sub_dict['total_exodus']=from_satoshi(addr_dict[addr]['exodus']['bought'])
@@ -478,7 +482,11 @@ def generate_api_jsons():
         for addr in addr_dict.keys():
             sub_dict={}
             sub_dict['address']=addr
-            sub_dict['balance']=from_satoshi(addr_dict[addr][c]['balance'])
+            if addr==exodus_address:
+                available_reward=get_available_reward(last_height)
+                sub_dict['balance']=from_satoshi(available_reward+addr_dict[addr][c]['balance'])
+            else:
+                sub_dict['balance']=from_satoshi(addr_dict[addr][c]['balance'])
             mastercoin_verify_list.append(sub_dict)
         atomic_json_dump(sorted(mastercoin_verify_list, key=lambda k: k['address']), 'mastercoin_verify/addresses/'+subdir, add_brackets=False)
 
@@ -499,6 +507,17 @@ def generate_api_jsons():
         mastercoin_verify_tx_per_address={'address':addr, 'transactions':verify_tx_list}
         atomic_json_dump(mastercoin_verify_tx_per_address, 'mastercoin_verify/transactions/'+addr, add_brackets=False)     
         
+def get_available_reward(height):
+    all_reward=int(addr_dict[exodus_address][coins_list[0]]['reward'])
+    # part available is (1 - 0.5^years)
+    (block_timestamp, err)=get_block_timestamp(height)
+    if block_timestamp == None:
+        error('failed getting block timestamp of '+str(block)+': '+err)
+    seconds_passed=block_timestamp-exodus_bootstrap_deadline
+    years=(seconds_passed+0.0)/seconds_in_one_year
+    part_available=1-0.5**years
+    available_reward=all_reward*part_available
+    return available_reward
 
 # validate a matercoin transaction
 def check_mastercoin_transaction(t, index=-1):
@@ -526,8 +545,8 @@ def check_mastercoin_transaction(t, index=-1):
         update_addr_dict(to_addr, True, 'exodus', bought=amount_transfer)
         # exodus bonus - 10% for exodus (available slowly during the years)
         ten_percent=int((amount_transfer+0.0)/10+0.5)
-        update_addr_dict(exodus_address, True, 'Mastercoin', balance=ten_percent, exodus_tx=t)
-        update_addr_dict(exodus_address, True, 'Test Mastercoin', balance=ten_percent, exodus_tx=t)
+        update_addr_dict(exodus_address, True, 'Mastercoin', reward=ten_percent, exodus_tx=t)
+        update_addr_dict(exodus_address, True, 'Test Mastercoin', reward=ten_percent, exodus_tx=t)
 
         # all exodus are done
         update_tx_dict(t['tx_hash'], color='bgc-done', icon_text='Exodus')
@@ -552,7 +571,13 @@ def check_mastercoin_transaction(t, index=-1):
                 mark_tx_invalid(tx_hash, 'pay from a non existing address')
                 return False 
             else:
-                balance_from=addr_dict[from_addr][c]['balance']
+                if from_addr==exodus_address:
+                    # in the exodus case, the balance to spend is the available reward
+                    # plus the negative balance
+                    available_reward=get_available_reward(t['block'])
+                    balance_from=available_reward+addr_dict[from_addr][c]['balance']
+                else:
+                    balance_from=addr_dict[from_addr][c]['balance']
                 if amount_transfer > int(balance_from):
                     debug('balance of '+currency+' is too low on '+tx_hash)
                     mark_tx_invalid(tx_hash, 'balance too low')
