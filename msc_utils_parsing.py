@@ -7,7 +7,7 @@ transaction_type_dict={'00000000':'Simple send', '00000014':'Sell offer', '00000
 exodus_address='1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P'
 first_exodus_bootstrap_block=249498
 last_exodus_bootstrap_block=255365
-exodus_bootstrap_deadline=1377993600
+exodus_bootstrap_deadline=1377993874
 seconds_in_one_year=31556926
 multisig_simple_disabled=True
 multisig_disabled=False
@@ -116,7 +116,7 @@ def peek_and_decode(outputs_list):
               data_dict['currencyId'] == '00000002'))):
             # invalidate if data was already found before among those outputs
             if data_output != None:
-                info('invalid mastercoin tx (multiple valid looking data addresses) '+tx_hash)
+                info('invalid mastercoin tx (multiple valid looking data addresses)')
                 return ((True,'multiple valid looking data addresses'), None, None)
             data_output=o
             data_seq=get_dataSequenceNum(o)
