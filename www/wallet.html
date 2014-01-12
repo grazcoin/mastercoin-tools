@@ -101,7 +101,7 @@
                                         <tbody>
                                             <tr ng-repeat="addr in addressArray">
                                                 <td>
-                                                    <button type="button" class="btc-tbl-btn btn btn-success btn-xs">X</button> 
+                                                    <button type="button" ng-click="DeleteAddress($index)" class="btc-tbl-btn btn btn-success btn-xs">X</button>
                                                     <a href="Address.html?addr={{addr.address}}">{{addr.address}}</a>
                                                 </td>
                                                 <td ng-repeat="balance in addr.balance">

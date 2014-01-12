@@ -6,6 +6,11 @@ function WalletController($scope, $http, $q) {
     $scope.addressArray = [];
     $scope.uuid = '';
   
+    $scope.DeleteAddress = function(addrIdx) {
+    	var newAddressArray = Wallet.DeleteIndex($scope.uuid, addrIdx);
+    	$scope.addressArray.splice(addrIdx,1);
+    }
+    
     $scope.CreateNewWallet = function() {
     	Wallet.CreateNewWallet();
     }
@@ -185,23 +190,66 @@ Wallet.AddAddress = function (address) {
     }
 };
 
-Wallet.GetAddressesOfFirstWallet = function () {
-    var retVal = new Array();
+Wallet.AddAddress = function (address) {
+    if (Wallet.supportsStorage()) {
+
+        var uuidToOpen = "";
+        
+        if (!localStorage[Wallet.StorageKey]) 
+        {
+       	    Wallet.CreateNewWallet();
+        }
+        var wallets = JSON.parse(localStorage[Wallet.StorageKey]);
+           
+        //Add address to the first wallet
+        wallets[0].addresses.push(address);
+        
+        uniqueArray = wallets[0].addresses.filter(function(elem, pos) {
+	    return wallets[0].addresses.indexOf(elem) == pos;
+	});
+	
+	wallets[0].addresses = uniqueArray;
+
+        uuidToOpen = wallets[0].uuid;
+
+        localStorage[Wallet.StorageKey] = JSON.stringify(wallets);
+        
+        window.location.href = "wallet.html?uuid=" + uuidToOpen;
+
+    }
+};
+
+Wallet.DeleteIndex = function (walletUuid, idx) {
     if (!Wallet.supportsStorage()) {
-        return retVal;
+        return null;
     }
         
     if (!localStorage[Wallet.StorageKey]) {
-       	return retVal;
+       	return null;
     }
     
     var wallets = JSON.parse(localStorage[Wallet.StorageKey]);
     
-    if (wallets.length <= 0 || wallets.length > 100 || !wallets[0] || !wallets[0].addresses) {
-    	return retVal;
+    if (wallets.length < 0 || wallets.length > 100) {
+    	return null;
     }
-           
-    retVal = wallets[0].addresses;
+    
+    var walletIndex = -1;
+    for (var i = 0; i < wallets.length; i++) {
+	    if (wallets[i].uuid == walletUuid) {
+		walletIndex = i;
+	    }
+    }
+    
+    if (walletIndex < 0)
+        return null;
+    
+    
+    wallets[walletIndex].addresses.splice(idx,1);
+    
+    var retVal = wallets[walletIndex].addresses;
+    
+    localStorage[Wallet.StorageKey] = JSON.stringify(wallets);
     
     return retVal;
 };
