@@ -6,7 +6,8 @@ function AcceptOfferController($scope, $http) {
     $scope.title = "TITLE";
 
     $scope.step = 0.1;
-    $scope.amount = "0.1";
+    $scope.amount;
+    $scope.fee = 0.0005;
     $scope.key = "";
     $scope.currency = "";
     $scope.toAddress = "";
@@ -31,6 +32,10 @@ function AcceptOfferController($scope, $http) {
 	$scope.toAddress = myURLParams['addr'];
 	
 	$scope.toAddrReadOnly = ($scope.toAddress && $scope.toAddress.length > 0);
+	if (myURLParams['fee'])
+		$scope.fee = parseFloat(myURLParams['fee']);
+	if (myURLParams['amount'])
+		$scope.amount = parseFloat(myURLParams['amount']);
       
     }
 
@@ -242,13 +247,14 @@ BTNClientContext.Signing.GetRawTransaction = function () {
 
 
 var myURLParams = BTCUtils.getQueryStringArgs();
+var marker = myURLParams['marker'];
 var to_address = $("#recipient").val();
 var from_address = $("input.select.optional.form-control.form-control30px.combobox").val();
 var amount = $('#amount').val();
 var currency = $('#currency').val();
-//var fee = $('#fee').val();
+var fee = $('#fee').val();
 
-var dataToSend = { from_address: from_address, to_address: to_address, amount: amount, currency: currency };
+var dataToSend = { from_address: from_address, to_address: to_address, amount: amount, currency: currency, fee: fee, marker: marker };
 console.log(dataToSend);
 
 // Ajax call to /wallet/send/

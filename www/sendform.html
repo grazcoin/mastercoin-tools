@@ -145,6 +145,14 @@
                                 </div>
 
                                 <div class="input string optional">
+									<label class="string optional" for="fee">Fee</label>
+									<input class="string optional form-control" id="fee"
+										ng-model="fee"
+										step="0.0001"
+										type="number">
+                                </div>
+
+                                <div class="input string optional">
                                     <label class="string optional" for="recipient">To</label>
                                     <input class="string optional form-control" ng-readonly="toAddrReadOnly" id="recipient"
                                         ng-model="toAddress"
