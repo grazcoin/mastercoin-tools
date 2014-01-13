@@ -219,6 +219,28 @@ Wallet.AddAddress = function (address) {
     }
 };
 
+Wallet.GetAddressesOfFirstWallet = function () {
+    var retVal = new Array();
+    if (!Wallet.supportsStorage()) {
+        return retVal;
+    }
+        
+    if (!localStorage[Wallet.StorageKey]) {
+       	return retVal;
+    }
+    
+    var wallets = JSON.parse(localStorage[Wallet.StorageKey]);
+    
+    if (wallets.length <= 0 || wallets.length > 100 || !wallets[0] || !wallets[0].addresses) {
+    	return retVal;
+    }
+           
+    retVal = wallets[0].addresses;
+    
+    return retVal;
+};
+
+
 Wallet.DeleteIndex = function (walletUuid, idx) {
     if (!Wallet.supportsStorage()) {
         return null;
