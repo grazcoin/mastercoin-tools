@@ -98,7 +98,10 @@
                                         </tr>
                                         <tr>
                                             <td>Amount accepted</td>
-                                            <td>{{transactionInformation.formatted_amount}}</td>
+                                            <td><span class="pull-left">{{transactionInformation.formatted_amount}}</span>
+                                                <a href="sendform.html?addr={{transactionInformation.to_address}}&amount={{transactionInformation.bitcoin_required}}&from={{transactionInformation.from_address}}&currency=BTC&marker=True">
+                                                     <button type="button" class="pull-right btc-tbl-btn btn btn-success btn-xs">PAY</button></a>
+                                            </td>
                                         </tr>
                                         <tr>
                                             <td>Amount bought</td>
