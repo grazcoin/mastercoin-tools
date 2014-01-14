@@ -17,7 +17,8 @@ def validateaddr_response(response_dict):
     
     # now verify
     l=len(addr)
-    if l == 66: # probably pubkey
+    info(l)
+    if l == 66 or l == 130: # probably pubkey
         if is_pubkey_valid(addr):
             debug='valid pubkey'
             response_status='OK'
