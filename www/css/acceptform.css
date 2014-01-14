@@ -1,4 +1,4 @@
-﻿.amountWarning {
+.amountWarning {
     display: none;
     position: absolute;
     right: -120px;
@@ -12,17 +12,43 @@
     margin-top: -39px;
    
   }
+  
+  .verifySendStatus {
+      display: none;
+      position: absolute;
+      margin-top: -32px;
+      margin-left: 70px;
+   }
+   
   .verifyMessage{
       display:none;
        position: absolute;
     margin-top: -32px;
   }
+  
+  #sendHyperlink{
+      display:none;
+  }
+  
   .verifyLoader{
        display:none;
        position: absolute;
     right: -90px;
     margin-top: -35px;
   }
+  
+  .loader {
+      width: 24px;
+      height: 24px;
+      display: none;
+  }
+  
+  .showUntilAjax{
+      display:inline;
+  }
+  .show3sec{
+      display:inline !important;
+}
 
   .redText{
       color:#d93838;
@@ -31,17 +57,13 @@
       color:#27dd3f;
       right: -90px;
   }
-  .loader{
-      width:24px;
-      height:24px;
-      display:none;
-  }
+ 
 .invalidKey {
     display: none;
     position: absolute;
     right: -60px;
     margin-top: -27px;
-}
+ }
 
 .invalidTransaction {
     /*display:none;*/
