@@ -16,6 +16,7 @@ MAX_PUBKEY_IN_BIP11=3
 MAX_COMMAND_TRIES=3
 features_enable_dict={'distributed exchange':420000}
 LAST_VALIDATED_BLOCK_NUMBER_FILE='last_validated_block.txt'
+max_payment_timeframe=255
 
 # used as a key function for sorting outputs of msc tx
 def get_dataSequenceNum(item):
