@@ -145,7 +145,7 @@ def prepare_sell_tx_for_signing(seller, amount, bitcoin_amount_desired, btc_min_
     random_byte=hex(random.randrange(0,255)).strip('0x').zfill(2)
     random_byte2=hex(random.randrange(0,255)).strip('0x').zfill(2)
     hacked_dataHex_obfuscated='02'+dataHex_obfuscated+random_byte
-    hacked_dataHex2_obfuscated='02'+dataHex_obfuscated+random_byte2
+    hacked_dataHex2_obfuscated='02'+dataHex2_obfuscated+random_byte2
     info('plain dataHex: --'+padded_dataHex+'--')
     info('plain dataHex2: --'+padded_dataHex2+'--')
     info('obfus dataHex: '+hacked_dataHex_obfuscated)
