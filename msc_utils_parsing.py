@@ -342,66 +342,69 @@ def parse_multisig(tx, tx_hash='unknown'):
                     # remove irrelevant keys
                     parse_dict.pop('bitcoin_amount_desired', None)
                     parse_dict.pop('block_time_limit', None)
+                else:
+                    if data_dict['transactionType'] == '00000014': # Sell offer
+                        # check feature is enabled
+                        if currency_type_dict[data_dict['currencyId']]=='Mastercoin':
+                            (height,index)=get_tx_index(tx_hash)
+                            if height == -1:
+                                error('failed getting height of '+tx_hash)
+                            if int(features_enable_dict['distributed exchange']) > int(height):
+                                info('distributed exchange of msc is not yet enabled '+tx_hash)
+                                parse_dict['invalid']=(True, 'distributed exchange of msc is not yet enabled')
+                                parse_dict['color']='bgc-invalid'
+                                parse_dict['icon_text']='Invalid sell offer'
+                                parse_dict['from_address']=input_addr
+                                parse_dict['to_address']=to_address
+                                return parse_dict
 
-                if data_dict['transactionType'] == '00000014': # Sell offer
-                    # check feature is enabled
-                    if currency_type_dict[data_dict['currencyId']]=='Mastercoin':
-                        (height,index)=get_tx_index(tx_hash)
-                        if height == -1:
-                            error('failed getting height of '+tx_hash)
-                        if int(features_enable_dict['distributed exchange']) > int(height):
-                            info('distributed exchange of msc is not yet enabled '+tx_hash)
-                            parse_dict['invalid']=(True, 'distributed exchange of msc is not yet enabled')
-                            parse_dict['color']='bgc-invalid'
-                            parse_dict['icon_text']='Invalid sell offer'
-                            parse_dict['from_address']=input_addr
-                            parse_dict['to_address']=to_address
-                            return parse_dict
+                        bitcoin_amount_desired=int(data_dict['bitcoin_amount_desired'],16)/100000000.0
+                        if amount > 0:
+                            price_per_coin=bitcoin_amount_desired/amount
+                        else:
+                            price_per_coin=0
+                            parse_dict['invalid']=(True,'non positive sell offer amount')
+                        # duplicate with another name
+                        parse_dict['formatted_amount_available'] = parse_dict['formatted_amount']
+                        # format fields
+                        parse_dict['formatted_bitcoin_amount_desired']= formatted_decimal(bitcoin_amount_desired)
+                        parse_dict['formatted_price_per_coin']= formatted_decimal(price_per_coin)
+                        parse_dict['formatted_block_time_limit']= str(int(data_dict['block_time_limit'],16))
 
-                    bitcoin_amount_desired=int(data_dict['bitcoin_amount_desired'],16)/100000000.0
-                    if amount > 0:
-                        price_per_coin=bitcoin_amount_desired/amount
+                        if len(dataHex_deobfuscated_list)>1: # currently true only for Sell offer (?)
+                            data_dict=parse_2nd_data_script(dataHex_deobfuscated_list[1])
+                            for key in data_dict:
+                                parse_dict[key]=data_dict[key]
+                            parse_dict['formatted_fee_required'] = from_hex_satoshi(data_dict['fee_required'])
                     else:
-                        price_per_coin=0
-                        parse_dict['invalid']=(True,'non positive sell offer amount')
-                    # duplicate with another name
-                    parse_dict['formatted_amount_available'] = parse_dict['formatted_amount']
-                    # format fields
-                    parse_dict['formatted_bitcoin_amount_desired']= formatted_decimal(bitcoin_amount_desired)
-                    parse_dict['formatted_price_per_coin']= formatted_decimal(price_per_coin)
-                    parse_dict['formatted_block_time_limit']= str(int(data_dict['block_time_limit'],16))
+                        if data_dict['transactionType'] == '00000016': # Sell accept
+                            # check feature is enabled
+                            if currency_type_dict[data_dict['currencyId']]=='Mastercoin':
+                                (height,index)=get_tx_index(tx_hash)
+                                if height == -1 or height == 'failed:':
+                                    error('failed getting height of '+tx_hash)
+                                if int(features_enable_dict['distributed exchange']) > int(height):
+                                    info('distributed exchange of msc is not yet enabled '+tx_hash)
+                                    parse_dict['invalid']=(True, 'distributed exchange of msc is not yet enabled')
+                                    parse_dict['color']='bgc-invalid'
+                                    parse_dict['icon_text']='Invalid sell accept'
+                                    parse_dict['from_address']=input_addr
+                                    parse_dict['to_address']=to_address
+                                    return parse_dict
 
-                if data_dict['transactionType'] == '00000016': # Sell accept
-                    # check feature is enabled
-                    if currency_type_dict[data_dict['currencyId']]=='Mastercoin':
-                        (height,index)=get_tx_index(tx_hash)
-                        if height == -1 or height == 'failed:':
-                            error('failed getting height of '+tx_hash)
-                        if int(features_enable_dict['distributed exchange']) > int(height):
-                            info('distributed exchange of msc is not yet enabled '+tx_hash)
-                            parse_dict['invalid']=(True, 'distributed exchange of msc is not yet enabled')
-                            parse_dict['color']='bgc-invalid'
-                            parse_dict['icon_text']='Invalid sell accept'
-                            parse_dict['from_address']=input_addr
-                            parse_dict['to_address']=to_address
-                            return parse_dict
+                                # remove irrelevant keys
+                                parse_dict.pop('bitcoin_amount_desired', None)
+                                parse_dict.pop('block_time_limit', None)
+                                # duplicate with another name
+                                parse_dict['formatted_amount_requested'] = parse_dict['formatted_amount']
+                                # add place holders
+                                parse_dict['bitcoin_required'] = 'Not available'
+                                parse_dict['sell_offer_txid'] = 'Not available'
+                                parse_dict['payment_txid'] = 'Not available'
+                                parse_dict['status'] = 'Awaiting payment'
 
-                    # remove irrelevant keys
-                    parse_dict.pop('bitcoin_amount_desired', None)
-                    parse_dict.pop('block_time_limit', None)
-                    # duplicate with another name
-                    parse_dict['formatted_amount_requested'] = parse_dict['formatted_amount']
-                    # add place holders
-                    parse_dict['bitcoin_required'] = 'Not available'
-                    parse_dict['sell_offer_txid'] = 'Not available'
-                    parse_dict['payment_txid'] = 'Not available'
-                    parse_dict['status'] = 'Awaiting payment'
-
-                if len(dataHex_deobfuscated_list)>1: # currently true only for Sell offer
-                    data_dict=parse_2nd_data_script(dataHex_deobfuscated_list[1])
-                    for key in data_dict:
-                        parse_dict[key]=data_dict[key]
-                    parse_dict['formatted_fee_required'] = from_hex_satoshi(data_dict['fee_required'])
+                        else: # non valid tx type
+                            return {'tx_hash':tx_hash, 'invalid':(True, 'non supported tx type '+data_dict['transactionType'])}
 
         else: # not the multisig output
             # the output with dust
