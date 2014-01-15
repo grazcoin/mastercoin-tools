@@ -406,16 +406,16 @@ def parse_multisig(tx, tx_hash='unknown'):
                                     parse_dict['to_address']=to_address
                                     return parse_dict
 
-                                # remove irrelevant keys
-                                parse_dict.pop('bitcoin_amount_desired', None)
-                                parse_dict.pop('block_time_limit', None)
-                                # duplicate with another name
-                                parse_dict['formatted_amount_requested'] = parse_dict['formatted_amount']
-                                # add place holders
-                                parse_dict['bitcoin_required'] = 'Not available'
-                                parse_dict['sell_offer_txid'] = 'Not available'
-                                parse_dict['payment_txid'] = 'Not available'
-                                parse_dict['status'] = 'Awaiting payment'
+                            # remove irrelevant keys
+                            parse_dict.pop('bitcoin_amount_desired', None)
+                            parse_dict.pop('block_time_limit', None)
+                            # duplicate with another name
+                            parse_dict['formatted_amount_requested'] = parse_dict['formatted_amount']
+                            # add place holders
+                            parse_dict['bitcoin_required'] = 'Not available'
+                            parse_dict['sell_offer_txid'] = 'Not available'
+                            parse_dict['payment_txid'] = 'Not available'
+                            parse_dict['status'] = 'Awaiting payment'
 
                         else: # non valid tx type
                             return {'tx_hash':tx_hash, 'invalid':(True, 'non supported tx type '+data_dict['transactionType'])}
