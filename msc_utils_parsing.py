@@ -257,6 +257,15 @@ def parse_multisig_simple(tx, tx_hash='unknown'):
         error('Bad parsing of data script '+data_script.encode('hex_codec'))
         return {}
 
+def get_obfus_str_list(address, length):
+       obfus_str_list=[]
+       obfus_str_list.append(get_sha256(address)) # 1st obfus is simple sha256
+       for i in range(length):
+           if i<length-1: # one less obfus str is needed (the first was not counted)
+               obfus_str_list.append(get_sha256(obfus_str_list[i].upper())) # i'th obfus is sha256 of upper prev
+       info(obfus_str_list)
+       return obfus_str_list
+
 def parse_multisig(tx, tx_hash='unknown'):
     if multisig_disabled:
         info('multisig is disabled: '+tx_hash)
@@ -309,7 +318,6 @@ def parse_multisig(tx, tx_hash='unknown'):
                     break
 
             # prepare place holder lists for obfus,deobfus,data_dict
-            obfus_str_list=[]
             dataHex_deobfuscated_list=[]
             data_dict_list=[]
            
@@ -317,10 +325,10 @@ def parse_multisig(tx, tx_hash='unknown'):
                 info('none input address (BIP11 inputs are not supported yet)')
                 return {'tx_hash':tx_hash, 'invalid':(True, 'not supported input (BIP11/BIP16)')}
 
-            obfus_str_list.append(get_sha256(input_addr)) # 1st obfus is simple sha256
-            for i in range(len(data_script_list)):
-                if i<len(data_script_list)-1: # one less obfus str is needed (the first was not counted)
-                    obfus_str_list.append(get_sha256(obfus_str_list[i].upper())) # i'th obfus is sha256 of upper prev
+            list_length=len(data_script_list)
+            obfus_str_list=get_obfus_str_list(input_addr, list_length)
+
+            for i in range(list_length):
                 dataHex_deobfuscated_list.append(get_string_xor(data_script_list[i][2:-2],obfus_str_list[i][:62]).zfill(64)+'00')
 
             # deobfuscated list is ready
