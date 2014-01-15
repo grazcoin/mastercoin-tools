@@ -3,6 +3,9 @@ import operator
 from optparse import OptionParser
 from msc_utils_parsing import *
 
+# global last block on the net
+last_height=get_last_height()
+
 def parse():
 
     ######################################
@@ -26,6 +29,17 @@ def parse():
     single_tx=options.single_tx
     requested_block_height=options.starting_block_height
 
+    # don't bother parsing if no new block was generated since last validation
+    last_validated_block=0
+    try:
+        f=open(LAST_VALIDATED_BLOCK_NUMBER_FILE,'r')
+        last_validated_block=int(f.readline())
+        f.close()
+        if last_validated_block == int(last_height):
+            info('last validated block '+str(last_validated_block)+' is identical to current height')
+            exit(0)
+    except IOError:
+        pass
 
     # find which block to start with
     if requested_block_height == None:
