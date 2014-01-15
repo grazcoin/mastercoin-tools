@@ -6,7 +6,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <link rel="shortcut icon" href="ico/favicon.png">
-    <title>Sell offer</title>
+    <title>Accept sell offer</title>
     <noscript>
     Java Script has been disabled!
     <meta http-equiv="refresh" content="0;url=javascript_required.html">
@@ -145,6 +145,12 @@
                                         Exceeds sell offer
                                     </p>
 
+                                </div>
+
+                                <div class="input string optional">
+                                    <label class="string optional" for="requiredFee">Price per coin</label>
+                                    <input class="string optional form-control" readonly="readonly" id="pricePerCoin"
+                                        ng-model="transactionInformation.formatted_price_per_coin" type="text">
                                 </div>
 
                                 <div class="input string optional">

@@ -274,8 +274,8 @@ BTNClientContext.Signing.GetRawTransactionResponse(data);
 
 console.log('fail');
 var testResponse = {
-    'sourceScript': 'OP_DUP OP_HASH160 4ae99c09a1944717ed4ebce399d44538023809c1 OP_EQUALVERIFY OP_CHECKSIG',
-    'transaction': '01000000017a06ea98cd40ba2e3288262b28638cec5337c1456aaf5eedc8e9e5a20f062bdf000000008a4730440220569b1ad609dcad5f17fd372533a51472771c5ea9e4aca6654d1c864e59b083e902207a8e2dedb07cee1fce92562fd3c072a0e9152e0d69b9ab436dd70f4662c487f4014104e0ba531dc5d2ad13e2178196ade1a23989088cfbeddc7886528412087f4bff2ebc19ce739f25a63056b6026a269987fcf5383131440501b583bab70a7254b09effffffff01b02e052a010000001976a9142dbde30815faee5bf221d6688ebad7e12f7b2b1a88ac00000000'
+    'sourceScript': 'ERROR',
+    'transaction': ''
 };
 BTNClientContext.Signing.GetRawTransactionResponse(testResponse);
 
