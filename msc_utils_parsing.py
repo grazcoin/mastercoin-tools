@@ -63,6 +63,7 @@ def parse_2nd_data_script(data_script):
         info('invalid data script '+data_script.encode('hex_codec'))
         return parse_dict
     parse_dict['fee_required']=data_script[4:10]
+    parse_dict['should_be_zeros']=data_script[10:54]
     return parse_dict
 
 def parse_bitcoin_payment(tx, tx_hash='unknown'):
@@ -263,7 +264,6 @@ def get_obfus_str_list(address, length):
        for i in range(length):
            if i<length-1: # one less obfus str is needed (the first was not counted)
                obfus_str_list.append(get_sha256(obfus_str_list[i].upper())) # i'th obfus is sha256 of upper prev
-       info(obfus_str_list)
        return obfus_str_list
 
 def parse_multisig(tx, tx_hash='unknown'):
@@ -382,9 +382,14 @@ def parse_multisig(tx, tx_hash='unknown'):
 
                         if len(dataHex_deobfuscated_list)>1: # currently true only for Sell offer (?)
                             data_dict=parse_2nd_data_script(dataHex_deobfuscated_list[1])
-                            for key in data_dict:
-                                parse_dict[key]=data_dict[key]
-                            parse_dict['formatted_fee_required'] = from_hex_satoshi(data_dict['fee_required'])
+                            if data_dict['should_be_zeros'] == '00000000000000000000000000000000000000000000':
+                                data_dict.pop('should_be_zeros')
+                                for key in data_dict:
+                                    parse_dict[key]=data_dict[key]
+                                parse_dict['formatted_fee_required'] = from_hex_satoshi(data_dict['fee_required'])
+                            else:
+                                parse_dict['invalid']=(True,'invalid last data script in BIP11')
+                                return parse_dict
                     else:
                         if data_dict['transactionType'] == '00000016': # Sell accept
                             # check feature is enabled
