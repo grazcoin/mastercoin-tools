@@ -128,27 +128,22 @@ def prepare_sell_tx_for_signing(seller, amount, bitcoin_amount_desired, btc_min_
     dataHex2 = '{:02x}'.format(0) + '{:02x}'.format(dataSequenceNum) + \
             '{:06x}'.format(min_buyer_fee)
 
-    dataBytes = dataHex.decode('hex_codec')
-    dataAddress = hash_160_to_bc_address(dataBytes[1:21])
-
-    dataBytes2 = dataHex2.decode('hex_codec')
-    dataAddress2 = hash_160_to_bc_address(dataBytes2[1:21])
-
     # create the BIP11 magic
     change_address_compressed_pub=get_compressed_pubkey_format(get_pubkey(changeAddress))
-    obfus_str=get_sha256(seller)[:62]
+    obfus_str=get_sha256(seller)
     obfus_str2=get_sha256(obfus_str.upper())
+
     padded_dataHex=dataHex[2:]+''.zfill(len(change_address_compressed_pub)-len(dataHex))[2:]
     padded_dataHex2=dataHex2[2:]+''.zfill(len(change_address_compressed_pub)-len(dataHex2))[2:]
-    dataHex_obfuscated=get_string_xor(padded_dataHex,obfus_str).zfill(62)
-    dataHex2_obfuscated=get_string_xor(padded_dataHex2,obfus_str2).zfill(62)
+    dataHex_obfuscated=get_string_xor(padded_dataHex,obfus_str[:62]).zfill(62)
+    dataHex2_obfuscated=get_string_xor(padded_dataHex2,obfus_str2[:62]).zfill(62)
     random_byte=hex(random.randrange(0,255)).strip('0x').zfill(2)
     random_byte2=hex(random.randrange(0,255)).strip('0x').zfill(2)
     hacked_dataHex_obfuscated='02'+dataHex_obfuscated+random_byte
     hacked_dataHex2_obfuscated='02'+dataHex2_obfuscated+random_byte2
-    info('plain dataHex: --'+padded_dataHex+'--')
+    info('plain dataHex:  --'+padded_dataHex+'--')
     info('plain dataHex2: --'+padded_dataHex2+'--')
-    info('obfus dataHex: '+hacked_dataHex_obfuscated)
+    info('obfus dataHex:  '+hacked_dataHex_obfuscated)
     info('obfus dataHex2: '+hacked_dataHex2_obfuscated)
     valid_dataHex_obfuscated=get_nearby_valid_pubkey(hacked_dataHex_obfuscated)
     valid_dataHex2_obfuscated=get_nearby_valid_pubkey(hacked_dataHex2_obfuscated)
@@ -177,6 +172,9 @@ def prepare_sell_tx_for_signing(seller, amount, bitcoin_amount_desired, btc_min_
 
     hash160=bc_address_to_hash_160(seller).encode('hex_codec')
     prevout_script='OP_DUP OP_HASH160 ' + hash160 + ' OP_EQUALVERIFY OP_CHECKSIG'
+
+    #parse_dict=parse_multisig(tx)
+    #info(parse_dict)
 
     # tx, inputs
     return_dict={'transaction':tx, 'sourceScript':prevout_script}
