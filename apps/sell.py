@@ -121,35 +121,30 @@ def prepare_sell_tx_for_signing(seller, amount, bitcoin_amount_desired, btc_min_
     tx_type=20 # 0x14 sell offer
 
     dataSequenceNum=1
-    dataHex = '{:02x}'.format(0) + '{:02x}'.format(dataSequenceNum) + \
+    dataHex_list=[]
+    dataHex_list.append('{:02x}'.format(0) + '{:02x}'.format(dataSequenceNum) + \
             '{:08x}'.format(tx_type) + '{:08x}'.format(currency_id) + \
             '{:016x}'.format(satoshi_amount) + '{:016x}'.format(bitcoin_amount_desired) + \
-            '{:02x}'.format(blocks) + '{:06x}'.format(0)
-    dataHex2 = '{:02x}'.format(0) + '{:02x}'.format(dataSequenceNum) + \
-            '{:06x}'.format(min_buyer_fee)
+            '{:02x}'.format(blocks) + '{:06x}'.format(0))
+    dataHex_list.append('{:02x}'.format(0) + '{:02x}'.format(dataSequenceNum) + \
+            '{:06x}'.format(min_buyer_fee))
 
     # create the BIP11 magic
+    valid_dataHex_obfuscated_list=[]
     change_address_compressed_pub=get_compressed_pubkey_format(get_pubkey(changeAddress))
-    obfus_str=get_sha256(seller)
-    obfus_str2=get_sha256(obfus_str.upper())
-
-    padded_dataHex=dataHex[2:]+''.zfill(len(change_address_compressed_pub)-len(dataHex))[2:]
-    padded_dataHex2=dataHex2[2:]+''.zfill(len(change_address_compressed_pub)-len(dataHex2))[2:]
-    dataHex_obfuscated=get_string_xor(padded_dataHex,obfus_str[:62]).zfill(62)
-    dataHex2_obfuscated=get_string_xor(padded_dataHex2,obfus_str2[:62]).zfill(62)
-    random_byte=hex(random.randrange(0,255)).strip('0x').zfill(2)
-    random_byte2=hex(random.randrange(0,255)).strip('0x').zfill(2)
-    hacked_dataHex_obfuscated='02'+dataHex_obfuscated+random_byte
-    hacked_dataHex2_obfuscated='02'+dataHex2_obfuscated+random_byte2
-    info('plain dataHex:  --'+padded_dataHex+'--')
-    info('plain dataHex2: --'+padded_dataHex2+'--')
-    info('obfus dataHex:  '+hacked_dataHex_obfuscated)
-    info('obfus dataHex2: '+hacked_dataHex2_obfuscated)
-    valid_dataHex_obfuscated=get_nearby_valid_pubkey(hacked_dataHex_obfuscated)
-    valid_dataHex2_obfuscated=get_nearby_valid_pubkey(hacked_dataHex2_obfuscated)
-    info('valid dataHex: '+valid_dataHex_obfuscated)
-    info('valid dataHex2: '+valid_dataHex2_obfuscated)
-    script_str='1 [ '+change_address_pub+' ] [ '+valid_dataHex_obfuscated+' ] [ '+valid_dataHex2_obfuscated+' ] 3 checkmultisig'
+    obfus_str_list=get_obfus_str_list(seller,2)
+    list_length=len(dataHex_list)
+    for i in range(list_length):
+        padded_dataHex=dataHex_list[i][2:]+''.zfill(len(change_address_compressed_pub)-len(dataHex_list[i]))[2:]
+        dataHex_obfuscated=get_string_xor(padded_dataHex,obfus_str_list[i][:62]).zfill(62)
+        random_byte=hex(random.randrange(0,255)).strip('0x').zfill(2)
+        hacked_dataHex_obfuscated='02'+dataHex_obfuscated+random_byte
+        info('plain dataHex:  --'+padded_dataHex+'--')
+        info('obfus dataHex:  '+hacked_dataHex_obfuscated)
+        valid_dataHex_obfuscated=get_nearby_valid_pubkey(hacked_dataHex_obfuscated)
+        info('valid dataHex: '+valid_dataHex_obfuscated)
+        valid_dataHex_obfuscated_list.append(valid_dataHex_obfuscated)
+    script_str='1 [ '+change_address_pub+' ] [ '+valid_dataHex_obfuscated_list[0]+' ] [ '+valid_dataHex_obfuscated_list[1]+' ] 3 checkmultisig'
     info('change address is '+changeAddress)
     info('from_address is '+seller)
     info('total inputs value is '+str(inputs_total_value))
@@ -173,8 +168,8 @@ def prepare_sell_tx_for_signing(seller, amount, bitcoin_amount_desired, btc_min_
     hash160=bc_address_to_hash_160(seller).encode('hex_codec')
     prevout_script='OP_DUP OP_HASH160 ' + hash160 + ' OP_EQUALVERIFY OP_CHECKSIG'
 
-    #parse_dict=parse_multisig(tx)
-    #info(parse_dict)
+    parse_dict=parse_multisig(tx)
+    info(parse_dict)
 
     # tx, inputs
     return_dict={'transaction':tx, 'sourceScript':prevout_script}
