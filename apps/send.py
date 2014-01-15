@@ -7,7 +7,6 @@ from msc_apps import *
 import random
 
 def send_form_response(response_dict):
-    info(response_dict)
     expected_fields=['from_address', 'to_address', 'amount', 'currency', 'fee']
     # if marker is True, send dust to marker (for payments of sells)
     for field in expected_fields:
@@ -55,7 +54,7 @@ def send_form_response(response_dict):
     pubkey='unknown'
     tx_to_sign_dict={'transaction':'','sourceScript':''}
     l=len(from_addr)
-    if l == 66: # probably pubkey
+    if l == 66 or l == 130: # probably pubkey
         if is_pubkey_valid(from_addr):
             pubkey=from_addr
             response_status='OK'
@@ -71,7 +70,12 @@ def send_form_response(response_dict):
             else:
                 pubkey=from_pubkey
                 response_status='OK'
-                tx_to_sign_dict=prepare_send_tx_for_signing(from_addr, to_addr, marker_addr, currency_id, amount, btc_fee)
+
+    if pubkey != None:
+        tx_to_sign_dict=prepare_send_tx_for_signing(from_addr, to_addr, marker_addr, currency_id, amount, btc_fee)
+    else:
+        # hack to show error on page
+        tx_to_sign_dict['sourceScript']=response_status
 
     response='{"status":"'+response_status+'", "transaction":"'+tx_to_sign_dict['transaction']+'", "sourceScript":"'+tx_to_sign_dict['sourceScript']+'"}'
     return (response, None)
