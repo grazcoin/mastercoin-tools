@@ -127,11 +127,12 @@ def get_nearby_valid_pubkey(pubkey):
     return valid_pubkey
 
 def is_valid_hash(h):
-    if len(h) != 64:
+    value=h.strip()
+    if len(value) != 64:
         return None
     res=re.findall(r"[0-9a-fA-F]+", value)
     if len(res)==1 and res[0]==value:
-        return h
+        return value
     return None
 
 def is_valid_bitcoin_address(value):
