@@ -170,9 +170,11 @@ def check_bitcoin_payment(t):
                                     bought=satoshi_spot_closed, bought_tx=sell_accept_tx)
 
                                 # update sell available: min between original sell amount, the remaining offer, and the current balance
-                                update_tx_dict(sell_offer_tx['tx_hash'], amount_available=min(float(sell_offer_tx['formatted_amount']), \
-                                    from_satoshi(addr_dict[from_address][c]['offer']),from_satoshi(addr_dict[from_address][c]['balance'])))
-                                update_tx_dict(sell_offer_tx['tx_hash'], formatted_amount_available=formatted_decimal(sell_offer_tx['amount_available']))
+                                amount_available=min(float(sell_offer_tx['formatted_amount']) - \
+                                    float(from_satoshi(addr_dict[from_address][c]['accept'])), \
+                                    from_satoshi(addr_dict[from_address][c]['offer']),from_satoshi(addr_dict[from_address][c]['balance']))
+                                update_tx_dict(sell_offer_tx['tx_hash'], amount_available=amount_available, \
+                                    formatted_amount_available=formatted_decimal(amount_available))
 
                                 # if not more left in the offer - close sell
                                 if addr_dict[address][c]['offer'] == 0:
@@ -597,7 +599,17 @@ def check_mastercoin_transaction(t, index=-1):
                     seller_balance=from_satoshi(addr_dict[from_addr][c]['balance'])
                 except KeyError: # no such address
                     seller_balance=0.0
-                amount_available=min(float(t['formatted_amount']), seller_balance)
+                try:
+                    seller_offer=from_satoshi(addr_dict[from_addr][c]['offer'])
+                except KeyError: # no such address
+                    seller_offer=0.0
+                try:
+                    seller_accept=from_satoshi(addr_dict[from_addr][c]['accept'])
+                except KeyError: # no such address
+                    seller_accept=0.0
+
+                amount_available=min(float(t['formatted_amount']) - float(seller_accept), float(seller_offer), \
+                    float(seller_balance))
                 update_tx_dict(t['tx_hash'], icon_text='Sell Offer ('+str(tx_age)+' confirms)', \
                     amount_available=amount_available, formatted_amount_available=formatted_decimal(amount_available))
                 # sell offer from empty or non existing address is allowed
@@ -623,13 +635,16 @@ def check_mastercoin_transaction(t, index=-1):
                     except KeyError:
                         accept_amount_requested=0.0
                     try:
-                        sell_offer=addr_dict[to_addr][c]['offer']           # get orig offer from seller
+                        sell_offer=from_satoshi(addr_dict[to_addr][c]['offer']) # get orig offer from seller
                         sell_offer_tx=addr_dict[to_addr][c]['offer_tx'][-1] # get orig offer tx (last) from seller
                     except (KeyError, IndexError):
                         # offer from wallet without entry (empty wallet)
                         info('accept offer from missing seller '+to_addr)
                         mark_tx_invalid(tx_hash, 'accept offer of missing sell offer')
                         return False
+
+                    # amount accepted is min between requested and offer
+                    amount_accepted=min(float(accept_amount_requested),sell_offer)
 
                     # required fee calculation
                     try:
@@ -644,28 +659,34 @@ def check_mastercoin_transaction(t, index=-1):
                         info('accept offer without minimal fee on tx: '+tx_hash)
                         mark_tx_invalid(tx_hash, 'accept offer without required fee')
                         return False
-
-                    try:
-                        formatted_price_per_coin=sell_offer_tx['formatted_price_per_coin']
-                    except KeyError:
-                        formatted_price_per_coin='price missing'
-                    t['formatted_price_per_coin']=formatted_price_per_coin
+                    
                     try:
                         # need to pay the part of the sell offer which got accepted
-                        part=float(t['formatted_amount_accepted'])/float(sell_offer_tx['formatted_amount'])
+                        part=float(amount_accepted/float(sell_offer_tx['formatted_amount']))
                         bitcoin_required=float(sell_offer_tx['formatted_bitcoin_amount_desired'])*part
                     except KeyError:
                         bitcoin_required='missing required btc'
 
-                    update_tx_dict(t['tx_hash'], bitcoin_required=bitcoin_required, sell_offer_txid=sell_offer_tx['tx_hash'], \
-                        btc_offer_txid='unknown')
+                    update_tx_dict(t['tx_hash'], bitcoin_required=str(bitcoin_required), sell_offer_txid=sell_offer_tx['tx_hash'], \
+                        formatted_price_per_coin=sell_offer_tx['formatted_price_per_coin'], formatted_amount_accepted=str(amount_accepted), \
+                        formatted_amount_bought='0.0', btc_offer_txid='unknown')
 
                     spot_accept=min(float(sell_offer),float(accept_amount_requested))   # the accept is on min of all
                     if spot_accept > 0: # ignore 0 or negative accepts
 
+                        # update sell accept
                         update_tx_dict(t['tx_hash'], formatted_amount_accepted=spot_accept, payment_done=False, payment_expired=False)
                         payment_timeframe=int(sell_offer_tx['formatted_block_time_limit'])
                         add_alarm(t['tx_hash'], payment_timeframe)
+
+                        # update sell offer
+                        # update sell available: min between original sell amount less the already accepted,
+                        # the remaining offer, and the current balance
+                        amount_available=min(float(sell_offer_tx['formatted_amount']) - \
+                            float(from_satoshi(addr_dict[to_addr][c]['accept'])), \
+                            from_satoshi(addr_dict[to_addr][c]['offer']),from_satoshi(addr_dict[to_addr][c]['balance']))
+                        update_tx_dict(sell_offer_tx['tx_hash'], amount_available=amount_available, \
+                            formatted_amount_available=formatted_decimal(amount_available))
 
                         # accomulate the spot accept on the seller side
                         update_addr_dict(from_addr, True, c, accept=to_satoshi(spot_accept), accept_tx=t)
