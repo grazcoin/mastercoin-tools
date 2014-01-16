@@ -62,7 +62,8 @@ def get_tx(tx_hash):
 def get_tx_index(tx_hash):
     out, err = run_command("sx fetch-transaction-index "+tx_hash)
     if err != None:
-        error(err)
+        info(err)
+        return (-1, -1)
     else:
         try:
             s=out.split()
