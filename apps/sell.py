@@ -168,9 +168,6 @@ def prepare_sell_tx_for_signing(seller, amount, bitcoin_amount_desired, btc_min_
     hash160=bc_address_to_hash_160(seller).encode('hex_codec')
     prevout_script='OP_DUP OP_HASH160 ' + hash160 + ' OP_EQUALVERIFY OP_CHECKSIG'
 
-    parse_dict=parse_multisig(tx)
-    info(parse_dict)
-
     # tx, inputs
     return_dict={'transaction':tx, 'sourceScript':prevout_script}
     return return_dict
