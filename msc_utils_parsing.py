@@ -207,7 +207,7 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
                     recipient=all_addresses[0]
                 else:
                     info('invalid mastercoin tx (failed all peek and decode levels) '+tx_hash)
-                    return {'invalid':'failed all peek and decode levels', 'tx_hash':tx_hash}
+                    return parse_bitcoin_payment(tx, tx_hash)
         else:
             info('Level 1 peek and decode for '+tx_hash)         
 
