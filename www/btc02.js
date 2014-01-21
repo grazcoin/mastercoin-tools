@@ -226,7 +226,7 @@ SearchHistoryContext.initHistoryCombobox = function () {
 
         //Add button in here
 
-        $('.search .combobox-container').append($("<button id='btnSearch' class='btn btn-default'></button>")
+        $('.search').append($("<button id='btnSearch' class='btn btn-default'></button>")
                     .text('Search'));
 
         //Placeholder

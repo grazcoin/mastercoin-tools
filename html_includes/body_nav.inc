@@ -17,7 +17,7 @@
                         <li><a href="About.html">Info</a></li>
                         <li>
                            <a class="searchLI">
-                              <div class="search">
+                              <div id="searchContainer" class="search">
                                  <select class="select optional combobox customDropdown"
                                     id="searchText" name="searchText">
                                  </select>
