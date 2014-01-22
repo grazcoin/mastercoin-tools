@@ -65,10 +65,6 @@
                                             Bitcoin payment</td>
                                         </tr>
                                         <tr>
-                                            <td>Transaction ID</td>
-                                            <td>{{transactionInformation.tx_hash|characters:30}}</td>
-                                        </tr>
-                                        <tr>
                                             <td>Included in block</td>
                                             <td>{{transactionInformation.block}}</td>
                                         </tr>
