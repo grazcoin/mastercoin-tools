@@ -130,7 +130,7 @@ def prepare_send_tx_for_signing(from_address, to_address, marker_address, curren
     inputs_total_value=0
 
     if inputs_number < 1:
-        error_msg='zero inputs'
+        error_msg=error_not_enough_funds
         info(error_msg)
         return (None, error_msg)
     for i in range(inputs_number):

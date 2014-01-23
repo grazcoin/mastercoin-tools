@@ -120,7 +120,7 @@ def prepare_accept_tx_for_signing(buyer, amount, tx_hash, min_btc_fee=0.0005):
     inputs_total_value=0
 
     if inputs_number < 1:
-        error_msg='zero inputs'
+        error_msg=error_not_enough_funds
         info(error_msg)
         return(None, error_msg)
     for i in range(inputs_number):

@@ -5,11 +5,13 @@ sys.path.append(lib_path)
 from msc_utils_obelisk import *
 
 http_status = '200 OK'
+error_not_enough_funds = 'Not enough bitcoin funds on address'
 
 def response_with_error(start_response, environ, response_body):
     headers = [('Content-type', 'application/json')]
     start_response(http_status, headers)
     response='{"error":"'+response_body+'"}'
+    info(response)
     return response
 
 def general_handler(environ, start_response, response_dict_to_response_func):
