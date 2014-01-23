@@ -248,6 +248,13 @@ console.log(data);
 BTNClientContext.Signing.GetRawTransaction = function () {
 
 
+$('#statusMessage').removeClass('redText');
+$('#statusMessage').addClass('greenTextColor');
+$('#statusMessage').text('');
+
+
+$('#createRawResponseForm').hide();
+
 var myURLParams = BTCUtils.getQueryStringArgs();
 var from_address = $("input.select.optional.form-control.form-control30px.combobox").val();
 var amount = $('#amount').val();
@@ -269,10 +276,9 @@ BTNClientContext.Signing.GetRawTransactionResponse(data);
 
 }).fail(function () {
 
-// TODO This should be changed - Currently always fail as there is no server
-
 console.log('fail');
 var testResponse = {
+    'status': 'ping?',
     'sourceScript': 'ERROR',
     'transaction': ''
 };
@@ -283,6 +289,24 @@ BTNClientContext.Signing.GetRawTransactionResponse(testResponse);
 
 BTNClientContext.Signing.GetRawTransactionResponse = function (data) {
 
+var status = data.status;
+if (!status)
+	status = data.error;
+if (status && status != "OK" && status != "Ok" && status != "ok") {
+if (status.length > 120) {
+    //take first 117 and add ...
+    status = status.substr(0, 117);
+    status += "...";
+}
+
+$('#statusMessage').removeClass('greenTextColor');
+$('#statusMessage').addClass('redText');
+$('#statusMessage').text(status);
+
+
+$('#createRawResponseForm').hide();
+return;
+}
 
 BTNClientContext.Signing.Transaction = data.transaction;
 
@@ -378,6 +402,7 @@ BTNClientContext.Signing.addAddressToHistory = function () {
     }
 };
 $(document).ready(function myfunction() {
+
     $('#sendLoader').addClass('hideLoader');
  
     //Combbox init
