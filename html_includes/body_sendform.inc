@@ -65,7 +65,7 @@
                                         type="text">
                                 </div>
 
-                                <div>
+                                <div style="display:block;">
                                     <button class="btn btn-primary btnMargin"
                                         id="createRawTransaction">
                                         Prepare
@@ -73,6 +73,8 @@
 
                                     <img id="createRawTransactionLoader"
                                         src="img/ajax_loader.gif" class="loader" />
+                                    <p id="statusMessage"  class="">
+                                    </p>
                                 </div>
 
                             </div>
