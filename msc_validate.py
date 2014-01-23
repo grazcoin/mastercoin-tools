@@ -15,6 +15,7 @@ tx_dict={}
 sorted_currency_tx_list={'Mastercoin':[],'Test Mastercoin':[]} # list 0 for mastercoins, list 1 for test mastercoins
 sorted_currency_sell_tx_list={'Mastercoin':[],'Test Mastercoin':[]} # list 0 for mastercoins, list 1 for test mastercoins
 sorted_currency_accept_tx_list={'Mastercoin':[],'Test Mastercoin':[]} # list 0 for mastercoins, list 1 for test mastercoins
+sorted_currency_sell_tx_list={'Mastercoin':[],'Test Mastercoin':[]} # list 0 for mastercoins, list 1 for test mastercoins
 
 # all available properties of a transaction
 tx_properties=\
@@ -451,14 +452,21 @@ def generate_api_jsons():
                 'general/'+coins_short_name_dict[c]+'_'+'{0:04}'.format(i+1)+'.json', add_brackets=False)
             pages[c]+=1
 
-    # create the latest accept transactions page
+    # create the latest sell and accept transactions page
     for c in coins_list:
         for t in sorted_currency_tx_list[c]:
+            if t['tx_type_str']=='Sell offer':
+                sorted_currency_sell_tx_list[c].append(t)
             if t['tx_type_str']=='Sell accept':
                 sorted_currency_accept_tx_list[c].append(t)
 
+    sell_pages={'Mastercoin':0, 'Test Mastercoin':0}
     accept_pages={'Mastercoin':0, 'Test Mastercoin':0}
     for c in coins_list:
+        for i in range(len(sorted_currency_sell_tx_list[c])/chunk):
+            atomic_json_dump(sorted_currency_sell_tx_list[c][i*chunk:(i+1)*chunk], \
+                'general/'+coins_short_name_dict[c]+'_sell_'+'{0:04}'.format(i+1)+'.json', add_brackets=False)
+            sell_pages[c]+=1
         for i in range(len(sorted_currency_accept_tx_list[c])/chunk):
             atomic_json_dump(sorted_currency_accept_tx_list[c][i*chunk:(i+1)*chunk], \
                 'general/'+coins_short_name_dict[c]+'_accept_'+'{0:04}'.format(i+1)+'.json', add_brackets=False)
@@ -474,6 +482,7 @@ def generate_api_jsons():
     for v in values_list:
         v['pages']=pages[coins_reverse_short_name_dict[v['currency']]]
         v['accept_pages']=accept_pages[coins_reverse_short_name_dict[v['currency']]]
+        v['sell_pages']=sell_pages[coins_reverse_short_name_dict[v['currency']]]
         updated_values_list.append(v)
     atomic_json_dump(updated_values_list, 'www/values.json', add_brackets=False)
 
