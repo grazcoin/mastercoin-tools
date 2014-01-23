@@ -7,6 +7,7 @@ from msc_apps import *
 import random
 
 def send_form_response(response_dict):
+    info(response_dict)
     expected_fields=['from_address', 'to_address', 'amount', 'currency', 'fee']
     # if marker is True, send dust to marker (for payments of sells)
     for field in expected_fields:
@@ -51,7 +52,7 @@ def send_form_response(response_dict):
         # if no marker, marker_addr stays None
         pass
 
-    pubkey='unknown'
+    pubkey=None
     tx_to_sign_dict={'transaction':'','sourceScript':''}
     l=len(from_addr)
     if l == 66 or l == 130: # probably pubkey
@@ -72,10 +73,13 @@ def send_form_response(response_dict):
                 response_status='OK'
 
     if pubkey != None:
-        tx_to_sign_dict=prepare_send_tx_for_signing(from_addr, to_addr, marker_addr, currency_id, amount, btc_fee)
+        (tx_to_sign_dict, error_msg)=prepare_send_tx_for_signing(from_addr, to_addr, marker_addr, currency_id, amount, btc_fee)
+        if error_msg != None:
+            return (None, error_msg)
     else:
-        # hack to show error on page
-        tx_to_sign_dict['sourceScript']=response_status
+        # return error
+        info(response_status)
+        return (None, response_status)
 
     response='{"status":"'+response_status+'", "transaction":"'+tx_to_sign_dict['transaction']+'", "sourceScript":"'+tx_to_sign_dict['sourceScript']+'"}'
     return (response, None)
@@ -119,13 +123,17 @@ def prepare_send_tx_for_signing(from_address, to_address, marker_address, curren
     inputs_total_value=0
 
     if inputs_number < 1:
-        error('zero inputs')
+        error_msg='zero inputs'
+        info(error_msg)
+        return (None, error_msg)
     for i in range(inputs_number):
         inputs.append(utxo_split[i*12+3])
         try:
             inputs_total_value += int(utxo_split[i*12+7])
         except ValueError:
-            error('error parsing value from '+utxo_split[i*12+7])
+            error_msg='error parsing value from '+utxo_split[i*12+7]
+            info(error_msg)
+            return (None, error_msg)
 
     inputs_outputs='/dev/stdout'
     for i in inputs:
@@ -134,7 +142,9 @@ def prepare_send_tx_for_signing(from_address, to_address, marker_address, curren
     # calculate change
     change_value=inputs_total_value-required_value-fee
     if change_value < 0:
-        error ('negative change value')
+        error_msg='negative change value'
+        info(error_msg)
+        return (None, error_msg)
 
     if currency_id == 0: # bitcoin
         # create a normal bitcoin transaction (not mastercoin)
@@ -201,7 +211,7 @@ def prepare_send_tx_for_signing(from_address, to_address, marker_address, curren
 
     # tx, inputs
     return_dict={'transaction':tx, 'sourceScript':prevout_script}
-    return return_dict
+    return (return_dict, None)
 
 
 def send_handler(environ, start_response):

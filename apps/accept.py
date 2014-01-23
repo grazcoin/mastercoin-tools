@@ -7,6 +7,7 @@ from msc_apps import *
 import random
 
 def accept_form_response(response_dict):
+    info(response_dict)
     expected_fields=['buyer', 'amount', 'tx_hash']
     for field in expected_fields:
         if not response_dict.has_key(field):
@@ -25,7 +26,7 @@ def accept_form_response(response_dict):
     if not is_valid_hash(tx_hash):
         return (None, 'Invalid tx hash')
 
-    pubkey='unknown'
+    pubkey=None
     tx_to_sign_dict={'transaction':'','sourceScript':''}
     l=len(buyer)
     if l == 66 or l == 130: # probably pubkey
@@ -45,11 +46,14 @@ def accept_form_response(response_dict):
                 pubkey=buyer_pubkey
                 response_status='OK'
 
-    if pubkey != 'unknown':
-        tx_to_sign_dict=prepare_accept_tx_for_signing(buyer, amount, tx_hash)
+    if pubkey != None:
+        (tx_to_sign_dict, error_msg)=prepare_accept_tx_for_signing(buyer, amount, tx_hash)
+        if error_msg != None:
+            return (None, error_msg)
     else:
-        # minor hack to show error on page
-        tx_to_sign_dict['sourceScript']=response_status
+        # return error
+        info(response_status)
+        return (None, response_status)
 
     response='{"status":"'+response_status+'", "transaction":"'+tx_to_sign_dict['transaction']+'", "sourceScript":"'+tx_to_sign_dict['sourceScript']+'"}'
     return (response, None)
@@ -77,9 +81,13 @@ def prepare_accept_tx_for_signing(buyer, amount, tx_hash, min_btc_fee=0.0005):
     # sanity check
     try:
         if sell_offer_tx_dict['tx_type_str'] != "Sell offer":
-            error('cannot accept non sell offer tx '+tx_hash)
+            error_msg='cannot accept non sell offer tx '+tx_hash
+            info(error_msg)
+            return(None, error_msg)
     except KeyError:
-        error('no field tx_type_str in tx '+tx_hash)
+        error_msg='no field tx_type_str in tx '+tx_hash
+        info(error_msg)
+        return(None, error_msg)
 
     try:
         seller=sell_offer_tx_dict['from_address']
@@ -88,7 +96,9 @@ def prepare_accept_tx_for_signing(buyer, amount, tx_hash, min_btc_fee=0.0005):
         formatted_fee_required=sell_offer_tx_dict['formatted_fee_required']
         currency_id=sell_offer_tx_dict['currencyId']
     except KeyError:
-        error('missing field on tx '+tx_hash)
+        error_msg='missing field on tx '+tx_hash
+        info(error_msg)
+        return(None,error_msg)
 
     #formatted_price_per_coin=sell_offer_tx_dict['formatted_price_per_coin']
     #formatted_block_time_limit=sell_offer_tx_dict['formatted_block_time_limit']
@@ -108,13 +118,17 @@ def prepare_accept_tx_for_signing(buyer, amount, tx_hash, min_btc_fee=0.0005):
     inputs_total_value=0
 
     if inputs_number < 1:
-        error('zero inputs')
+        error_msg='zero inputs'
+        info(error_msg)
+        return(None, error_msg)
     for i in range(inputs_number):
         inputs.append(utxo_split[i*12+3])
         try:
             inputs_total_value += int(utxo_split[i*12+7])
         except ValueError:
-            error('error parsing value from '+utxo_split[i*12+7])
+            error_msg='error parsing value from '+utxo_split[i*12+7]
+            info(error_msg)
+            return(None,error_msg)
 
     inputs_outputs='/dev/stdout'
     for i in inputs:
@@ -123,7 +137,9 @@ def prepare_accept_tx_for_signing(buyer, amount, tx_hash, min_btc_fee=0.0005):
     # calculate change
     change_value=inputs_total_value-required_value-fee
     if change_value < 0:
-        error ('negative change value')
+        error_msg='negative change value'
+        info(error_msg)
+        return(None, error_msg)
 
     # sell accept - multisig
     # dust to exodus
@@ -181,7 +197,7 @@ def prepare_accept_tx_for_signing(buyer, amount, tx_hash, min_btc_fee=0.0005):
 
     # tx, inputs
     return_dict={'transaction':tx, 'sourceScript':prevout_script}
-    return return_dict
+    return (return_dict, None)
 
 
 def accept_handler(environ, start_response):

@@ -45,7 +45,7 @@ def sell_form_response(response_dict):
     satoshi_price=to_satoshi(price)
     bitcoin_amount_desired=int(round(satoshi_price*float(amount)))
 
-    pubkey='unknown'
+    pubkey=None
     tx_to_sign_dict={'transaction':'','sourceScript':''}
     l=len(seller)
     if l == 66: # probably pubkey
@@ -64,8 +64,16 @@ def sell_form_response(response_dict):
             else:
                 pubkey=seller_pubkey
                 response_status='OK'
-                tx_to_sign_dict=prepare_sell_tx_for_signing(seller, amount, bitcoin_amount_desired, min_buyer_fee, fee, blocks, currency_id)
 
+    if pubkey != None:
+        (tx_to_sign_dict, error_msg)=prepare_sell_tx_for_signing(seller, amount, bitcoin_amount_desired, min_buyer_fee, fee, blocks, currency_id)
+        if error_msg != None:
+            return (None, error_msg)
+    else:
+        # return error
+        info(response_status)
+        return (None, response_status)
+        
     response='{"status":"'+response_status+'", "transaction":"'+tx_to_sign_dict['transaction']+'", "sourceScript":"'+tx_to_sign_dict['sourceScript']+'"}'
     return (response, None)
 
@@ -97,13 +105,17 @@ def prepare_sell_tx_for_signing(seller, amount, bitcoin_amount_desired, btc_min_
     inputs_total_value=0
 
     if inputs_number < 1:
-        error('zero inputs')
+        error_msg='zero inputs'
+        info(error_msg)
+        return (None, error_msg)
     for i in range(inputs_number):
         inputs.append(utxo_split[i*12+3])
         try:
             inputs_total_value += int(utxo_split[i*12+7])
         except ValueError:
-            error('error parsing value from '+utxo_split[i*12+7])
+            error_msg='error parsing value from '+utxo_split[i*12+7]
+            info(error_msg)
+            return (None, error_msg)
 
     inputs_outputs='/dev/stdout'
     for i in inputs:
@@ -112,7 +124,9 @@ def prepare_sell_tx_for_signing(seller, amount, bitcoin_amount_desired, btc_min_
     # calculate change
     change_value=inputs_total_value-required_value-fee
     if change_value < 0:
-        error ('negative change value')
+        error_msg='negative change value'
+        info(error_msg)
+        return (None, error_msg)
 
     # sell offer - multisig
     # dust to exodus
@@ -170,7 +184,7 @@ def prepare_sell_tx_for_signing(seller, amount, bitcoin_amount_desired, btc_min_
 
     # tx, inputs
     return_dict={'transaction':tx, 'sourceScript':prevout_script}
-    return return_dict
+    return (return_dict, None)
 
 
 def sell_handler(environ, start_response):

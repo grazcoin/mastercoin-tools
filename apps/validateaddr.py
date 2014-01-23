@@ -6,6 +6,7 @@ from msc_utils_obelisk import *
 from msc_apps import *
 
 def validateaddr_response(response_dict):
+    info(response_dict)
     try:
         addrs_list=response_dict['addr']
     except KeyError:
@@ -17,7 +18,6 @@ def validateaddr_response(response_dict):
     
     # now verify
     l=len(addr)
-    info(l)
     if l == 66 or l == 130: # probably pubkey
         if is_pubkey_valid(addr):
             debug='valid pubkey'
@@ -37,6 +37,11 @@ def validateaddr_response(response_dict):
             else:
                 debug='missing pubkey'
                 response_status='missing pubkey'
+
+    if response_status != 'OK':
+        info(response_status)
+        return(None, response_status)
+
     response='{"status":"'+response_status+'", "debug":"'+debug+'"}'
     return (response, None)
 
