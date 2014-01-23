@@ -265,7 +265,7 @@ def parse():
         if single_tx == None and block != None:
             msc_globals.last_block=block
 
-    rev=get_revision_dict(last_block)
+    rev=get_revision_dict( last_block, options.repository_path )
     atomic_json_dump(rev, 'www/revision.json', add_brackets=False)
 
     if archive:

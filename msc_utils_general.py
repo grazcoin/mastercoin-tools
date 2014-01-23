@@ -134,9 +134,9 @@ def get_now():
 def get_today():
     return format_time_from_struct(time.gmtime(), True)
 
-def get_revision_dict(last_block):
+def get_revision_dict( last_block, directory="~/mastercoin-tools" ):
     rev={}
-    git_details=get_git_details()
+    git_details=get_git_details( directory )
     hexsha=git_details[0]
     commit_time=git_details[1]
     rev['commit_hexsha']=hexsha
