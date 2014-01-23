@@ -25,11 +25,18 @@ def send_form_response(response_dict):
     if not is_valid_bitcoin_address(to_addr):
         return (None, 'To address is not a bitcoin address')
     amount=response_dict['amount'][0]
-    if float(amount)<0 or float(amount)>max_currency_value:
-        return (None, 'Invalid amount')
+    try:
+        if float(amount)<0 or float(amount)>max_currency_value:
+            return (None, 'Invalid amount')
+    except ValueError:
+        return (None, "amount must be a number")
     btc_fee=response_dict['fee'][0]
-    if float(btc_fee)<0 or float(btc_fee)>max_currency_value:
-        return (None, 'Invalid fee')
+    try:
+        if float(btc_fee)<0 or float(btc_fee)>max_currency_value:
+            return (None, 'Invalid fee')
+    except ValueError:
+        return (None, "fee must be a number")
+
     currency=response_dict['currency'][0]
     if currency=='MSC':
         currency_id=1
