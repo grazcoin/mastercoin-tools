@@ -277,6 +277,9 @@ var myURLParams = BTCUtils.getQueryStringArgs();
 var tx_hash = myURLParams['tx'];
 var amount = $('#amount').val();
 var buyer = $('#buyerAddressOrPublicKey').val();
+if (!buyer) {
+	buyer = $("input.select.optional.form-control.form-control30px.combobox").val();
+}
 
 var dataToSend = { buyer: buyer, amount: amount, tx_hash: tx_hash };
 console.log(dataToSend);
