@@ -203,6 +203,17 @@ cat	head_end.inc \
 	body_About.inc \
 	body_last.inc >> $FILE
 
+FILE=../www/professional.html
+TITLE="About"
+cat	head_begin.inc > $FILE
+echo "         $TITLE" >> $FILE
+cat	head_middle.inc >> $FILE
+cat	head_end.inc \
+	body_first.inc \
+	body_nav.inc \
+	body_professional.inc \
+	body_last.inc >> $FILE
+
 FILE=../www/API.html
 TITLE="API"
 cat	head_begin.inc > $FILE
