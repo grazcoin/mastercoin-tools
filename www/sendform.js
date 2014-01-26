@@ -117,14 +117,14 @@ if (data.status == 'OK') {
 else {
     $('#verifyMessage').addClass('greenText');
     ok = false;
-    if (data.status == 'invalid pubkey') {
+    if (data.error == 'invalid pubkey') {
         $('#verifyMessage').text('invalid pubkey');
     } else {
-        if (data.status == 'missing pubkey') {
+        if (data.error == 'missing pubkey') {
             $('#verifyMessage').text('no pubkey on blockchain');
         } else {
 	        $('#verifyMessage').addClass('redText');
-            if (data.status == 'invalid address') {
+            if (data.error == 'invalid address') {
                 $('#verifyMessage').text('invalid address');
             } else {
                 $('#verifyMessage').text('invalid');
