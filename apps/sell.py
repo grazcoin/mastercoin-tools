@@ -160,7 +160,7 @@ def prepare_sell_tx_for_signing(seller, amount, bitcoin_amount_desired, btc_min_
 
     # create the BIP11 magic
     valid_dataHex_obfuscated_list=[]
-    change_address_compressed_pub=get_compressed_pubkey_format(get_pubkey(changeAddress))
+    change_address_compressed_pub=get_compressed_pubkey_format(change_address_pub)
     obfus_str_list=get_obfus_str_list(seller,2)
     list_length=len(dataHex_list)
     for i in range(list_length):

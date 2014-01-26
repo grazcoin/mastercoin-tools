@@ -179,7 +179,7 @@ def prepare_send_tx_for_signing(from_address, to_address, marker_address, curren
         dataAddress = hash_160_to_bc_address(dataBytes[1:21])
 
         # create the BIP11 magic 
-        change_address_compressed_pub=get_compressed_pubkey_format(get_pubkey(changeAddress))
+        change_address_compressed_pub=get_compressed_pubkey_format(change_address_pub)
         obfus_str=get_sha256(from_address)[:62]
         padded_dataHex=dataHex[2:]+''.zfill(len(change_address_compressed_pub)-len(dataHex))[2:]
         dataHex_obfuscated=get_string_xor(padded_dataHex,obfus_str).zfill(62)
