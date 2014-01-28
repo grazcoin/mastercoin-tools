@@ -23,9 +23,15 @@ do
   x=$?
 done
 
+python msc_validate.py 2>&1 > $VALIDATE_LOG
+
+# copy all results to web browser directory
+cp tx/* www/tx/
+cp addr/* www/addr/
+cp general/* www/general/
+cp offers/* www/offers/
 mkdir -p www/mastercoin_verify/addresses/
 mkdir -p www/mastercoin_verify/transactions/
-python msc_validate.py 2>&1 > $VALIDATE_LOG
 
 # update archive
 mkdir -p www/downloads/

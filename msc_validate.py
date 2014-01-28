@@ -59,7 +59,7 @@ coins_short_name_dict={'Mastercoin':'MSC','Test Mastercoin':'TMSC'}
 coins_reverse_short_name_dict=dict((v,k) for k, v in coins_short_name_dict.iteritems())
 
 # create modified tx dict which would be used to modify tx files
-bids_dict={}
+offers_dict={}
 
 # global last block on the net
 last_height=get_last_height()
@@ -498,12 +498,11 @@ def mark_tx_invalid(tx_hash, reason):
     update_tx_dict(tx_hash, invalid=(True,reason), color='bgc-invalid')
 
 # add another sell tx to the modified dict
-def add_bids(key, t):
-    if bids_dict.has_key(key):
-        bids_dict[key].append(t['tx_hash'])
+def add_offers(key, t):
+    if offers_dict.has_key(key):
+        offers_dict[key].append(t['tx_hash'])
     else:
-        bids_dict[key]=[t['tx_hash']]
-
+        offers_dict[key]=[t['tx_hash']]
 
 # write back to fs all tx which got modified
 def write_back_modified_tx():
@@ -515,15 +514,15 @@ def write_back_modified_tx():
             # save back to filesystem
             atomic_json_dump(tx_dict[k], 'tx/'+k+'.json', add_brackets=False)
 
-# create bids json
-def update_bids():
-    for tx_hash in bids_dict.keys():
+# create offers json
+def update_offers():
+    for tx_hash in offers_dict.keys():
         # generate tx list for each tx_hash
-        bids=[]
-        for b_hash in bids_dict[tx_hash]:
-            bids.append(tx_dict[b_hash][-1])
-        # write updated bids
-        atomic_json_dump(bids, 'bids/bids-'+tx_hash+'.json', add_brackets=False)
+        offers=[]
+        for b_hash in offers_dict[tx_hash]:
+            offers.append(tx_dict[b_hash][-1])
+        # write updated offers
+        atomic_json_dump(offers, 'offers/offers-'+tx_hash+'.json', add_brackets=False)
 
 def update_bitcoin_balances():
     if msc_globals.b == True:
@@ -1116,14 +1115,13 @@ def check_mastercoin_transaction(t, index=-1):
                     else:
                         mark_tx_invalid(t['tx_hash'],'non positive amount accepted')
 
-                    # add to current bids (which appear on seller tx)
+                    # add to current offers (which appear on seller tx)
                     key=sell_offer_tx['tx_hash']
-                    add_bids(key, t)
+                    add_offers(key, t)
 
                     # heavy debug
                     debug_address(from_addr,c, 'after sell accept')
                     debug_address(to_addr,c, 'after sell accept')
-
                     return True
                 else:
                     info('unknown tx type: '+t['tx_type_str']+' in '+tx_hash)
@@ -1207,8 +1205,8 @@ def validate():
         except OSError:
             error('error on tx '+t['tx_hash'])
 
-    # create json for bids
-    update_bids()
+    # create json for offers
+    update_offers()
 
     # update changed tx
     write_back_modified_tx()
