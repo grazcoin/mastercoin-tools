@@ -27,13 +27,13 @@ def compare():
     difference_dict={}
    
     urls=['https://masterchain.info/mastercoin_verify/addresses/0', \
-          'http://mastercoin-explorer.com/mastercoin_verify/addresses']
-
+          'https://masterchest.info/mastercoin_verify/addresses.aspx', \
+          'http://mymastercoins.com/jaddress.aspx']
     # parse sites from url list
     sites=[]
     for u in urls:
         sites.append(url_to_domain(u))
-    dicts={sites[0]:{},sites[1]:{}}
+    dicts={sites[0]:{},sites[1]:{},sites[2]:{}}
 
     keys=dicts.keys()
 
@@ -52,10 +52,10 @@ def compare():
     for source in keys:
         for addr in dicts[source].keys():
             try:
-                if dicts[keys[0]][addr]!=dicts[keys[1]][addr]:
+                if float(dicts[keys[0]][addr])!=float(dicts[keys[1]][addr]):
                     difference_dict[addr]='different'
             except KeyError:
-                if dicts[source][addr]!='0.0': # 0.0 is considered as nothing
+                if float(dicts[source][addr]) != 0: # 0 is considered as nothing
                     difference_dict[addr]='only on '+source
 
     atomic_json_dump(difference_dict,'general/difference.json')
