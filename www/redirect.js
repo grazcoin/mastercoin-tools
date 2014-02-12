@@ -36,7 +36,7 @@ $(document).ready(function () {
                 //if is bitcoin payment
 		url += "btcpayment.html?tx=";
             }
-	    else if ((method == 'basic') || (transactionType == '00000000')) {
+	    else if ((method == 'basic') || (transactionType == '00000000') || ! transactionType) {
 		//it is simplesend
 		url += "simplesend.html?tx=";
 	    }
