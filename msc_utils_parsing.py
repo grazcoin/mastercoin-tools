@@ -279,8 +279,8 @@ def parse_multisig(tx, tx_hash='unknown'):
             input_addr=get_address_from_output(previous_output)
         else:
             if get_address_from_output(previous_output) != input_addr:
-                error('Bad multiple inputs on: '+tx_hash)
-                return {}
+                info('Bad multiple inputs on: '+tx_hash)
+                return {'tx_hash':tx_hash, 'invalid':(True, 'Bad multiple inputs')}
     all_outputs=parsed_json_tx['outputs']
     (outputs_list_no_exodus, outputs_to_exodus, different_outputs_values)=examine_outputs(all_outputs, tx_hash, tx)
     tx_dust=outputs_to_exodus[0]['value']
