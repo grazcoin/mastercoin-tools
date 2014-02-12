@@ -51,12 +51,15 @@ def compare():
 
     for source in keys:
         for addr in dicts[source].keys():
-            try:
-                if float(dicts[keys[0]][addr])!=float(dicts[keys[1]][addr]):
-                    difference_dict[addr]='different'
-            except KeyError:
-                if float(dicts[source][addr]) != 0: # 0 is considered as nothing
-                    difference_dict[addr]='only on '+source
+            compare_to=keys[:]
+            compare_to.remove(source)
+            for other in compare_to:
+                try:
+                    if float(dicts[source][addr])!=float(dicts[other][addr]):
+                        difference_dict[addr]='different'
+                except KeyError:
+                    if float(dicts[source][addr]) != 0: # 0 is considered as nothing
+                        difference_dict[addr]='not on '+other
 
     atomic_json_dump(difference_dict,'general/difference.json')
 
