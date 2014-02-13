@@ -50,6 +50,7 @@ def parse_data_script(data_script):
         return parse_dict
     parse_dict['baseCoin']=data_script[0:2] # 00 for normal bitcoin (different for multisig?)
     parse_dict['dataSequenceNum']=data_script[2:4]
+    parse_dict['transactionVersion']=data_script[2:4]
     parse_dict['transactionType']=data_script[4:12]
     parse_dict['currencyId']=data_script[12:20]
     parse_dict['amount']=data_script[20:36]
@@ -223,7 +224,8 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
             parse_dict['currency_str']=get_currency_type_from_dict(data_dict['currencyId'])
             parse_dict['tx_type_str']=get_transaction_type_from_dict(data_dict['transactionType'])
             parse_dict['tx_method_str']='basic'
-            # FIXME: checksum?
+            # default transaction version in simple basic to zero
+            parse_dict['transactionVersion']='0'
             return parse_dict
         else:
             info('invalid mastercoin tx with less than 6 fields '+tx_hash)
