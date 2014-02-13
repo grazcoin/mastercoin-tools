@@ -64,7 +64,8 @@ def parse_2nd_data_script(data_script):
         info('invalid data script '+data_script.encode('hex_codec'))
         return parse_dict
     parse_dict['fee_required']=data_script[4:10]
-    parse_dict['should_be_zeros']=data_script[10:54]
+    parse_dict['action']=data_script[10:11]
+    parse_dict['should_be_zeros']=data_script[11:54]
     return parse_dict
 
 def parse_bitcoin_payment(tx, tx_hash='unknown'):
@@ -384,7 +385,8 @@ def parse_multisig(tx, tx_hash='unknown'):
 
                         if len(dataHex_deobfuscated_list)>1: # currently true only for Sell offer (?)
                             data_dict=parse_2nd_data_script(dataHex_deobfuscated_list[1])
-                            if data_dict['should_be_zeros'] == '00000000000000000000000000000000000000000000':
+                            if data_dict['should_be_zeros'] == '00000000000000000000000000000000000000000000' or \
+                               data_dict['should_be_zeros'] == '0000000000000000000000000000000000000000000':
                                 data_dict.pop('should_be_zeros')
                                 for key in data_dict:
                                     parse_dict[key]=data_dict[key]
