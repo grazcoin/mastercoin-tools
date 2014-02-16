@@ -154,7 +154,7 @@ def get_balance(addrs):
         try:
             parsed_json_balance=simplejson.JSONDecoder().decode(out)
         except simplejson.JSONDecodeError:
-            error('error parsing balance json')
+            error('error parsing balance json of '+addrs)
         return parsed_json_balance
 
 def rawscript(script):

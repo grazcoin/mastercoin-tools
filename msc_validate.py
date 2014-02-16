@@ -365,7 +365,8 @@ def update_bitcoin_balances():
         # create the string of all addresses
         addr_batch_str=''
         for a in addr_batch:
-            addr_batch_str=addr_batch_str+a+' '
+            if a != "unknown":
+                addr_batch_str=addr_batch_str+a+' '
 
         # get the balances
         balances=get_balance(addr_batch_str)
