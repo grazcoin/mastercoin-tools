@@ -306,13 +306,13 @@ def update_initial_icon_details(t):
     # update fields icon, details
     update_tx_dict(t['tx_hash'], color='bgc-new')
     try:
-        if t['transactionType']=='00000000':
+        if t['transactionType']=='0000':
             update_tx_dict(t['tx_hash'], icon='simplesend', details=t['to_address'])
         else:
-            if t['transactionType']=='00000014':
+            if t['transactionType']=='0014':
                 update_tx_dict(t['tx_hash'], icon='selloffer', details=t['formatted_price_per_coin'])
             else:
-                if t['transactionType']=='00000016':
+                if t['transactionType']=='0016':
                     update_tx_dict(t['tx_hash'], icon='sellaccept', details='unknown_price')
                 else:
                     update_tx_dict(t['tx_hash'], icon='unknown', details='unknown')
@@ -568,7 +568,7 @@ def check_mastercoin_transaction(t, index=-1):
             debug('unknown currency '+currency+ ' in tx '+tx_hash)
             return False
         # left are normal transfer and sell offer/accept
-        if t['tx_type_str']==transaction_type_dict['00000000']:
+        if t['tx_type_str']==transaction_type_dict['0000']:
             if tx_age <= blocks_consider_new:
                 update_tx_dict(t['tx_hash'], color='bgc-new', icon_text='Simple send ('+str(tx_age)+' confirms)')
             else:
@@ -602,7 +602,7 @@ def check_mastercoin_transaction(t, index=-1):
                     return True
         else:
             # sell offer
-            if t['tx_type_str']==transaction_type_dict['00000014']:
+            if t['tx_type_str']==transaction_type_dict['0014']:
                 debug('sell offer: '+tx_hash)
                 # update sell available: min between original sell amount and the current balance
                 try:
@@ -631,7 +631,7 @@ def check_mastercoin_transaction(t, index=-1):
                 return True
             else:
                 # sell accept
-                if t['tx_type_str']==transaction_type_dict['00000016']:
+                if t['tx_type_str']==transaction_type_dict['0016']:
                     debug('sell accept: '+tx_hash)
 
                     update_tx_dict(t['tx_hash'], icon_text='Sell Accept (active)')
