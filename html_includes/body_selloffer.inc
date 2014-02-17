@@ -70,6 +70,14 @@
                                             {{transactionInformation.tx_type_str}}</td>
                                         </tr>
                                         <tr>
+                                            <td>Transaction version</td>
+                                            <td>{{transactionInformation.transactionVersion}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Action</td>
+                                            <td>{{transactionInformation.action}}</td>
+                                        </tr>
+                                        <tr>
                                             <td>Included in block</td>
                                             <td>{{transactionInformation.block}}</td>
                                         </tr>
