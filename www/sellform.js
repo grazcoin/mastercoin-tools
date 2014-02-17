@@ -123,7 +123,7 @@ else {
         $('#verifyMessage').text('invalid pubkey');
     } else {
         if (data.error == 'missing pubkey') {
-            $('#verifyMessage').text('no pubkey on blockchain');
+            $('#verifyMessage').text('no pubkey on blockchain. use wallet or supply Public Key from brainwallet.org');
         } else {
 	        $('#verifyMessage').addClass('redText');
             if (data.error == 'invalid address') {
