@@ -93,7 +93,7 @@ def send_form_response(response_dict):
 
 
 # simple send and bitcoin send (with or without marker)
-def prepare_send_tx_for_signing(from_address, to_address, marker_address, currency_id, amount, btc_fee=0.0005):
+def prepare_send_tx_for_signing(from_address, to_address, marker_address, currency_id, amount, btc_fee=0.0001):
     # consider a more general func that covers also sell offer and sell accept
 
     # check if address or pubkey was given as from address

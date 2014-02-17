@@ -60,7 +60,7 @@ def accept_form_response(response_dict):
     response='{"status":"'+response_status+'", "transaction":"'+tx_to_sign_dict['transaction']+'", "sourceScript":"'+tx_to_sign_dict['sourceScript']+'"}'
     return (response, None)
 
-def prepare_accept_tx_for_signing(buyer, amount, tx_hash, min_btc_fee=0.0005):
+def prepare_accept_tx_for_signing(buyer, amount, tx_hash, min_btc_fee=0.0001):
 
     # check if address or pubkey was given as buyer
     if buyer.startswith('0'): # a pubkey was given

@@ -8,8 +8,8 @@ function AcceptOfferController($scope, $http) {
     $scope.step = 0.1;
     $scope.amount;
     $scope.price;
-    $scope.min_buyer_fee = 0.0005;
-    $scope.fee = 0.0005;
+    $scope.min_buyer_fee = 0.0001;
+    $scope.fee = 0.0001;
     $scope.blocks = 10;
     $scope.key = "";
     $scope.currency = "";
