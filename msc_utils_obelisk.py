@@ -102,11 +102,13 @@ def get_value_from_output(tx_and_number):
     rawtx=get_raw_tx(txid)
     json_tx=get_json_tx(rawtx)
     if json_tx == None:
-        error('json_tx is None')
+        info('json_tx is None')
+        return None
     try:
         all_outputs=json_tx['outputs']
     except TypeError: # obelisk can give None
-        error('bad outputs parsing on: '+json_tx)
+        info('bad outputs parsing on: '+json_tx)
+        return None
     output=all_outputs[number]
     return output['value']
 
@@ -119,7 +121,8 @@ def get_address_from_output(tx_and_number):
     rawtx=get_raw_tx(tx_hash)
     json_tx=get_json_tx(rawtx)
     if json_tx == None:
-        error('failed getting json_tx (None) for '+tx_hash)
+        info('failed getting json_tx (None) for '+tx_hash)
+        return None
     all_outputs=json_tx['outputs']
     output=all_outputs[number]
     return output['address']

@@ -41,8 +41,8 @@ def error(msg):
     except IndexError:
         pass
     # on parse: update last block
-    if func_name=='parse':
-        # store last block
+    if func_name.startswith('parse'):
+        # store last parsed block
         try:
             f=open(LAST_BLOCK_NUMBER_FILE,'w')
             f.write(str(msc_globals.last_block)+'\n')

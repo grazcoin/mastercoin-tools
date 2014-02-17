@@ -9,7 +9,6 @@ first_exodus_bootstrap_block=249498
 last_exodus_bootstrap_block=255365
 exodus_bootstrap_deadline=1377993874
 seconds_in_one_year=31556926
-multisig_simple_disabled=True
 multisig_disabled=False
 dust_limit=5430
 MAX_PUBKEY_IN_BIP11=3
@@ -44,7 +43,6 @@ def bootstrap_dict_per_tx(block, tx_hash, address, value, dacoins):
     return tx_dict
 
 def parse_data_script(data_script):
-    info(data_script)
     parse_dict={}
     if len(data_script)<42:
         info('invalid data script '+data_script.encode('hex_codec'))
@@ -86,7 +84,10 @@ def parse_bitcoin_payment(tx, tx_hash='unknown'):
                 from_address+=i['address']
             else:
                 from_address='not signed'
-            total_inputs+=get_value_from_output(i['previous_output'])
+            input_value=get_value_from_output(i['previous_output'])
+            if input_value==None:
+                error('failed get_value_from_output')
+            total_inputs+=input_value
     except KeyError, IndexError:
         error('inputs error')
     try:
@@ -160,6 +161,8 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
         inputs_values_dict={}
         for i in inputs:
             input_value=get_value_from_output(i['previous_output'])
+            if input_value == None:
+                error('failed get_value_from_output')
             input_address=i['address']
             if inputs_values_dict.has_key(input_address):
                 inputs_values_dict[input_address]+=int(input_value)
@@ -193,7 +196,7 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
             if invalidity_tuple[0] == True:
                 info(invalidity_tuple[1]+' '+tx_hash)
             if level2_data_output != None and level2_recipient != None:
-                info('Level 2 peek and decode for '+tx_hash)
+                debug('Level 2 peek and decode for '+tx_hash)
                 data_output=level2_data_output
                 recipient=level2_recipient
             else:
@@ -201,7 +204,7 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
                 # all output values are equal in size and if there are three outputs
                 # of these type of outputs total
                 if (len(different_outputs_values)==1 and len(different_outputs_values[0])==3 and data_output != None):
-                    info('Level 3 peek and decode for '+tx_hash)
+                    debug('Level 3 peek and decode for '+tx_hash)
                     # Collect all outputs and remove the data address and the Exodus output.
                     # The remaining output is the recipient address.
                     all_addresses=[d['address'] for d in different_outputs_values[0]]
@@ -212,7 +215,7 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
                     info('invalid mastercoin tx (failed all peek and decode levels) '+tx_hash)
                     return parse_bitcoin_payment(tx, tx_hash)
         else:
-            info('Level 1 peek and decode for '+tx_hash)         
+            debug('Level 1 peek and decode for '+tx_hash)         
 
         to_address=recipient
         data_script=data_output['script'].split()[3].zfill(42)
@@ -233,32 +236,6 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
     except (KeyError, IndexError, TypeError) as e:
         info('invalid mastercoin tx ('+str(e)+') at tx '+tx_hash)
         return {'invalid':(True,'bad parsing'), 'tx_hash':tx_hash}
-
-def parse_multisig_simple(tx, tx_hash='unknown'):
-    if multisig_simple_disabled:
-        info('multisig simple is disabled: '+tx_hash)
-        return {}
-    parsed_json_tx=get_json_tx(tx)
-    script=parsed_json_tx['outputs'][1]['script']
-    fields=script.split('[ ')
-    change_address_pub=fields[1].split(' ]')[0]
-    padded_recipientHex_and_dataHex=recipientHex=fields[2].split(' ]')[0]
-    recipientHex=padded_recipientHex_and_dataHex[0:50]
-    data_script=padded_recipientHex_and_dataHex[50:92]
-    data_dict=parse_data_script(data_script)
-    if len(data_dict) >= 6: # at least 6 basic fields got parse
-        parse_dict=data_dict
-        parse_dict['tx_hash']=tx_hash
-        parse_dict['from_address'] = get_addr_from_key(change_address_pub)
-        parse_dict['to_address'] = b58encode(recipientHex.decode('hex_codec'))
-        parse_dict['formatted_amount'] = from_hex_satoshi(data_dict['amount'])
-        parse_dict['currency_str'] = get_currency_type_from_dict(data_dict['currencyId'])
-        parse_dict['tx_type_str'] = get_transaction_type_from_dict(data_dict['transactionType'])
-        parse_dict['tx_method_str'] = 'multisig simple'
-        return parse_dict
-    else:
-        error('Bad parsing of data script '+data_script.encode('hex_codec'))
-        return {}
 
 def get_obfus_str_list(address, length):
        obfus_str_list=[]

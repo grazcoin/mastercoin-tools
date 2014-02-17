@@ -127,11 +127,6 @@ def check_bitcoin_payment(t):
                     debug('bitcoin payment: '+t['tx_hash'])
                     debug('for sell offer: '+sell_offer_tx['tx_hash'])
 
-# stopped here
-# I want to have tx only in tx_dict, and in addr_dict only tx_hash's
-# Can introduce (sorted)json hash, hash of hashes, and this push to blockchain for suported parser versions.
-# auto verify that parsing is correct
-
                     try:
                         required_btc=float(sell_offer_tx['formatted_bitcoin_amount_desired'])
                         whole_sell_amount=float(sell_offer_tx['formatted_amount'])

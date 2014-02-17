@@ -25,9 +25,13 @@ def parse():
                         help="archive the parsed data of tx addr and general for others to download")
 
     (options, args) = parser.parse_args()
-    d=options.debug_mode
+    msc_globals.d=options.debug_mode
     single_tx=options.single_tx
     requested_block_height=options.starting_block_height
+
+    # show debug on
+    if msc_globals.d:
+        debug('debug is on')
 
     # don't bother parsing if no new block was generated since last validation
     last_validated_block=0
@@ -210,20 +214,9 @@ def parse():
                 else:
                     debug('skip bootstrap basic tx with less than 3 outputs '+tx_hash)
         else: # multisig
-            if num_of_outputs == 2: # simple version of multisig
-                parsed=parse_multisig_simple(raw_tx, tx_hash)
-                if len(parsed) == 0:
-                    # disabled
-                    continue
-                parsed['method']='multisig simple'
-                parsed['block']=str(block)
-                parsed['index']=str(index)
-                if not parsed.has_key('invalid'):
-                    parsed['invalid']=False
-                parsed['tx_time']=str(block_timestamp)+'000'
-                debug(str(parsed))
-                filename='tx/'+parsed['tx_hash']+'.json'
-                atomic_json_dump(parsed, filename)
+            if num_of_outputs == 2: # depracated simple version of multisig
+                info('ignore depracated multisig simple tx: '+tx_hash)
+                continue
             else:
                 if num_of_outputs > 2: # multisig
                     parsed=parse_multisig(raw_tx, tx_hash)
