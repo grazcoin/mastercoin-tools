@@ -36,15 +36,15 @@ $(document).ready(function () {
                 //if is bitcoin payment
 		url += "btcpayment.html?tx=";
             }
-	    else if ((method == 'basic') || (transactionType == '00000000') || ! transactionType) {
+	    else if ((method == 'basic') || (transactionType == '0000') || ! transactionType) {
 		//it is simplesend
 		url += "simplesend.html?tx=";
 	    }
-	    else if (transactionType == '00000014') {
+	    else if (transactionType == '0014') {
 		//it is a sell offer
 		url += "selloffer.html?tx=";
 	    }
-	    else if (transactionType == '00000016') {
+	    else if (transactionType == '0016') {
 		//it is a sell accept
 		url += "sellaccept.html?tx=";
 	    }
