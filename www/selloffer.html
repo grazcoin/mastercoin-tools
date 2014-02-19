@@ -164,11 +164,20 @@
                                             <td>Transaction method</td>
                                             <td>{{transactionInformation.method}}</td>
                                         </tr>
-
                                         <tr>
-                                            <td>Valid</td>
-                                            <td class="{{transactionInformation.invalid|truefalsesearch}}ValidState"></td>
-                                        </tr>
+                                       <td>Valid</td>
+                                       <td ng-switch on="transactionInformation.invalid|truefalsesearch" class="{{transactionInformation.invalid|truefalsesearch}}ValidStateDiv">
+                                       <div ng-switch-when="true" id="validPopup"
+                                          data-content="{{reason}}" rel="popover"
+                                          data-placement="bottom" data-original-title="Invalid"
+                                          ng-init="makePopup()">
+                                          Invalid
+                                       </div>
+                                       <div ng-switch-when="false">
+                                          Valid
+                                       </div>
+                                       </td>
+                                       </tr>
                                     </tbody>
                                 </table>
                             </div>

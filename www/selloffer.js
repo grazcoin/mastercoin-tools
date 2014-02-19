@@ -25,6 +25,7 @@ function TransactionController($scope, $http) {
         // Make the http request and process the result
         $http.get(file, {}).success(function (data, status, headers, config) {
             $scope.transactionInformation = data[0];
+            $scope.updateReason();
         });
 
         var bidsURL = "bids/bids-";
@@ -44,5 +45,10 @@ function TransactionController($scope, $http) {
         var url = "acceptform.html?tx=";
         url += myURLParams['tx'];
         window.location = url;
+    }
+    $scope.updateReason = function () {
+        if (!angular.isArray($scope.transactionInformation.invalid)) return;
+        if ($scope.transactionInformation.invalid.length < 2) return;
+        $scope.reason = $scope.transactionInformation.invalid[1];
     }
 }
