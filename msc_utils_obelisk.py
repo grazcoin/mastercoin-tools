@@ -221,11 +221,17 @@ def validate_sig(filename, index, script_code, signature):
         return out
 
 def validate_tx(filename):
-    out, err = run_command('sx validtx '+filename)
+    out, err = run_command('sx validtx ' + filename)
     if err != None:
         return err
     else:
-        return out.strip('\n')
+        out = out.strip('\n')
+        #info('validate tx: ' + command) 
+        #info({json: out[-7:] })
+        if out[-7:] == 'Success':
+            return None
+        else:
+            return out
 
 def send_tx(filename, host='localhost', port=8333):
     out, err = run_command("sx sendtx "+filename+' '+host+' '+port)
@@ -236,9 +242,15 @@ def send_tx(filename, host='localhost', port=8333):
         return None
 
 def broadcast_tx(filename):
-    out, err = run_command("sx broadcast-tx "+filename)
+    out, err = run_command("sx sendtx-bci " + filename)
     if err != None:
         return err
     else:
+        out = out.strip('\n')
+        #info('broadcast tx: ' + command)
+        #info({json: out[-7:] })
         info('broadcasted')
-        return None
+        if out[-7:] == 'Success':
+            return None
+        else:
+            return out
