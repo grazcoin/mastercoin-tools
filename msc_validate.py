@@ -575,7 +575,10 @@ def generate_api_jsons():
         sorted_currency_sell_tx_list[c]=sorted(sorted_currency_sell_tx_list[c], \
             key=lambda k: float(k['formatted_price_per_coin']))
         # filter the closed sell offers
-        filtered_tx_list[c] = [t for t in sorted_currency_sell_tx_list[c] if t['icon_text'] != 'Sell offer done']
+        try:
+            filtered_tx_list[c] = [t for t in sorted_currency_sell_tx_list[c] if t['icon_text'] != 'Sell offer done']
+        except KeyError:
+            error('tx without icon_text '+t['tx_hash'])
         sorted_currency_sell_tx_list[c] = filtered_tx_list[c]
 
     sell_pages={'Mastercoin':0, 'Test Mastercoin':0}
@@ -749,15 +752,15 @@ def check_mastercoin_transaction(t, index=-1):
                 if transaction_version == '0000':
                     # if offer is zero - it is action 3 (cancel)
                     if float(seller_offer) == 0:
-                        action='3'
+                        action='03'
                     # otherwise, it is action 1 (new)
                     else:
-                        action='1'
+                        action='01'
                 else:
                     action=t['action']
 
                 # new/modify/cancel
-                if action == '1':
+                if action == '01':
                     # new offer allowed only if non prior exists or else invalid
                     # positive reserved funds are a good indication for prior offer
                     if float(seller_reserved) != 0:
@@ -767,19 +770,19 @@ def check_mastercoin_transaction(t, index=-1):
                     else:
                         info('new sell offer on '+from_addr+' '+t['tx_hash'])
                 else:
-                    if action == '2':
+                    if action == '02':
                         # modify allowed only if prior exists. mark old modified by.
                         if float(seller_reserved) != 0:
-                            info('modify sell offer on '+from_addr)
+                            info('NOT IMPLEMENTED: modify sell offer on '+from_addr)
                         else:
                             mark_tx_invalid(t['tx_hash'], 'invalid modify offer since no prior offer exits')
                             info('invalid modify sell offer: no prior offer exits on '+from_addr+' '+t['tx_hash'])
                             return False
                     else:
-                        if action == '3':
+                        if action == '03':
                             # cancel allowed only if prior exists. mark canceled (some funds sold).
                             if float(seller_reserved) != 0:
-                                info('cancel sell offer on '+from_addr+' '+t['tx_hash'])
+                                info('NOT IMPLEMENTED: cancel sell offer on '+from_addr+' '+t['tx_hash'])
                             else:
                                 mark_tx_invalid(t['tx_hash'], 'invalid cancel offer since no prior offer exits')
                                 info('invalid cancel sell offer: no prior offer exits on '+from_addr+' '+t['tx_hash'])
@@ -801,7 +804,7 @@ def check_mastercoin_transaction(t, index=-1):
                     seller_accept=0.0
 
                 # first handle a new offer
-                if action == '1':
+                if action == '01':
                     # assert on existing reserved
                     if float(seller_reserved) != 0:
                         info('BUG: a new sell offer with non zero reserved '+str(seller_reserved)+' on '+from_addr+' '+t['tx_hash'])
@@ -825,13 +828,13 @@ def check_mastercoin_transaction(t, index=-1):
                     update_addr_dict(from_addr, True, c, offer=to_satoshi(actual_offer), reserved=to_satoshi(actual_offer), \
                         balance=-to_satoshi(actual_offer), offer_tx=t)
                 else:
-                    if action == '2':
+                    if action == '02':
                         # mark previous sell offer as updated + update next
                         # update new sell offer with remaining offer and new price and offer details + update prev
                         # update address with new balance and reserved
                         pass
                     else:
-                        if action == '3':
+                        if action == '03':
                             # mark previous sell offer as canceled + update next
                             # mark closed + update prev
                             # update address with new balance and reserved
