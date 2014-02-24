@@ -150,6 +150,11 @@ def class_A_Level_1(outputs_list):
         if int(seq,16)==int(recipient_seq):
             # taking the first one (there may be more)
             recipient=o['address']
+    # on failure with 3 outputs case, take non data/exodus to be the recipient
+    if len(outputs_list) == 3:
+        for o in outputs_list:
+            if o['address'] != exodus_address and o != data_output:
+                recipient = o['address']
     return ((False,''), data_output, recipient)
 
 # "Class A" transaction
