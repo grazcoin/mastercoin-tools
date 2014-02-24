@@ -146,7 +146,15 @@
                                         </tr>
                                         <tr>
                                             <td>Action</td>
-                                            <td>{{transactionInformation.action}}</td>
+                                            <td>{{transactionInformation.action_str}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Updating offer</td>
+                                            <td><a ng-href="selloffer.html?tx={{transactionInformation.updating}}&currency={{currency}}">{{transactionInformation.updating|characters:10}}</a></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Updated by offer</td>
+                                            <td><a ng-href="selloffer.html?tx={{transactionInformation.updated_by}}&currency={{currency}}">{{transactionInformation.updated_by|characters:10}}</a></td>
                                         </tr>
                                         <tr>
                                             <td>Included in block</td>

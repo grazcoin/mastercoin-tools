@@ -4,6 +4,7 @@ from msc_utils_obelisk import *
 currency_type_dict={'00000001':'Mastercoin','00000002':'Test Mastercoin'}
 reverse_currency_type_dict={'Mastercoin':'00000001','Test Mastercoin':'00000002'}
 transaction_type_dict={'0000':'Simple send', '0014':'Sell offer', '0016':'Sell accept'}
+sell_offer_action_dict={'00':'Undefined', '01':'New', '02':'Update', '03':'Cancel'}
 exodus_address='1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P'
 first_exodus_bootstrap_block=249498
 last_exodus_bootstrap_block=255365
@@ -65,6 +66,10 @@ def parse_2nd_data_script(data_script):
     parse_dict['fee_required']=data_script[4:10]
     parse_dict['action']=data_script[10:12]
     parse_dict['should_be_zeros']=data_script[12:54]
+    try:
+        parse_dict['action_str']=sell_offer_action_dict[parse_dict['action']]
+    except KeyError:
+        parse_dict['action_str']='unknown '+str(parse_dict['action'])
     return parse_dict
 
 def parse_bitcoin_payment(tx, tx_hash='unknown'):

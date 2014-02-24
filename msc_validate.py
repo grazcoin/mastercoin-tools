@@ -29,10 +29,12 @@ tx_properties=\
      'baseCoin', 'dataSequenceNum', 'method', 'tx_method_str', \
      'bitcoin_amount_desired', 'block_time_limit', 'fee', \
      'sell_offer_txid', 'accept_txid', 'btc_offer_txid', 'payment_txid', \
+     'action', 'action_str', \
      'amount_available', 'formatted_amount_available', \
      'formatted_amount_accepted', 'formatted_amount_bought', \
      'formatted_amount_requested', 'formatted_price_per_coin', 'bitcoin_required', \
      'payment_done', 'payment_expired', \
+     'updating', 'updated_by', \
      'status']
 
 # all available properties of a currency in address
@@ -436,9 +438,9 @@ def mark_tx_invalid(tx_hash, reason):
 # add another sell tx to the modified dict
 def add_bids(key, t):
     if bids_dict.has_key(key):
-        bids_dict[key].append(t)
+        bids_dict[key].append(t['tx_hash'])
     else:
-        bids_dict[key]=[t]
+        bids_dict[key]=[t['tx_hash']]
 
 
 # write back to fs all tx which got modified
@@ -454,8 +456,12 @@ def write_back_modified_tx():
 # create bids json
 def update_bids():
     for tx_hash in bids_dict.keys():
+        # generate tx list for each tx_hash
+        bids=[]
+        for b_hash in bids_dict[tx_hash]:
+            bids.append(tx_dict[b_hash][-1])
         # write updated bids
-        atomic_json_dump(bids_dict[tx_hash], 'bids/bids-'+tx_hash+'.json', add_brackets=False)
+        atomic_json_dump(bids, 'bids/bids-'+tx_hash+'.json', add_brackets=False)
 
 def update_bitcoin_balances():
     if msc_globals.b == True:
@@ -756,10 +762,14 @@ def check_mastercoin_transaction(t, index=-1):
                     # otherwise, it is action 1 (new)
                     else:
                         action='01'
+                    action_str=sell_offer_action_dict[action]
+                    # update action and action_str on tx (so it behaves like transaction version 1)
+                    debug('action_str of '+t['tx_hash']+' is modified to '+action_str)
+                    update_tx_dict(t['tx_hash'], action=action, action_str=action_str)
                 else:
                     action=t['action']
 
-                # new/modify/cancel
+                # new/update/cancel
                 if action == '01':
                     # new offer allowed only if non prior exists or else invalid
                     # positive reserved funds are a good indication for prior offer
@@ -771,12 +781,12 @@ def check_mastercoin_transaction(t, index=-1):
                         info('new sell offer on '+from_addr+' '+t['tx_hash'])
                 else:
                     if action == '02':
-                        # modify allowed only if prior exists. mark old modified by.
+                        # update allowed only if prior exists. mark old updated_by.
                         if float(seller_reserved) != 0:
-                            info('NOT IMPLEMENTED: modify sell offer on '+from_addr)
+                            info('update sell offer on '+from_addr)
                         else:
-                            mark_tx_invalid(t['tx_hash'], 'invalid modify offer since no prior offer exits')
-                            info('invalid modify sell offer: no prior offer exits on '+from_addr+' '+t['tx_hash'])
+                            mark_tx_invalid(t['tx_hash'], 'invalid update offer since no prior offer exits')
+                            info('invalid update sell offer: no prior offer exits on '+from_addr+' '+t['tx_hash'])
                             return False
                     else:
                         if action == '03':
@@ -830,9 +840,19 @@ def check_mastercoin_transaction(t, index=-1):
                 else:
                     if action == '02':
                         # mark previous sell offer as updated + update next
-                        # update new sell offer with remaining offer and new price and offer details + update prev
-                        # update address with new balance and reserved
-                        pass
+                        previous_sell_offer=addr_dict[from_addr][c]['offer_tx'][-1]
+                        # update updated_by on previous offer
+                        update_tx_dict(previous_sell_offer['tx_hash'], updated_by=t['tx_hash'], \
+                            icon_text='Depracated sell offer', color='bgc-expired')
+                        # update updating on current offer
+                        update_tx_dict(t['tx_hash'], updating=previous_sell_offer['tx_hash'], \
+                            icon_text='Sell Offer ('+str(tx_age)+' confirms)', color='bgc-new')
+
+                        # update address:
+                        # new offer
+                        # new balance and reserved
+                        update_addr_dict(from_addr, True, c, offer_tx=t)
+
                     else:
                         if action == '03':
                             # mark previous sell offer as canceled + update next
