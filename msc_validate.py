@@ -430,16 +430,20 @@ def update_addr_dict(addr, accomulate, *arguments, **keywords):
             else: # values are in satoshi
                 addr_dict[addr][c][kw]+=int(keywords[kw])
                 if addr_dict[addr][c][kw]<0:
-                    info('BUG: field '+kw+' on accomulated '+addr+' has '+str(addr_dict[addr][c][kw]))
-                    return False
+                    # exodus address keeps only the expenses, and calculates dynamic balance on demand
+                    if addr != exodus_address:
+                        info('BUG: field '+kw+' on accomulated '+addr+' has '+str(addr_dict[addr][c][kw]))
+                        return False
         else:
             if kw.endswith('_tx'): # replace the tx or value
                 addr_dict[addr][c][kw]=[keywords[kw]]
             else: # values are in satoshi
                 addr_dict[addr][c][kw]=int(keywords[kw])
                 if addr_dict[addr][c][kw]<0:                
-                    info('BUG: field '+kw+' on '+addr+' has '+str(addr_dict[addr][c][kw]))
-                    return False
+                    # exodus address keeps only the expenses, and calculates dynamic balance on demand
+                    if addr != exodus_address:
+                        info('BUG: field '+kw+' on '+addr+' has '+str(addr_dict[addr][c][kw]))
+                        return False
     return True
 
 
@@ -621,7 +625,8 @@ def generate_api_jsons():
             key=lambda k: float(k['formatted_price_per_coin']))
         # filter the closed sell offers
         try:
-            filtered_tx_list[c] = [t for t in sorted_currency_sell_tx_list[c] if t['icon_text'] != 'Sell offer done']
+            filtered_tx_list[c] = [t for t in sorted_currency_sell_tx_list[c] \
+                if t['icon_text'] != 'Sell offer done' and t['icon_text'] != 'Depracated sell offer']
         except KeyError:
             error('tx without icon_text '+t['tx_hash'])
         sorted_currency_sell_tx_list[c] = filtered_tx_list[c]
