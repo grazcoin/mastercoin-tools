@@ -25,59 +25,66 @@ def compare():
     info('starting comparison')
 
     difference_dict={}
-   
-    urls=['https://masterchain.info/mastercoin_verify/addresses/0', \
-          'https://masterchest.info/mastercoin_verify/addresses.aspx', \
-          'http://mymastercoins.com/jaddress.aspx']
-    # parse sites from url list
-    sites=[]
-    for u in urls:
-        sites.append(url_to_domain(u))
-    dicts={sites[0]:{},sites[1]:{},sites[2]:{}}
+  
+    urls_list_dict={'MSC': \
+        ['https://masterchain.info/mastercoin_verify/addresses/0', \
+        'https://masterchest.info/mastercoin_verify/addresses.aspx', \
+        'http://mymastercoins.com/jaddress.aspx?currency_id=1'], \
+        'TMSC': \
+        ['https://masterchain.info/mastercoin_verify/addresses/1', \
+        'http://mymastercoins.com/jaddress.aspx?currency_id=2']}
 
-    keys=dicts.keys()
+    for coin in urls_list_dict.keys():
+        urls=urls_list_dict[coin]
 
-    for u in urls:
-        filename='general/'+url_to_domain(u)+'-addresses.json'
-        debug('download json from '+u+' start')
-        response = urllib2.urlopen(u)
-        f = open(filename, "w")
-        f.write(response.read())
-        f.close()
-        debug('download json from '+u+' done')
-        l=load_dict_from_file(filename, all_list=True)
-        for d in l:
-            dicts[url_to_domain(u)][d['address']]=d['balance']
+        dicts={}
+        for u in urls:
+            dicts[url_to_domain(u)]={}
 
-    for source in keys:
-        for addr in dicts[source].keys():
-            compare_to=keys[:]
-            compare_to.remove(source)
-            for other in compare_to:
+        keys=dicts.keys()
+
+        for u in urls:
+            filename='general/'+url_to_domain(u)+'-addresses.json'
+            debug('download json from '+u+' start')
+            response = urllib2.urlopen(u)
+            f = open(filename, "w")
+            f.write(response.read())
+            f.close()
+            debug('download json from '+u+' done')
+            l=load_dict_from_file(filename, all_list=True)
+            for d in l:
+                dicts[url_to_domain(u)][d['address']]=d['balance']
+
+        for source in keys:
+            for addr in dicts[source].keys():
+                compare_to=keys[:]
+                compare_to.remove(source)
+                for other in compare_to:
+                    try:
+                        if float(dicts[source][addr])!=float(dicts[other][addr]):
+                            difference_dict[addr]='different'
+                    except KeyError:
+                        if float(dicts[source][addr]) != 0: # 0 is considered as nothing
+                            difference_dict[addr]='not on '+other
+
+        # collect detailed difference in text format
+        detailed_difference=''
+        sources=keys[:]
+        for addr in difference_dict.keys():
+            results=addr+': '
+            for source in sources:
                 try:
-                    if float(dicts[source][addr])!=float(dicts[other][addr]):
-                        difference_dict[addr]='different'
+                    value=str(float(dicts[source][addr]))
                 except KeyError:
-                    if float(dicts[source][addr]) != 0: # 0 is considered as nothing
-                        difference_dict[addr]='not on '+other
+                    value='0.0'
+                results+=source+' '+value+'; '
+            detailed_difference+=results+'\n'
 
-    # collect detailed difference in text format
-    detailed_difference=''
-    sources=keys[:]
-    for addr in difference_dict.keys():
-        results=addr+': '
-        for source in sources:
-            try:
-                value=str(float(dicts[source][addr]))
-            except KeyError:
-                value='0.0'
-            results+=source+' '+value+'; '
-        detailed_difference+=results+'\n'
+        atomic_json_dump(difference_dict,'www/general/'+coin+'-difference.json')
+        f = open('www/general/'+coin+'-difference.txt', "w")
+        f.write(detailed_difference)
+        f.close()
 
-    atomic_json_dump(difference_dict,'www/general/difference.json')
-    f = open('www/general/difference.txt', "w")
-    f.write(detailed_difference)
-    f.close()
     info('comparison done')
 
 if __name__ == "__main__":
