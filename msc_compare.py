@@ -61,8 +61,23 @@ def compare():
                     if float(dicts[source][addr]) != 0: # 0 is considered as nothing
                         difference_dict[addr]='not on '+other
 
-    atomic_json_dump(difference_dict,'general/difference.json')
+    # collect detailed difference in text format
+    detailed_difference=''
+    sources=keys[:]
+    for addr in difference_dict.keys():
+        results=addr+': '
+        for source in sources:
+            try:
+                value=str(float(dicts[source][addr]))
+            except KeyError:
+                value='0.0'
+            results+=source+' '+value+'; '
+        detailed_difference+=results+'\n'
 
+    atomic_json_dump(difference_dict,'www/general/difference.json')
+    f = open('www/general/difference.txt', "w")
+    f.write(detailed_difference)
+    f.close()
     info('comparison done')
 
 if __name__ == "__main__":
