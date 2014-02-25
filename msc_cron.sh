@@ -8,6 +8,10 @@ ARCHIVE_LOG=archived.log
 export PATH=$PATH:/usr/local/bin/
 cd /home/dev/mastercoin-tools/
 
+# update external prices for wallet view
+python msc_prices.py
+cp www/currencies.json ../dev-mastercoin-tools/www/
+
 # check lock (not to run multiple times)
 [ -f $LOCK_FILE ] && exit 0
 
@@ -34,6 +38,16 @@ mkdir -p www/mastercoin_verify/addresses/
 cp mastercoin_verify/addresses/* www/mastercoin_verify/addresses/
 mkdir -p www/mastercoin_verify/transactions/
 cp mastercoin_verify/transactions/* www/mastercoin_verify/transactions/
+
+# copy also to dev site
+cp tx/* ../dev-mastercoin-tools/www/tx/
+cp addr/* ../dev-mastercoin-tools/www/addr/
+cp general/* ../dev-mastercoin-tools/www/general/
+cp bids/* ../dev-mastercoin-tools/www/bids/
+mkdir -p ../dev-mastercoin-tools/www/mastercoin_verify/addresses/
+cp mastercoin_verify/addresses/* ../dev-mastercoin-tools/www/mastercoin_verify/addresses/
+mkdir -p ../dev-mastercoin-tools/www/mastercoin_verify/transactions/
+cp mastercoin_verify/transactions/* ../dev-mastercoin-tools/www/mastercoin_verify/transactions/
 
 # update archive
 python msc_archive.py 2>&1 > $ARCHIVE_LOG
