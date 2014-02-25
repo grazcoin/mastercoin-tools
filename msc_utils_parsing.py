@@ -279,6 +279,12 @@ def parse_multisig(tx, tx_hash='unknown'):
         if o['address']!=exodus_address:
             to_address=o['address']
             continue
+
+    # no recipient?
+    if to_address=='unknown':
+        info('no recipient tx '+tx_hash)
+        return {'tx_hash':tx_hash, 'invalid':(True, 'no recipient')}
+
     for o in outputs_list_no_exodus:
         if o['address']==None: # This should be the multisig
             script=o['script']
