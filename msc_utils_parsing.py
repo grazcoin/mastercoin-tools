@@ -255,7 +255,7 @@ def get_obfus_str_list(address, length):
                obfus_str_list.append(get_sha256(obfus_str_list[i].upper())) # i'th obfus is sha256 of upper prev
        return obfus_str_list
 
-def parse_multisig(tx, tx_hash='unknown'):
+def parse_multisig(tx, tx_hash='unknown', allow_no_recipient=False):
     if multisig_disabled:
         info('multisig is disabled: '+tx_hash)
         return {}
@@ -281,7 +281,7 @@ def parse_multisig(tx, tx_hash='unknown'):
             continue
 
     # no recipient?
-    if to_address=='unknown':
+    if not allow_no_recipient and to_address=='unknown':
         info('no recipient tx '+tx_hash)
         return {'tx_hash':tx_hash, 'invalid':(True, 'no recipient')}
 
