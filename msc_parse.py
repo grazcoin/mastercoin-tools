@@ -77,7 +77,7 @@ def parse():
         starting_block_height=requested_block_height
 
     # to catch chain reorgs, check 5 blocks back
-    starting_block_height -= 5
+    starting_block_height = int(starting_block_height) - 5
 
     archive=options.archive
 
@@ -218,7 +218,7 @@ def parse():
                     debug('skip bootstrap basic tx with less than 3 outputs '+tx_hash)
         else: # multisig
             if num_of_outputs == 2: # depracated simple version of multisig or sell offer with no change
-                parsed=parse_multisig(raw_tx, tx_hash, allow_no_recipient=True)
+                parsed=parse_multisig(raw_tx, tx_hash)
                 if len(parsed) == 0:
                     continue
                 parsed['method']='multisig'

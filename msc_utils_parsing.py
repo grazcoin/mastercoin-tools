@@ -255,7 +255,7 @@ def get_obfus_str_list(address, length):
                obfus_str_list.append(get_sha256(obfus_str_list[i].upper())) # i'th obfus is sha256 of upper prev
        return obfus_str_list
 
-def parse_multisig(tx, tx_hash='unknown', allow_no_recipient=False):
+def parse_multisig(tx, tx_hash='unknown'):
     if multisig_disabled:
         info('multisig is disabled: '+tx_hash)
         return {}
@@ -279,11 +279,6 @@ def parse_multisig(tx, tx_hash='unknown', allow_no_recipient=False):
         if o['address']!=exodus_address:
             to_address=o['address']
             continue
-
-    # no recipient?
-    if not allow_no_recipient and to_address=='unknown':
-        info('no recipient tx '+tx_hash)
-        return {'tx_hash':tx_hash, 'invalid':(True, 'no recipient')}
 
     for o in outputs_list_no_exodus:
         if o['address']==None: # This should be the multisig
@@ -333,6 +328,12 @@ def parse_multisig(tx, tx_hash='unknown', allow_no_recipient=False):
                 data_dict=parse_data_script(dataHex_deobfuscated_list[0])
             except IndexError:
                 error('cannot parse dataHex_deobfuscated_list')
+
+            # no recipient? allow for sell offer
+            if to_address=='unknown' and data_dict['transactionType'] != '0014':
+                info('no recipient tx '+tx_hash)
+                return {'tx_hash':tx_hash, 'invalid':(True, 'no recipient')}
+
             if len(data_dict) >= 6: # at least 6 basic fields got parse on the first dataHex
                 amount=int(data_dict['amount'],16)/100000000.0
                 parse_dict=data_dict
@@ -367,7 +368,11 @@ def parse_multisig(tx, tx_hash='unknown', allow_no_recipient=False):
                             price_per_coin=bitcoin_amount_desired/amount
                         else:
                             price_per_coin=0
-                            parse_dict['invalid']=(True,'non positive sell offer amount')
+                            if amount == 0 and data_dict['transactionVersion']=='0000':
+                                    # cancel sell order
+                                    pass
+                            else:
+                                parse_dict['invalid']=(True,'non positive sell offer amount')
                         # duplicate with another name
                         parse_dict['formatted_amount_available'] = parse_dict['formatted_amount']
                         # format fields
