@@ -76,6 +76,9 @@ def parse():
     else:
         starting_block_height=requested_block_height
 
+    # to catch chain reorgs, check 5 blocks back
+    starting_block_height -= 5
+
     archive=options.archive
 
     info('starting parsing at block '+str(starting_block_height))
@@ -214,9 +217,19 @@ def parse():
                 else:
                     debug('skip bootstrap basic tx with less than 3 outputs '+tx_hash)
         else: # multisig
-            if num_of_outputs == 2: # depracated simple version of multisig
-                info('ignore depracated multisig simple tx: '+tx_hash)
-                continue
+            if num_of_outputs == 2: # depracated simple version of multisig or sell offer with no change
+                parsed=parse_multisig(raw_tx, tx_hash, allow_no_recipient=True)
+                if len(parsed) == 0:
+                    continue
+                parsed['method']='multisig'
+                parsed['block']=str(block)
+                parsed['index']=str(index)
+                if not parsed.has_key('invalid'):
+                    parsed['invalid']=False
+                parsed['tx_time']=str(block_timestamp)+'000'
+                debug(str(parsed))
+                filename='tx/'+parsed['tx_hash']+'.json'
+                atomic_json_dump(parsed, filename)
             else:
                 if num_of_outputs > 2: # multisig
                     parsed=parse_multisig(raw_tx, tx_hash)
