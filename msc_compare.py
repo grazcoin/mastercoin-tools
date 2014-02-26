@@ -32,6 +32,7 @@ def compare():
         'http://mymastercoins.com/jaddress.aspx?currency_id=1'], \
         'TMSC': \
         ['https://masterchain.info/mastercoin_verify/addresses/1', \
+        'https://masterchest.info/mastercoin_verify/addresses_test.aspx', \
         'http://mymastercoins.com/jaddress.aspx?currency_id=2']}
 
     for coin in urls_list_dict.keys():
@@ -68,7 +69,7 @@ def compare():
                             difference_dict[addr]='not on '+other
 
         # collect detailed difference in text format
-        detailed_difference=''
+        detailed_difference=coin+' consensus check at '+get_now()+'\n'
         sources=keys[:]
         for addr in difference_dict.keys():
             results=addr+': '

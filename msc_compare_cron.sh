@@ -14,8 +14,5 @@ touch $LOCK_FILE
 
 python msc_compare.py 2>&1 > $COMPARE_LOG
 
-# copy results to web browser directory
-cp -f general/difference.json www/general/
-
 # unlock
 rm -f $LOCK_FILE
