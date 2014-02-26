@@ -568,7 +568,7 @@ def generate_api_jsons():
             sub_dict['total_sell_accept']=from_satoshi(addr_dict[addr][c]['accept'])
             sub_dict['total_sell_offer']=from_satoshi(addr_dict[addr][c]['offer'])
             if addr==exodus_address:
-                available_reward=get_available_reward(last_height)
+                available_reward=get_available_reward(last_height, c)
                 sub_dict['balance']=from_satoshi(available_reward+addr_dict[addr][c]['balance'])
             else:
                 sub_dict['balance']=from_satoshi(addr_dict[addr][c]['balance'])
@@ -665,7 +665,7 @@ def generate_api_jsons():
             sub_dict={}
             sub_dict['address']=addr
             if addr==exodus_address:
-                available_reward=get_available_reward(last_height)
+                available_reward=get_available_reward(last_height, c)
                 sub_dict['balance']=from_satoshi(available_reward+addr_dict[addr][c]['balance'])
             else:
                 sub_dict['balance']=from_satoshi(addr_dict[addr][c]['balance'])
@@ -689,17 +689,18 @@ def generate_api_jsons():
         mastercoin_verify_tx_per_address={'address':addr, 'transactions':verify_tx_list}
         atomic_json_dump(mastercoin_verify_tx_per_address, 'mastercoin_verify/transactions/'+addr, add_brackets=False)     
         
-def get_available_reward(height):
-    all_reward=int(addr_dict[exodus_address][coins_list[0]]['reward'])
-    # part available is (1 - 0.5^years)
-    (block_timestamp, err)=get_block_timestamp(height)
-    if block_timestamp == None:
-        error('failed getting block timestamp of '+str(height)+': '+err)
-    seconds_passed=block_timestamp-exodus_bootstrap_deadline
-    years=(seconds_passed+0.0)/seconds_in_one_year
-    part_available=1-0.5**years
-    available_reward=all_reward*part_available
-    return available_reward
+def get_available_reward(height, c):
+    available_reward=0
+    if c == 'Mastercoin':
+        all_reward=5631623576222
+        (block_timestamp, err)=get_block_timestamp(height)
+        if block_timestamp == None:
+            error('failed getting block timestamp of '+str(height)+': '+err)
+        seconds_passed=block_timestamp-exodus_bootstrap_deadline
+        years=(seconds_passed+0.0)/seconds_in_one_year
+        part_available=1-0.5**years
+        available_reward=all_reward*part_available
+    return round(available_reward)
 
 # validate a matercoin transaction
 def check_mastercoin_transaction(t, index=-1):
@@ -763,7 +764,7 @@ def check_mastercoin_transaction(t, index=-1):
                 if from_addr==exodus_address:
                     # in the exodus case, the balance to spend is the available reward
                     # plus the negative balance
-                    available_reward=get_available_reward(t['block'])
+                    available_reward=get_available_reward(t['block'], c)
                     balance_from=available_reward+addr_dict[from_addr][c]['balance']
                 else:
                     balance_from=addr_dict[from_addr][c]['balance']
@@ -832,7 +833,8 @@ def check_mastercoin_transaction(t, index=-1):
                     # positive reserved funds are a good indication for prior offer
                     if float(seller_reserved) != 0:
                         mark_tx_invalid(t['tx_hash'], 'invalid new offer since prior sell offer exists')
-                        info('invalid new sell offer: prior sell offer on '+from_addr+' '+t['tx_hash'])
+                        info('invalid new sell offer: prior sell offer on '+from_addr+' with reserves of '+ \
+                            seller_reserved+' '+t['tx_hash'])
                         return False
                     else:
                         info('new sell offer on '+from_addr+' '+t['tx_hash'])
