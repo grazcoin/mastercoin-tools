@@ -849,9 +849,9 @@ def check_mastercoin_transaction(t, index=-1):
                             return False
                     else:
                         if action == '03':
-                            # cancel allowed only if prior exists. mark canceled (some funds sold).
+                            # cancel allowed only if prior exists. mark cancelled (some funds sold).
                             if float(seller_reserved) != 0:
-                                info('NOT IMPLEMENTED: cancel sell offer on '+from_addr+' '+t['tx_hash'])
+                                info('cancel sell offer on '+from_addr+' '+t['tx_hash'])
                             else:
                                 mark_tx_invalid(t['tx_hash'], 'invalid cancel offer since no prior offer exits')
                                 info('invalid cancel sell offer: no prior offer exits on '+from_addr+' '+t['tx_hash'])
@@ -965,15 +965,16 @@ def check_mastercoin_transaction(t, index=-1):
                             previous_sell_offer=addr_dict[from_addr][c]['offer_tx'][-1]
                             # update updated_by on previous offer
                             update_tx_dict(previous_sell_offer['tx_hash'], updated_by=t['tx_hash'], \
-                                icon_text='Depracated sell offer', color='bgc-expired')
+                                icon_text='Sell offer cancelled', color='bgc-expired')
                             # update updating on current offer
                             update_tx_dict(t['tx_hash'], updating=previous_sell_offer['tx_hash'], \
-                                icon_text='Sell Offer canceled', color='bgc-expired')
+                                icon_text='Cancel request', color='bgc-expired')
 
                             # update address - reserved move back to balance:
-                            update_addr_dict(from_addr, True, c, balance=satoshi_seller_reserved, reserved=-satoshi_seller_reserved)
-
-                            # remove offer?
+                            update_addr_dict(from_addr, True, c, balance=satoshi_seller_reserved, \
+                                reserved=-satoshi_seller_reserved, offer_tx=t)
+                            # reset offer
+                            update_addr_dict(from_addr, False, c, offer=0)
 
                 # heavy debug - after change
                 debug_address(from_addr,c, 'after sell offer')
