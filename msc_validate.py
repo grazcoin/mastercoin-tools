@@ -818,9 +818,14 @@ def check_mastercoin_transaction(t, index=-1):
                     # if offer is zero - it is action 3 (cancel)
                     if float(seller_offer) == 0:
                         action='03'
-                    # otherwise, it is action 1 (new)
+                    # otherwise, it is action 1 (new) or action 2 (update)
                     else:
-                        action='01'
+                        if float(seller_reserved) != 0:
+                            # that's an update
+                            action='02'
+                        else:
+                            # a new transaction
+                            action='01'
                     action_str=sell_offer_action_dict[action]
                     # update action and action_str on tx (so it behaves like transaction version 1)
                     debug('action_str of '+t['tx_hash']+' is modified to '+action_str)
@@ -830,14 +835,6 @@ def check_mastercoin_transaction(t, index=-1):
 
                 # new/update/cancel
                 if action == '01':
-                    # new offer allowed only if non prior exists or else invalid
-                    # positive reserved funds are a good indication for prior offer
-                    if float(seller_reserved) != 0:
-                        mark_tx_invalid(t['tx_hash'], 'invalid new offer since prior sell offer exists')
-                        info('invalid new sell offer: prior sell offer on '+from_addr+' with reserves of '+ \
-                            seller_reserved+' '+t['tx_hash'])
-                        return False
-                    else:
                         info('new sell offer on '+from_addr+' '+t['tx_hash'])
                 else:
                     if action == '02':
@@ -875,7 +872,10 @@ def check_mastercoin_transaction(t, index=-1):
                 if action == '01':
                     # assert on existing reserved
                     if float(seller_reserved) != 0:
-                        info('BUG: a new sell offer with non zero reserved '+str(seller_reserved)+' on '+from_addr+' '+t['tx_hash'])
+                        info('invalid new sell offer version '+str(transaction_version)+ \
+                            ' after prior sell offer with reserved '+str(seller_reserved)+ \
+                            ' on '+from_addr+' '+t['tx_hash'])
+                        mark_tx_invalid(t['tx_hash'], 'new sell offer version '+str(transaction_version)+' after prior sell offer')
                         return False
 
                     # calculate offer:
