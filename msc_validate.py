@@ -217,11 +217,17 @@ def check_bitcoin_payment(t):
                     debug('run over sell accept list ...')
                     for sell_accept_tx in sell_accept_tx_list: # go over all accepts
                         debug('... check accept '+sell_accept_tx['tx_hash'])
+                        sell_offer_accepted=sell_accept_tx['sell_offer_txid']
+                        if sell_offer_accepted != sell_offer_tx['tx_hash']:
+                            debug('... sell accept is for a different sell offer ('+sell_offer_accepted+')')
+                            continue
+
                         accept_buyer=sell_accept_tx['from_address']
                         payment_sender=t['from_address']
                         if payment_sender != accept_buyer:
                             debug('not correct accept since payment sender and accept buyer are different')
                             continue
+
                         accept_seller=sell_accept_tx['to_address']
                         sell_seller=sell_offer_tx['from_address']
                         if accept_seller != sell_seller:
@@ -230,9 +236,10 @@ def check_bitcoin_payment(t):
                         
                         # now check if block time limit is as required
                         sell_accept_block=int(sell_accept_tx['block'])
+
                         # if sell accept is valid, then fee is OK - no need to re-check
                         if sell_accept_block+block_time_limit >= current_block:
-                            debug('... payment timing fits')
+                            debug('... payment timing fits ('+str(sell_accept_block)+'+'+str(block_time_limit)+' >= '+str(current_block)+')')
 
                             # heavy debug
                             debug_address(address, c, 'before bitcoin payment')
@@ -911,9 +918,13 @@ def check_mastercoin_transaction(t, index=-1):
                         update_tx_dict(t['tx_hash'], updating=previous_sell_offer['tx_hash'], \
                             icon_text='Sell Offer ('+str(tx_age)+' confirms)', color='bgc-new')
 
-                        # update address - reserved move back to balance:
-                        update_addr_dict(from_addr, True, c, balance=satoshi_seller_reserved, \
-                            reserved=-satoshi_seller_reserved)
+                        # check how much already got accepted from this sell offer
+                        already_accepted=float(seller_reserved)-float(previous_seller_offer)
+                        satoshi_already_accepted=to_satoshi(already_accepted)
+
+                        # update address - reserved (limitted by already_accepted) move back to balance:
+                        update_addr_dict(from_addr, True, c, balance=satoshi_seller_reserved-satoshi_already_accepted, \
+                            reserved=-satoshi_seller_reserved+satoshi_already_accepted)
                         # reset offer
                         update_addr_dict(from_addr, False, c, offer=0)
 
@@ -923,14 +934,14 @@ def check_mastercoin_transaction(t, index=-1):
                         except KeyError: # no such address
                             seller_balance=0.0
 
-                        # get reserved (after update, should be zero)
+                        # get reserved (after update, should be equal to standing accepts if any)
                         try:
                             seller_reserved=from_satoshi(addr_dict[from_addr][c]['reserved'])
                         except KeyError: # no such address
                             seller_reserved=0.0
 
-                        if float(seller_reserved) != 0:
-                            info('BUG: reserved does not become zero during sell offer update '+t['tx_hash'])
+                        if float(seller_reserved) != already_accepted:
+                            info('BUG: reserved does not equal to standing accepts during sell offer update '+t['tx_hash'])
                             return False
 
                         # calculate offer:
@@ -938,13 +949,14 @@ def check_mastercoin_transaction(t, index=-1):
                         actual_offer=min(float(seller_balance), float(seller_offer))
 
                         debug('seller_balance is '+str(seller_balance)+' in '+t['tx_hash'])
+                        debug('seller_reserved is '+str(seller_reserved)+' in '+t['tx_hash'])
                         debug('seller_offer is '+str(seller_offer)+' in '+t['tx_hash'])
                         debug('actual_offer updated to '+formatted_decimal(actual_offer)+' in '+t['tx_hash'])
 
                         # no sell offers of zero (e.g. due to zero balance) are allowed
                         if actual_offer == 0:
                             mark_tx_invalid(t['tx_hash'], 'update zero sell offer (was '+str(seller_offer)+')')
-                            info('invalid new zero sell offer sell offer was ('+str(seller_offer)+')')
+                            info('invalid updated zero sell offer sell offer was ('+str(seller_offer)+')')
                             return False
 
                         # update tx
@@ -1072,7 +1084,7 @@ def check_mastercoin_transaction(t, index=-1):
 
                         # update sell offer
                         # update sell available: min between the remaining offer, and the current balance
-                        debug('update sell offer '+t['tx_hash']+' with amount available '+str(updated_amount_available))
+                        debug('update sell offer '+sell_offer_tx['tx_hash']+' with amount available '+str(updated_amount_available))
                         update_tx_dict(sell_offer_tx['tx_hash'], amount_available=updated_amount_available, \
                             formatted_amount_available=formatted_decimal(updated_amount_available))
 
