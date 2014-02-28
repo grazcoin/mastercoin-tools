@@ -265,7 +265,7 @@ def check_bitcoin_payment(t):
 
                                 # update buyer address - balance increases, accept decreases.
                                 update_addr_dict(from_address, True, c, accept=-satoshi_amount_accepted, \
-                                    balance=satoshi_amount_closed, bought=satoshi_amount_closed, bought_tx=sell_accept_tx)
+                                    balance=satoshi_amount_closed, bought=satoshi_amount_closed, bought_tx=t)
 
                                 # update sell available (less closed - accepted)
                                 updated_amount_available = float(amount_available) + float(amount_accepted) - float(amount_closed)
@@ -626,7 +626,8 @@ def generate_api_jsons():
         # filter the closed sell offers
         try:
             filtered_tx_list[c] = [t for t in sorted_currency_sell_tx_list[c] \
-                if t['icon_text'] != 'Sell offer done' and t['icon_text'] != 'Depracated sell offer']
+                if t['icon_text'] != 'Sell offer done' and t['icon_text'] != 'Depracated sell offer' and \
+                    t['icon_text'] != 'Cancel request' and t['icon_text'] != 'Sell offer cancelled']
         except KeyError:
             error('tx without icon_text '+t['tx_hash'])
         sorted_currency_sell_tx_list[c] = filtered_tx_list[c]

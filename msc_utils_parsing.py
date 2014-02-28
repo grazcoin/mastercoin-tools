@@ -111,6 +111,9 @@ def parse_bitcoin_payment(tx, tx_hash='unknown'):
     parse_dict['fee']=from_satoshi(total_inputs-total_outputs)
     parse_dict['tx_hash']=tx_hash
     parse_dict['invalid']=(True,'bitcoin payment')
+    parse_dict['icon']='bitcoin'
+    parse_dict['icon_text']='Bitcoin payment'
+    parse_dict['color']='bgc-done'
     return parse_dict
 
 def peek_and_decode(outputs_list):
