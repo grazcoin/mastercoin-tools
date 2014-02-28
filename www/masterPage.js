@@ -7,10 +7,12 @@ function NavigationController($scope, $http) {
     var currency = myURLParams['currency'].toString();
     var filter_caption = (myURLParams['filter'] && myURLParams['filter'].length > 0)? " " + myURLParams['filter'] : "";
     var filter = myURLParams['filter'];
+    var sub_title = "";
     $scope.title = title;
     $scope.currency = currency;
     $scope.footer = '';
     $scope.filter = filter_caption;
+    $scope.sub_title = filter_caption;
     $scope.getNavData = function () {
 
         $scope.values = {};
@@ -27,6 +29,7 @@ function NavigationController($scope, $http) {
 				break;
 			case "sell":
 				pages = value.sell_pages;
+                                $scope.sub_title = " order book";
 				break;
 			default:
 				break;
