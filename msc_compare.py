@@ -73,13 +73,20 @@ def compare():
         sources=keys[:]
         for addr in difference_dict.keys():
             results=addr+': '
+            last_value=-1
+            add_line=False
             for source in sources:
                 try:
                     value=str(float(dicts[source][addr]))
                 except KeyError:
                     value='0.0'
+                if last_value == -1:
+                    last_value = float(value)
+                if float(value) != last_value:
+                    add_line=True
                 results+=source+' '+value+'; '
-            detailed_difference+=results+'\n'
+            if add_line:
+                detailed_difference+=results+'\n'
 
         atomic_json_dump(difference_dict,'www/general/'+coin+'-difference.json')
         f = open('www/general/'+coin+'-difference.txt', "w")
