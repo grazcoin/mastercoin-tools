@@ -75,7 +75,7 @@
                      <div class="inner">
                         <div ng-controller="BTCController" ng-init="getData(1)">
                            <table class="table table-striped table-hover table-condensed">
-                              <caption>Latest {{currency}}{{sub_title}} transactions</caption>
+                              <caption>Latest {{currency}}{{filter}} transactions</caption>
                               <thead>
                                  <tr>
                                     <th>Transaction</th>
@@ -178,7 +178,7 @@
       <div id="footer" ng-controller="RevisionController" ng-init="getData()">
          <div class="container c-footer-container">
             <div class="revision">Updated: {{revision.last_parsed}} rev <a href='{{revision.url}}'>{{revision.commit_hexsha|characters:6}}</a> ({{revision.commit_time}})</div>
-            <div class="muted credit">&copy; Masterchain Grazcoin Grimentz 2013.</div>
+            <div class="muted credit">&copy; Masterchain Grazcoin Grimentz 2013-2014.</div>
          </div>
       </div>
    </body>

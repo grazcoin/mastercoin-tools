@@ -1,4 +1,15 @@
 #!/usr/bin/python
+
+#######################################################
+#                                                     #
+#  Copyright Masterchain Grazcoin Grimentz 2013-2014  #
+#  https://github.com/grazcoin/mastercoin-tools       #
+#  https://masterchain.info                           #
+#  masterchain@@bitmessage.ch                         #
+#  License AGPLv3                                     #
+#                                                     #
+#######################################################
+
 import operator
 from optparse import OptionParser
 from msc_utils_parsing import *

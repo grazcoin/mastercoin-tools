@@ -1,4 +1,15 @@
 #!/usr/bin/python
+
+#######################################################
+#                                                     #
+#  Copyright Masterchain Grazcoin Grimentz 2013-2014  #
+#  https://github.com/grazcoin/mastercoin-tools       #
+#  https://masterchain.info                           #
+#  masterchain@@bitmessage.ch                         #
+#  License AGPLv3                                     #
+#                                                     #
+#######################################################
+
 from msc_utils_obelisk import *
 
 currency_type_dict={'00000001':'Mastercoin','00000002':'Test Mastercoin'}

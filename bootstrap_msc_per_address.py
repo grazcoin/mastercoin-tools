@@ -1,5 +1,15 @@
 #!/usr/bin/python
 
+#######################################################
+#                                                     #
+#  Copyright Masterchain Grazcoin Grimentz 2013-2014  #
+#  https://github.com/grazcoin/mastercoin-tools       #
+#  https://masterchain.info                           #
+#  masterchain@@bitmessage.ch                         #
+#  License AGPLv3                                     #
+#                                                     #
+#######################################################
+
 f=open('outputs/bootstrap.log','r')
 lines=f.readlines()
 f.close()
