@@ -104,21 +104,21 @@ def format_time_from_struct(st, short=False):
 def format_time_from_epoch(epoch, short=False):
     return format_time_from_struct(time.localtime(int(epoch)), short)
 
-def get_git_details(directory="~/mastercoin-tools"):
+def get_git_details(directory=msc_globals.mastercoin_tools_dir):
     repo = git.Repo(directory)
     assert repo.bare == False
     head_commit=repo.head.commit
     timestamp=format_time_from_epoch(int(head_commit.authored_date), True)
     return(head_commit.hexsha,timestamp)
 
-def archive_repo(directory="~/mastercoin-tools"):
+def archive_repo(directory=msc_globals.mastercoin_tools_dir):
     (commit_hexsha, timestamp)=get_git_details()
     assert repo.bare == False
     archive_name='www/downloads/mastercoin-tools-src-'+timestamp+'-'+commit_hexsha[:8]+'-'+timestamp+'.tar'
     repo = git.Repo(directory)
     repo.archive(open(archive_name,'w'))
 
-def archive_parsed_data(directory="~/mastercoin-tools"):
+def archive_parsed_data(directory=msc_globals.mastercoin_tools_dir):
     (commit_hexsha, timestamp)=get_git_details()
     archive_name='www/downloads/mastercoin-tools-parse-snapshot-'+timestamp+'-'+commit_hexsha[:8]+'.tar.gz'
     path_to_archive='www/revision.json www/tx www/addr www/general/'

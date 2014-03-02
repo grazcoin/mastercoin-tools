@@ -15,3 +15,4 @@ def init():
     global d # debug mode
     last_block=0
     d=False
+    mastercoin_tools_dir='~/matercoin-tools'
