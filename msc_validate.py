@@ -815,6 +815,12 @@ def check_mastercoin_transaction(t, index=-1):
                     mark_tx_invalid(t['tx_hash'], 'non supported sell offer with transaction version '+transaction_version)
                     return False
 
+                bitcoin_amount_desired=float(t['formatted_bitcoin_amount_desired'])
+                if bitcoin_amount_desired == 0:
+                    info('zero bitcoin amount desired on '+t['tx_hash'])
+                    mark_tx_invalid(t['tx_hash'], 'zero bitcoins amount desired')
+                    return False
+
                 # get reserved funds on address
                 try:
                     seller_reserved=from_satoshi(addr_dict[from_addr][c]['reserved'])
