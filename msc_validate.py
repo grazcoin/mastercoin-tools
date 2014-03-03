@@ -157,8 +157,17 @@ def check_alarm(t, last_block, current_block):
                         # update buyer address - accept decreases
                         update_addr_dict(a['from_address'], True, a['currency_str'], accept=-to_satoshi(amount_accepted))
 
-                        # update seller address - offer increases (reserved stays)
-                        update_addr_dict(a['to_address'], True, a['currency_str'], offer=to_satoshi(amount_accepted))
+                        # if sell offer got updated during the accept, drop the reserved due to that accept
+                        current_sell_tx=addr_dict[a['to_address']][a['currency_str']]['offer_tx'][-1]
+                        if sell_tx['tx_hash'] != current_sell_tx['tx_hash']:
+                            # update seller address - offer change isn't relevant to current sell offer.
+                            # reserved moves to balance.
+                            update_addr_dict(a['to_address'], True, a['currency_str'], reserved=-to_satoshi(amount_accepted), \
+                                balance=to_satoshi(amount_accepted))
+                        else:
+                            # update seller address - offer increases (reserved stays)
+                            update_addr_dict(a['to_address'], True, a['currency_str'], offer=to_satoshi(amount_accepted))
+
 
                         # heavy debug
                         debug_address(a['from_address'], a['currency_str'], 'after alarm expired')
