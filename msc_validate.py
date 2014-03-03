@@ -178,7 +178,7 @@ def check_alarm(t, last_block, current_block):
                         try:
                             # depracated
                             if sell_tx['updated_by'] != None:
-                                update_tx_dict(sell_tx['tx_hash'], icon_text='Depracated sell Offer', color='bgc-expired')
+                                update_tx_dict(sell_tx['tx_hash'], icon_text='Depracated sell offer', color='bgc-expired')
                         except KeyError:
                             # back to new
                             if updated_amount_available == amount:
