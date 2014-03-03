@@ -173,14 +173,23 @@ def check_alarm(t, last_block, current_block):
                         debug_address(a['from_address'], a['currency_str'], 'after alarm expired')
                         debug_address(a['to_address'], a['currency_str'], 'after alarm expired')
 
+
                         # update icon colors of sell
-                        if updated_amount_available == amount:
-                            update_tx_dict(sell_tx['tx_hash'], color='bgc-new', icon_text='Sell offer')
-                        else:
-                            if updated_amount_available == 0:
-                                update_tx_dict(sell_tx['tx_hash'], color='bgc-accepted', icon_text='Sell offer accepted')
+                        try:
+                            # depracated
+                            if sell_tx['updated_by'] != None:
+                                update_tx_dict(sell_tx['tx_hash'], icon_text='Depracated sell Offer', color='bgc-expired')
+                        except KeyError:
+                            # back to new
+                            if updated_amount_available == amount:
+                                update_tx_dict(sell_tx['tx_hash'], color='bgc-new', icon_text='Sell offer')
                             else:
-                                update_tx_dict(sell_tx['tx_hash'], color='bgc-new-accepted', icon_text='Sell offer partially accepted')
+                                if updated_amount_available == 0:
+                                    # fully accepted
+                                    update_tx_dict(sell_tx['tx_hash'], color='bgc-accepted', icon_text='Sell offer accepted')
+                                else:
+                                    # partially accepted
+                                    update_tx_dict(sell_tx['tx_hash'], color='bgc-new-accepted', icon_text='Sell offer partially accepted')
 
                     # no need to check this accept any more
                     debug('remove alarm for expired '+tx_hash)
