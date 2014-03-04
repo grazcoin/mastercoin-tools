@@ -168,11 +168,9 @@ def check_alarm(t, last_block, current_block):
                             # update seller address - offer increases (reserved stays)
                             update_addr_dict(a['to_address'], True, a['currency_str'], offer=to_satoshi(amount_accepted))
 
-
                         # heavy debug
                         debug_address(a['from_address'], a['currency_str'], 'after alarm expired')
                         debug_address(a['to_address'], a['currency_str'], 'after alarm expired')
-
 
                         # update icon colors of sell
                         try:
@@ -190,7 +188,8 @@ def check_alarm(t, last_block, current_block):
                                 else:
                                     # partially accepted
                                     update_tx_dict(sell_tx['tx_hash'], color='bgc-new-accepted', icon_text='Sell offer partially accepted')
-
+                    else:
+                        info('BUG: remove alarm for accept without sell_offer_txid '+a['tx_hash'])
                     # no need to check this accept any more
                     debug('remove alarm for expired '+tx_hash)
                     remove_alarm(tx_hash)
@@ -218,8 +217,8 @@ def check_bitcoin_payment(t):
                         sell_offer_tx_list=addr_dict[address][c]['offer_tx']
                     except (IndexError,KeyError):
                         sell_offer_tx_list=[]
-                    sell_offer_tx_list.reverse()
-                    for sell_offer_tx in sell_offer_tx_list:
+                    reversed_sell_offer_tx_list=list(reversed(sell_offer_tx_list))
+                    for sell_offer_tx in reversed_sell_offer_tx_list:
                         # any relevant sell offer found?
                         if sell_offer_tx != None:
                             debug('found! checking:')
@@ -1059,6 +1058,8 @@ def check_mastercoin_transaction(t, index=-1):
                         mark_tx_invalid(tx_hash, 'accept offer with missing seller tx on sell offer')
                         return False
 
+                    debug('match sell accept '+t['tx_hash']+' with sell offer '+sell_offer_tx['tx_hash'])
+
                     try:
                         amount_available=float(sell_offer_tx['amount_available']) # get orig offer from seller
                     except (KeyError, IndexError):
@@ -1102,7 +1103,7 @@ def check_mastercoin_transaction(t, index=-1):
 
                     updated_amount_available = float(amount_available) - float(amount_accepted)
 
-                    debug('update sell offer '+t['tx_hash']+' for address '+to_addr+' with amount accepted '+str(amount_accepted))
+                    debug('update sell accept '+t['tx_hash']+' for address '+to_addr+' with amount accepted '+str(amount_accepted))
                     update_tx_dict(t['tx_hash'], bitcoin_required=formatted_decimal(bitcoin_required), \
                         sell_offer_txid=sell_offer_tx['tx_hash'], \
                         formatted_price_per_coin=sell_offer_tx['formatted_price_per_coin'], \
@@ -1116,6 +1117,7 @@ def check_mastercoin_transaction(t, index=-1):
                     if amount_accepted > 0: # ignore 0 or negative accepts
                         # update sell accept
                         update_tx_dict(t['tx_hash'], formatted_amount_accepted=amount_accepted, payment_done=False, payment_expired=False)
+                        debug('add alarm for accept '+str(t))
                         add_alarm(t['tx_hash'])
 
                         # update sell offer
