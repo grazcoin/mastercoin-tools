@@ -200,6 +200,8 @@ def check_alarm(t, last_block, current_block):
 def check_bitcoin_payment(t):
     if t['invalid']==[True, 'bitcoin payment']:
         from_address=t['from_address']
+        if from_address.find(';') >= 0: # there are multiple inputs
+            from_address=from_address.split(';')[0] # take the first one
         current_block=int(t['block'])
         # was there accept from this address to any of the payment addresses?
         to_multi_address_and_amount=t['to_address'].split(';')
@@ -252,7 +254,7 @@ def check_bitcoin_payment(t):
                                     continue
 
                                 accept_buyer=sell_accept_tx['from_address']
-                                payment_sender=t['from_address']
+                                payment_sender=from_address
                                 if payment_sender != accept_buyer:
                                     debug('not correct accept since payment sender and accept buyer are different')
                                     continue
