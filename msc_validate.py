@@ -264,6 +264,16 @@ def check_bitcoin_payment(t):
                                 if accept_seller != sell_seller:
                                     debug('not correct accept since accept seller and sell offer seller are different')
                                     continue
+
+                                # check if accept got already paid
+                                btc_offer_txid=None
+                                try:
+                                    btc_offer_txid=sell_accept_tx['btc_offer_txid']
+                                except KeyError:
+                                    pass
+                                if btc_offer_txid != None and btc_offer_txid != "unknown":
+                                    debug('accept '+sell_accept_tx['tx_hash']+' was already paid on '+btc_offer_txid)
+                                    continue
                         
                                 # now check if block time limit is as required
                                 sell_accept_block=int(sell_accept_tx['block'])
