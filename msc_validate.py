@@ -281,6 +281,17 @@ def check_bitcoin_payment(t):
                                     # this was not the right accept
                                     continue
 
+                                # get the amount bought
+                                try:
+                                    amount_bought=float(sell_accept_tx['formatted_amount_bought'])
+                                except KeyError:
+                                    amount_bought=0.0
+
+                                # is accept exhausted?
+                                if amount_accepted == amount_bought:
+                                    debug('... skip this accept since it is already fully paid '+sell_accept_tx['tx_hash'])
+                                    continue
+
                                 # now check if block time limit is as required
                                 sell_accept_block=int(sell_accept_tx['block'])
 
