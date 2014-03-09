@@ -418,6 +418,10 @@ def check_bitcoin_payment(t):
 
                                             # update sell and accept offer in bitcoin payment
                                             update_tx_dict(t['tx_hash'], sell_offer_txid=sell_offer_tx['tx_hash'], accept_txid=sell_accept_tx['tx_hash'])
+
+                                            # update purchased amount on bitcoin payment
+                                            update_tx_dict(t['tx_hash'], formatted_amount=formatted_decimal(amount_closed))
+                                            
                                         else:
                                             # later payment
                                             debug('additional payment')
@@ -451,6 +455,8 @@ def check_bitcoin_payment(t):
                                             # update sell and accept offer in bitcoin payment
                                             update_tx_dict(t['tx_hash'], sell_offer_txid=sell_offer_tx['tx_hash'], accept_txid=sell_accept_tx['tx_hash'])
 
+                                            # update purchased amount on bitcoin payment
+                                            update_tx_dict(t['tx_hash'], formatted_amount=formatted_decimal(diff_closed))
 
                                         # if accept fully paid - close accept
                                         if part_bought >= 1.0:
