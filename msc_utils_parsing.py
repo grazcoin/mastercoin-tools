@@ -344,7 +344,7 @@ def parse_multisig(tx, tx_hash='unknown'):
                 error('cannot parse dataHex_deobfuscated_list')
 
             # no recipient? allow for sell offer
-            if to_address=='unknown' and data_dict['transactionType'] != '0014':
+            if to_address=='unknown' and (data_dict['transactionType'] == '0000' or data_dict['transactionType'] == '0016'):
                 info('no recipient tx '+tx_hash)
                 return {'tx_hash':tx_hash, 'invalid':(True, 'no recipient')}
 

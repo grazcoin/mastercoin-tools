@@ -147,6 +147,14 @@
                                             <td>Block time</td>
                                             <td>{{transactionInformation.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
                                         </tr>
+                                        <tr>
+                                            <td>Previous payment</td>
+                                            <td><a href="btcpayment.html?tx={{transactionInformation.prev_payment_txid}}">{{transactionInformation.prev_payment_txid}}</a></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Next payment</td>
+                                            <td><a href="btcpayment.html?tx={{transactionInformation.next_payment_txid}}">{{transactionInformation.next_payment_txid}}</a></td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
