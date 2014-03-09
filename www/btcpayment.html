@@ -94,7 +94,7 @@
                                         </tr>
                                         <tr ng-repeat="f in transactionInformation.to_address">
                                             <td>
-                                                <span class="pull-left">To <a href="Address.html?addr={{f.address}}">{{f.address | characters:10}}</a></span>
+                                                <span class="pull-left">To <a href="Address.html?addr={{f.address}}&currency={{currency}}">{{f.address | characters:10}}</a></span>
                                             </td>
                                             <td>
                                                 <span class="pull-right">{{f.value}} ฿</span>
