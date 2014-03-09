@@ -39,7 +39,8 @@ tx_properties=\
      'details', 'tx_type_str', \
      'baseCoin', 'dataSequenceNum', 'method', 'tx_method_str', \
      'bitcoin_amount_desired', 'block_time_limit', 'fee', \
-     'sell_offer_txid', 'accept_txid', 'btc_offer_txid', 'payment_txid', \
+     'sell_offer_txid', 'accept_txid', 'btc_offer_txid', \
+     'prev_payment_txid', 'next_payment_txid', 'accomulated_payment', \
      'action', 'action_str', \
      'amount_available', 'formatted_amount_available', \
      'formatted_amount_accepted', 'formatted_amount_bought', \
@@ -125,6 +126,10 @@ def check_alarm(t, last_block, current_block):
             for a in alarm[b]:
                 debug('verify payment for tx '+str(a['tx_hash']))
                 tx_hash=a['tx_hash']
+                amount=float(a['formatted_amount'])
+                amount_accepted=float(a['formatted_amount_accepted'])
+                amount_bought=float(a['formatted_amount_bought'])
+
                 # not paid case
                 if not a.has_key('btc_offer_txid') or a['btc_offer_txid']=='unknown': # accept with no payment
                     # update accept transaction with expired note
@@ -137,8 +142,6 @@ def check_alarm(t, last_block, current_block):
                         # get sell transaction details
                         sell_tx_hash=a['sell_offer_txid']
                         sell_tx=tx_dict[sell_tx_hash][-1]
-                        amount=float(a['formatted_amount'])
-                        amount_accepted=float(a['formatted_amount_accepted'])
                         amount_available=float(sell_tx['formatted_amount_available'])
                         # amount available grows when an accept expires
                         updated_amount_available=float(amount_available)+float(amount_accepted)
@@ -194,7 +197,12 @@ def check_alarm(t, last_block, current_block):
                     debug('remove alarm for expired '+tx_hash)
                     remove_alarm(tx_hash)
                 else:
-                    debug('accept offer '+tx_hash+' was already paid with '+a['btc_offer_txid'])  
+                    debug('accept offer '+tx_hash+' was already paid with '+a['btc_offer_txid'])
+                    # update left over accept on buyer side
+                    left_over_accept=amount_accepted-amount_bought
+                    debug('reduce left over accept from buyer accept value due to accept expire of '+tx_hash)
+                    update_addr_dict(a['from_address'], True, a['currency_str'], accept=-to_satoshi(left_over_accept))
+ 
 
 
 def check_bitcoin_payment(t):
@@ -265,16 +273,14 @@ def check_bitcoin_payment(t):
                                     debug('not correct accept since accept seller and sell offer seller are different')
                                     continue
 
-                                # check if accept got already paid
-                                btc_offer_txid=None
+                                # calculate the amount accepted
                                 try:
-                                    btc_offer_txid=sell_accept_tx['btc_offer_txid']
+                                    amount_accepted=float(sell_accept_tx['formatted_amount_accepted'])
                                 except KeyError:
-                                    pass
-                                if btc_offer_txid != None and btc_offer_txid != "unknown":
-                                    debug('accept '+sell_accept_tx['tx_hash']+' was already paid on '+btc_offer_txid)
+                                    info('BUG: continue to next accept, since no formatted_amount_accepted on '+sell_accept_tx['tx_hash'])
+                                    # this was not the right accept
                                     continue
-                        
+
                                 # now check if block time limit is as required
                                 sell_accept_block=int(sell_accept_tx['block'])
 
@@ -286,64 +292,182 @@ def check_bitcoin_payment(t):
                                     debug_address(address, c, 'before bitcoin payment')
                                     debug_address(from_address, c, 'before bitcoin payment')
 
-                                    part_bought=float(amount)/required_btc
-                                    if part_bought>0:
-                                        # mark accept as closed
-                                        # calculate the amount accepted
+                                    accomulated_payment=0
+                                    payments_list=[]
+                                    # check if accept got already paid
+                                    btc_offer_txid=None
+                                    try:
+                                        btc_offer_txid=sell_accept_tx['btc_offer_txid']
+                                    except KeyError:
+                                        pass
+
+                                    debug(btc_offer_txid)
+
+                                    # was there already a payment?
+                                    if btc_offer_txid != None and btc_offer_txid != 'unknown':
+                                        # there was at least one payment
+                                        # let's chain this payment to previous payments
+                                        # build the chain of payments
+                                        debug('build the chain of payments')
+                                        payments_list.append(btc_offer_txid)
+                                        # get/set accomulated payment
                                         try:
-                                            amount_accepted=float(sell_accept_tx['formatted_amount_accepted'])
-                                        except KeyError:
-                                            debug('continue to next accept, since no formatted_amount_accepted on '+sell_accept_tx['tx_hash'])
-                                            # this was not the right accept
-                                            continue
-                                        amount_closed=min((part_bought*float(whole_sell_amount)+0.0), amount_accepted, amount_reserved)
-                                        debug('... amount_accepted is '+str(amount_accepted))
-                                        debug('... amount_reserved is '+str(amount_reserved))
-                                        debug('... amount_available is '+str(amount_available))
-                                        debug('... amount_closed is '+str(amount_closed))
+                                            accomulated_payment=tx_dict[btc_offer_txid][-1]['accomulated_payment']
+                                        except (KeyError, IndexError):
+                                            # if not accomulated_payment field on btc_offer_txid, then it is the first
+                                            info('BUG: no accomulated amount on first bitcoin payment for accept '+sell_accept_tx['tx_hash']+' on '+btc_offer_txid)
+                                            break
+
+                                        # running until this payment is in the payments list
+                                        while payments_list[-1] != t['tx_hash']:
+                                            # take care with endless loop here
+                                            # is this payment the last, or are there other previous payments?
+                                            next_payment_txid=None
+                                            try:
+                                                next_payment_txid=tx_dict[payments_list[-1]][-1]['next_payment_txid']
+                                            except (KeyError,IndexError):
+                                                pass
+
+                                            if next_payment_txid == None or next_payment_txid == 'unknwon':
+                                                # This payment is the last one.
+                                                # connect it to the chain of payments.
+                                                next_payment_txid=t['tx_hash']
+                                                debug('adding payment '+next_payment_txid+' to payment chain for accept '+sell_accept_tx['tx_hash'])
+                                                payments_list.append(next_payment_txid)
+                                                if payments_list[-2] == payments_list[-1]:
+                                                    info('BUG: loop of payments on last payment in accept '+sell_accept_tx['tx_hash']+'. First is '+btc_offer_txid+' and additional is '+t['tx_hash'])
+                                                    break
+                                                debug('update payment '+payments_list[-2]+' with next payment '+payments_list[-1])
+                                                update_tx_dict(payments_list[-2], next_payment_txid=payments_list[-1])
+                                                debug('update payment '+payments_list[-1]+' with prev payment '+payments_list[-2])
+                                                update_tx_dict(payments_list[-1], prev_payment_txid=payments_list[-2])
+
+                                                # calculate accomulated payment (sum of amounts of all payments for this accept)
+                                                try:
+                                                    accomulated_payment=float(tx_dict[payments_list[-2]][-1]['accomulated_payment'])+float(amount)
+                                                except (KeyError, IndexError):
+                                                    info('BUG: no accomulated amount on later bitcoin payment for accept '+sell_accept_tx['tx_hash']+' on '+payments_list[-2])
+                                                    break
+                                                debug('update accomulated payment to '+str(accomulated_payment))
+                                                update_tx_dict(payments_list[-1], accomulated_payment=accomulated_payment)
+
+                                            else:
+                                                debug('add payment to the chain '+next_payment_txid)
+                                                payments_list.append(next_payment_txid)
+                                                # get stored accomulated payment (amount was added on previous run)
+                                                try:
+                                                    accomulated_payment=float(tx_dict[payments_list[-1]][-1]['accomulated_payment'])
+                                                except (KeyError,IndexError):
+                                                    info('BUG: no accomulated amount on stored bitcoin payment for accept '+sell_accept_tx['tx_hash']+' on '+payments_list[-1])
+
+                                                # check for trivial loop, but there can be more complicated loops
+                                                try:
+                                                    if payments_list[-2] == payments_list[-1]:
+                                                        info('BUG: loop of payments on accept '+sell_accept_tx['tx_hash']+'. First is '+btc_offer_txid+' and additional is '+t['tx_hash'])
+                                                        break
+                                                except IndexError:
+                                                    pass
+
+                                                # skip to the next payment on the chain
+                                                continue
+                                    else:
+                                        # This is the first payment
+                                        update_tx_dict(sell_accept_tx['tx_hash'], btc_offer_txid=t['tx_hash'])
+                                        accomulated_payment=float(amount)
+                                        update_tx_dict(t['tx_hash'], accomulated_payment=accomulated_payment)
+                                        debug('first bitcoin payment '+t['tx_hash']+' for accept '+sell_accept_tx['tx_hash']+' is '+str(accomulated_payment))
+
+                                    part_bought=float(accomulated_payment)/required_btc
+                                    amount_closed=min((part_bought*float(whole_sell_amount)+0.0), amount_accepted, amount_reserved)
+                                    debug('... amount_accepted is '+str(amount_accepted))
+                                    debug('... amount_reserved is '+str(amount_reserved))
+                                    debug('... amount_available is '+str(amount_available))
+                                    debug('... amount_closed is '+str(amount_closed))
+
+                                    if part_bought>0:
+                                        # mark accept as closed if part bought is 100%
 
                                         if float(amount_closed) < 0:
                                             info('BUG: negative amount closed for accept '+sell_accept_tx['tx_hash'])
 
-                                        # update seller address - reserved decreases, balance stays, offer updates (decreased at accept).
-                                        satoshi_amount_closed=to_satoshi(amount_closed)
-                                        satoshi_amount_accepted=to_satoshi(amount_accepted)
-                                        update_addr_dict(address, True, c, reserved=-satoshi_amount_closed, sold=satoshi_amount_closed, \
-                                            sold_tx=sell_accept_tx, offer=-satoshi_amount_closed+satoshi_amount_accepted)
+                                        if float(accomulated_payment) == float(amount): # first payment
+                                            # update seller address - reserved decreases, balance stays, offer updates (decreased at accept).
+                                            satoshi_amount_closed=to_satoshi(amount_closed)
+                                            satoshi_amount_accepted=to_satoshi(amount_accepted)
+                                            update_addr_dict(address, True, c, reserved=-satoshi_amount_closed, sold=satoshi_amount_closed, \
+                                                sold_tx=sell_accept_tx, offer=-satoshi_amount_closed+satoshi_amount_accepted)
 
-                                        # update buyer address - balance increases, accept decreases.
-                                        update_addr_dict(from_address, True, c, accept=-satoshi_amount_accepted, \
-                                            balance=satoshi_amount_closed, bought=satoshi_amount_closed, bought_tx=t)
+                                            # update buyer address - balance increases, accept decreases.
+                                            update_addr_dict(from_address, True, c, accept=-satoshi_amount_closed, \
+                                                balance=satoshi_amount_closed, bought=satoshi_amount_closed, bought_tx=t)
 
-                                        # update sell available (less closed - accepted)
-                                        updated_amount_available = float(amount_available) + float(amount_accepted) - float(amount_closed)
+                                            # update sell available (less closed - accepted)
+                                            updated_amount_available = float(amount_available) + float(amount_accepted) - float(amount_closed)
 
-                                        if float(updated_amount_available) < 0:
-                                            info('BUG: negative updated amount available after '+sell_accept_tx['tx_hash'])
+                                            if float(updated_amount_available) < 0:
+                                                info('BUG: negative updated amount available after '+sell_accept_tx['tx_hash'])
 
-                                        debug('... update sell offer amount available '+formatted_decimal(updated_amount_available)+' at '+sell_offer_tx['tx_hash'])
-                                        update_tx_dict(sell_offer_tx['tx_hash'], amount_available=updated_amount_available, \
-                                            formatted_amount_available=formatted_decimal(updated_amount_available))
+                                            debug('... update sell offer amount available '+formatted_decimal(updated_amount_available)+' at '+sell_offer_tx['tx_hash'])
+                                            update_tx_dict(sell_offer_tx['tx_hash'], amount_available=updated_amount_available, \
+                                                formatted_amount_available=formatted_decimal(updated_amount_available))
+
+                                            # update sell accept tx (with bitcoin payment etc)
+                                            update_tx_dict(sell_accept_tx['tx_hash'], status='Closed', \
+                                                payment_done=True, formatted_amount_bought=formatted_decimal(amount_closed),  \
+                                                color='bgc-done', icon_text='Accept offer paid')
+
+                                            # update sell and accept offer in bitcoin payment
+                                            update_tx_dict(t['tx_hash'], sell_offer_txid=sell_offer_tx['tx_hash'], accept_txid=sell_accept_tx['tx_hash'])
+                                        else:
+                                            # later payment
+                                            debug('additional payment')
+                                            additional_payment=amount
+                                            additional_part=float(additional_payment)/required_btc
+                                            prev_closed=min(((part_bought-additional_part)*float(whole_sell_amount)+0.0), amount_accepted, amount_reserved)
+                                            diff_closed=amount_closed-prev_closed
+                                            satoshi_diff_closed=to_satoshi(diff_closed)
+
+                                            # update seller address
+                                            update_addr_dict(address, True, c, reserved=-satoshi_diff_closed, sold=satoshi_diff_closed, \
+                                                offer=-satoshi_diff_closed)
+
+                                            # update buyer address - balance increases, accept decreases.
+                                            update_addr_dict(from_address, True, c, accept=-satoshi_diff_closed, \
+                                                balance=satoshi_diff_closed, bought=satoshi_diff_closed, bought_tx=t)
+
+                                            # update sell available (less diff_closed)
+                                            updated_amount_available = float(amount_available) - float(diff_closed)
+
+                                            if float(updated_amount_available) < 0:
+                                                info('BUG: negative updated amount available on later payment '+t['tx_hash'])
+
+                                            debug('... update sell offer amount available '+formatted_decimal(updated_amount_available)+' at '+sell_offer_tx['tx_hash'])
+                                            update_tx_dict(sell_offer_tx['tx_hash'], amount_available=updated_amount_available, \
+                                                formatted_amount_available=formatted_decimal(updated_amount_available))
+
+                                            # update sell accept tx (only amount bought changed)
+                                            update_tx_dict(sell_accept_tx['tx_hash'], formatted_amount_bought=formatted_decimal(amount_closed))
+
+                                            # update sell and accept offer in bitcoin payment
+                                            update_tx_dict(t['tx_hash'], sell_offer_txid=sell_offer_tx['tx_hash'], accept_txid=sell_accept_tx['tx_hash'])
+
+
+                                        # if accept fully paid - close accept
+                                        if part_bought >= 1.0:
+                                            debug('... 100% paid accept '+sell_accept_tx['tx_hash']+'. closing accept for payments. remove alarm.')
+                                            # remove alarm for accept
+                                            remove_alarm(sell_accept_tx['tx_hash'])
 
                                         # if not more left in the offer - close sell
                                         if addr_dict[address][c]['offer'] == 0:
-                                            debug('... offer closed for '+address)
+                                            debug('... sell offer closed for '+address)
                                             update_tx_dict(sell_offer_tx['tx_hash'], color='bgc-done', icon_text='Sell offer done')
+                                            # remove alarm for accept
+                                            debug('remove alarm for paid '+sell_accept_tx['tx_hash'])
+                                            remove_alarm(sell_accept_tx['tx_hash'])
                                         else:
-                                            debug('... offer is still open on '+address)
+                                            debug('... sell offer is still open on '+address)
                                             update_tx_dict(sell_offer_tx['tx_hash'], color='bgc-accepted-done', icon_text='Sell offer partially done')
-
-                                        # remove alarm for accept
-                                        debug('remove alarm for paid '+sell_accept_tx['tx_hash'])
-                                        remove_alarm(sell_accept_tx['tx_hash'])
-
-                                        # update sell accept tx (with bitcoin payment etc)
-                                        update_tx_dict(sell_accept_tx['tx_hash'], btc_offer_txid=t['tx_hash'], status='Closed', \
-                                            payment_done=True, formatted_amount_bought=formatted_decimal(amount_closed),  \
-                                            color='bgc-done', icon_text='Accept offer paid')
-
-                                        # update sell and accept offer in bitcoin payment
-                                        update_tx_dict(t['tx_hash'], sell_offer_txid=sell_offer_tx['tx_hash'], accept_txid=sell_accept_tx['tx_hash'])
 
                                         # heavy debug
                                         debug_address(address, c, 'after bitcoin payment')
