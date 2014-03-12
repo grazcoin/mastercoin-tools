@@ -1243,6 +1243,28 @@ def check_mastercoin_transaction(t, index=-1):
                         mark_tx_invalid(tx_hash, 'accept offer for closed sell offer')
                         return False
 
+                    # invalidate accept for addresses that already have a running accept from that address
+                    try:
+                        bids_hash_list=bids_dict[sell_offer_tx['tx_hash']]
+                        for b_hash in bids_hash_list:
+                            b = tx_dict[b_hash][-1]
+                            try:
+                                payment_expired=b['payment_expired']
+                            except KeyError:
+                                payment_expired=False
+                            try:
+                                payment_done=b['payment_done']
+                            except KeyError:
+                                payment_expired=False
+
+                            if not (payment_expired or payment_done) and b['from_address']==t['from_address']:
+                                info('invalidate accept since a running bid for sell offer from that address exists '+t['tx_hash'])
+                                mark_tx_invalid(tx_hash, 'sell offer has already a running accept from that address')
+                                return False
+                        debug('no bids from '+t['from_address']+' on sell offer yet')
+                    except KeyError:
+                        debug('no bids yet on sell offer yet')
+
                     # amount accepted is min between requested and offer
                     amount_accepted=min(float(accept_amount_requested),float(amount_available))
 
