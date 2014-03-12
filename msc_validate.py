@@ -142,16 +142,26 @@ def check_alarm(t, last_block, current_block):
                         # get sell transaction details
                         sell_tx_hash=a['sell_offer_txid']
                         sell_tx=tx_dict[sell_tx_hash][-1]
+
                         amount_available=float(sell_tx['formatted_amount_available'])
                         # amount available grows when an accept expires
                         updated_amount_available=float(amount_available)+float(amount_accepted)
                         formatted_updated_amount_available=formatted_decimal(updated_amount_available)
                         debug('update sell transaction '+sell_tx_hash+' and address '+sell_tx['from_address']+ \
                             ' with amount available '+str(updated_amount_available)+' after payment expired')
-
                         # update sell transaction - amount_available increases
                         update_tx_dict(sell_tx_hash, amount_available=updated_amount_available, \
                             formatted_amount_available=formatted_updated_amount_available)
+
+                        # check if sell offer got updated for later updates
+                        try:
+                            sell_tx_updated_by=sell_tx['updated_by']
+                            if sell_tx_updated_by == None or sell_tx_updated_by == 'unknown':
+                                sell_tx_updated=False
+                            else:
+                                sell_tx_updated=True
+                        except KeyError:
+                            sell_tx_updated=False
 
                         # heavy debug
                         debug_address(a['from_address'], a['currency_str'], 'before alarm expired')
@@ -165,8 +175,13 @@ def check_alarm(t, last_block, current_block):
                         if sell_tx['tx_hash'] != current_sell_tx['tx_hash']:
                             # update seller address - offer change isn't relevant to current sell offer.
                             # reserved moves to balance.
-                            update_addr_dict(a['to_address'], True, a['currency_str'], reserved=-to_satoshi(amount_accepted), \
-                                balance=to_satoshi(amount_accepted))
+
+                            # but only if sell tx did not get upated
+                            if not sell_tx_updated:
+                                update_addr_dict(a['to_address'], True, a['currency_str'], reserved=-to_satoshi(amount_accepted), \
+                                    balance=to_satoshi(amount_accepted))
+                            else:
+                                debug('skip updating transaction '+sell_tx_hash+' after payment expired as it got already updated')
                         else:
                             # update seller address - offer increases (reserved stays)
                             update_addr_dict(a['to_address'], True, a['currency_str'], offer=to_satoshi(amount_accepted))
@@ -1235,17 +1250,23 @@ def check_mastercoin_transaction(t, index=-1):
 
                     # required fee calculation
                     try:
-                        required_fee=float(sell_offer_tx['formatted_required_fee'])
+                        required_fee=float(sell_offer_tx['formatted_fee_required'])
                     except KeyError:
                         required_fee=0.0
                     try:
                         accept_fee=float(t['formatted_fee'])
                     except KeyError:
                         accept_fee=0.0
-                    if accept_fee<required_fee:
+
+                    debug('required_fee is '+str(required_fee))
+                    debug('accept_fee is '+str(accept_fee))
+
+                    if float(accept_fee)<float(required_fee):
                         info('accept offer without minimal fee on tx: '+tx_hash)
                         mark_tx_invalid(tx_hash, 'accept offer without required fee')
                         return False
+                    else:
+                        debug('minimal fee is met')
                     
                     try:
                         # need to pay the part of the sell offer which got accepted
