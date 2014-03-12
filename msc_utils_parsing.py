@@ -431,6 +431,9 @@ def parse_multisig(tx, tx_hash='unknown'):
                             parse_dict['sell_offer_txid'] = 'Not available'
                             parse_dict['payment_txid'] = 'Not available'
                             parse_dict['status'] = 'Awaiting payment'
+                            # parse as bitcoin payment to get the tx fee
+                            bitcoin_dict=parse_bitcoin_payment(tx, tx_hash)
+                            parse_dict['formatted_fee']=bitcoin_dict['fee']
 
                         else: # non valid tx type
                             return {'tx_hash':tx_hash, 'invalid':(True, 'non supported tx type '+data_dict['transactionType'])}
