@@ -382,11 +382,7 @@ def parse_multisig(tx, tx_hash='unknown'):
                             price_per_coin=bitcoin_amount_desired/amount
                         else:
                             price_per_coin=0
-                            if amount == 0 and data_dict['transactionVersion']=='0000':
-                                    # cancel sell order
-                                    pass
-                            else:
-                                parse_dict['invalid']=(True,'non positive sell offer amount')
+
                         # duplicate with another name
                         parse_dict['formatted_amount_available'] = parse_dict['formatted_amount']
                         # format fields
@@ -395,13 +391,26 @@ def parse_multisig(tx, tx_hash='unknown'):
                         parse_dict['formatted_block_time_limit']= str(int(data_dict['block_time_limit'],16))
 
                         if len(dataHex_deobfuscated_list)>1: # currently true only for Sell offer (?)
-                            data_dict=parse_2nd_data_script(dataHex_deobfuscated_list[1])
-                            if data_dict['should_be_zeros'] == '0000000000000000000000000000000000000000000' or \
-                               data_dict['should_be_zeros'] == '000000000000000000000000000000000000000000':
-                                data_dict.pop('should_be_zeros')
-                                for key in data_dict:
-                                    parse_dict[key]=data_dict[key]
-                                parse_dict['formatted_fee_required'] = from_hex_satoshi(data_dict['fee_required'])
+                            data_dict2=parse_2nd_data_script(dataHex_deobfuscated_list[1])
+
+                            # verify positive sell offer amount
+                            if amount == 0: # this is allowed only on Cancel action
+                                if data_dict['transactionVersion']=='0000' or data_dict2['action_str']=='Cancel':
+                                    debug('cancel sell offer with zero amount on '+tx_hash)
+                                else:
+                                    parse_dict['invalid']=(True,'zero sell offer amount')
+                            else:
+                                if amount < 0:
+                                    info('BUG: negative sell offer amount on '+tx_hash)
+                                    parse_dict['invalid']=(True,'negative sell offer amount')
+
+
+                            if data_dict2['should_be_zeros'] == '0000000000000000000000000000000000000000000' or \
+                               data_dict2['should_be_zeros'] == '000000000000000000000000000000000000000000':
+                                data_dict2.pop('should_be_zeros')
+                                for key in data_dict2:
+                                    parse_dict[key]=data_dict2[key]
+                                parse_dict['formatted_fee_required'] = from_hex_satoshi(data_dict2['fee_required'])
                             else:
                                 parse_dict['invalid']=(True,'invalid last data script in BIP11')
                                 return parse_dict
