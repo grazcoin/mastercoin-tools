@@ -1144,8 +1144,7 @@ def check_mastercoin_transaction(t, index=-1):
                             seller_reserved=0.0
 
                         if float(seller_reserved) != already_accepted:
-                            info('BUG: reserved does not equal to standing accepts during sell offer update '+t['tx_hash'])
-                            return False
+                            debug('NOTICE: reserved does not equal to standing accepts during sell offer update '+t['tx_hash'])
 
                         # calculate offer:
                         # limit offer with balance (after the revert of old offer)
