@@ -196,6 +196,11 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
         # the from address is the one with the highest value
         from_address=max(inputs_values_dict, key=inputs_values_dict.get)
 
+        if from_address == None:
+            info('invalid from address (address with largest value is None) at tx '+tx_hash)
+            return {'invalid':(True,'address with largest value is None'), 'tx_hash':tx_hash}
+
+
         #######################################################################
         # follow Class A P&D https://github.com/mastercoin-MSC/spec/issues/29 #
         #######################################################################
