@@ -393,12 +393,12 @@ def update_tx_dict(tx_hash, *arguments, **keywords):
 # debug dump of address values
 def debug_address(addr,c, message="-"):
     if msc_globals.heavy_debug == True:
-        debug('######## '+addr+' '+c+' '+message+' >>>>>>>>')
+        debug('######## '+str(addr)+' '+str(c)+' '+str(message)+' >>>>>>>>')
         try:
             d=addr_dict[addr][c]
         except KeyError:
             debug('address does not exist in database')
-            debug('>>>>>>>> '+addr+' '+c+' '+message+' ########')
+            debug('>>>>>>>> '+str(addr)+' '+str(c)+' '+str(message)+' ########')
             return False
         debug('balance: '+str(d['balance']))
         debug('reserved: '+str(d['reserved']))
@@ -408,7 +408,7 @@ def debug_address(addr,c, message="-"):
         debug('sold: '+str(d['sold']))
         debug('sent: '+str(d['sent']))
         debug('received: '+str(d['received']))
-        debug('>>>>>>>> '+addr+' '+c+' '+message+' ########')
+        debug('>>>>>>>> '+str(addr)+' '+str(c)+' '+str(message)+' ########')
 
 # update the main address database
 # example call:
