@@ -74,7 +74,7 @@
                                         </tr>
                                         <tr>
                                             <td>Block time</td>
-                                            <td>{{transactionInformation.tx_time | date:'yyyy-MM-dd HH:mm:ss UTC'}}</td>
+                                            <td>{{transactionInformation.tx_time | date:'yyyy-MM-dd HH:mm:ss'}}</td>
                                         </tr>
                                     </tbody>
                                 </table>
