@@ -408,7 +408,7 @@ def parse_multisig(tx, tx_hash='unknown'):
                     else:
                         if data_dict['transactionType'] == '0016': # Sell accept
                             # check feature is enabled
-                            if currency_type_dict[data_dict['currencyId']]=='Mastercoin':
+                            if currency_type_dict[data_dict['currencyId']]=='Mastercoin' and tx_hash != 'unknown':
                                 (height,index)=get_tx_index(tx_hash)
                                 if height == -1 or height == 'failed:':
                                     error('failed getting height of '+tx_hash)
