@@ -23,7 +23,7 @@
                                         </tr>
                                         <tr ng-repeat="f in transactionInformation.to_address">
                                             <td>
-                                                <span class="pull-left">To <a href="Address.html?addr={{f.address}}">{{f.address | characters:10}}</a></span>
+                                                <span class="pull-left">To <a href="Address.html?addr={{f.address}}&currency={{currency}}">{{f.address | characters:10}}</a></span>
                                             </td>
                                             <td>
                                                 <span class="pull-right">{{f.value}} ฿</span>
@@ -38,12 +38,16 @@
                                             <td><span class="pull-right">{{transactionInformation.fee}} ฿</span></td>
                                         </tr>
                                         <tr>
+                                            <td>Bought</td>
+                                            <td><span class="pull-right">{{transactionInformation.formatted_amount}} {{currency}}</span></td>
+                                        </tr>
+                                        <tr>
                                             <td>Sell Offer</td>
-                                            <td><a href="selloffer.html?tx={{transactionInformation.sell_offer_txid}}">{{transactionInformation.sell_offer_txid}}</a></td>
+                                            <td><a href="selloffer.html?tx={{transactionInformation.sell_offer_txid}}&currency={{currency}}">{{transactionInformation.sell_offer_txid}}</a></td>
                                         </tr>
                                         <tr>
                                             <td>Accept Offer</td>
-                                            <td><a href="sellaccept.html?tx={{transactionInformation.accept_txid}}">{{transactionInformation.accept_txid}}</a></td>
+                                            <td><a href="sellaccept.html?tx={{transactionInformation.accept_txid}}&currency={{currency}}">{{transactionInformation.accept_txid}}</a></td>
                                         </tr>
 
                                     </tbody>
@@ -75,6 +79,14 @@
                                         <tr>
                                             <td>Block time</td>
                                             <td>{{transactionInformation.tx_time | date:'yyyy-MM-dd HH:mm:ss'}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Previous payment</td>
+                                            <td><a href="btcpayment.html?tx={{transactionInformation.prev_payment_txid}}&currency={{currency}}">{{transactionInformation.prev_payment_txid}}</a></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Next payment</td>
+                                            <td><a href="btcpayment.html?tx={{transactionInformation.next_payment_txid}}&currency={{currency}}">{{transactionInformation.next_payment_txid}}</a></td>
                                         </tr>
                                     </tbody>
                                 </table>

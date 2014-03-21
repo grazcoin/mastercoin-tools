@@ -33,6 +33,11 @@
                                        </td>
                                     </tr>
                                     <tr>
+                                       <td>Reserved</td>
+                                       <td>{{addressInformation.total_reserved}}
+                                       </td>
+                                    </tr>
+                                    <tr>
                                        <td>Bought via Exodus</td>
                                        <!-- 1 is for Mastercoin and 2 is for Test Mastercoint-->
                                        <td>{{addressInformation.total_exodus}}</td>
@@ -71,6 +76,10 @@
                                     <tr>
                                        <td>Currency</td>
                                        <td><strong>{{currency}}</strong></td>
+                                    </tr>
+                                    <tr>
+                                       <td></td>
+                                       <td></td>
                                     </tr>
                                     <tr>
                                        <td>Exodus transactions</td>
@@ -153,7 +162,7 @@
                                              data-content="{{trans.icon_text}}" rel="popover"
                                              data-placement="bottom"
                                              alt="" />
-                                          <a ng-href="selloffer.html?tx={{trans.tx_hash}}&currency={{currency}}">{{trans.tx_hash | characters:10}}</a>
+                                          <a ng-href="sellaccept.html?tx={{trans.tx_hash}}&currency={{currency}}">{{trans.tx_hash | characters:10}}</a>
                                        </td>
                                        <td>{{trans.formatted_amount}}</td>
                                        <td>{{trans.tx_time | date:'dd MMM HH:mm'}}</td>
@@ -168,8 +177,8 @@
                                  <caption>Bought coins ({{addressInformation.bought_transactions.length}})</caption>
                                  <thead>
                                     <tr>
-                                       <th>Transaction</th>
-                                       <th>Amount</th>
+                                       <th>Payment</th>
+                                       <th>Accept</th>
                                        <th>Date</th>
                                     </tr>
                                  </thead>
@@ -182,9 +191,17 @@
                                              data-content="{{trans.icon_text}}" rel="popover"
                                              data-placement="bottom"
                                              alt="" />
-                                          <a ng-href="sellaccept.html?tx={{trans.tx_hash}}&currency={{currency}}">{{trans.tx_hash | characters:10}}</a>
+                                          <a ng-href="btcpayment.html?tx={{trans.tx_hash}}&currency={{currency}}">{{trans.tx_hash | characters:10}}</a>
                                        </td>
-                                       <td>{{trans.formatted_amount}}</td>
+                                       <td>
+                                          <img class="icon24 round-corner {{trans.color}} iconPopupInit"
+                                             src="ico/sellaccept24t.png"
+                                             ng-init="createIconPopup()"
+                                             data-content="Accept offer paid" rel="popover"
+                                             data-placement="bottom"
+                                             alt="" />
+
+                                          <a ng-href="sellaccept.html?tx={{trans.accept_txid}}&currency={{currency}}">{{trans.accept_txid | characters:10}}</a>
                                        <td>{{trans.tx_time | date:'dd MMM HH:mm'}}</td>
                                     </tr>
                                  </tbody>
