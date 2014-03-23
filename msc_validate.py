@@ -99,8 +99,10 @@ def add_alarm(tx_hash):
     alarm_block=tx_block+payment_timeframe
     if alarm.has_key(alarm_block):
         alarm[alarm_block].append(t)
+        debug('added alarm in block '+str(alarm_block)+' for '+tx_hash)
     else:
         alarm[alarm_block]=[t]
+        debug('added first alarm in block '+str(alarm_block)+' for '+tx_hash)
 
 def remove_alarm(tx_hash):
     t=tx_dict[tx_hash][-1] # last tx on the list
@@ -112,6 +114,7 @@ def remove_alarm(tx_hash):
     if alarm.has_key(alarm_block):
         try:
             alarm[alarm_block].remove(t)
+            debug('removed alarm at block '+str(alarm_block)+' for '+tx_hash)
         except ValueError:
             info('failed removing alarm for '+tx_hash)
     else:
@@ -123,6 +126,7 @@ def check_alarm(t, last_block, current_block):
     for b in range(last_block, current_block):
         if alarm.has_key(b):
             debug('alarm for block '+str(b))
+            debug('transaction checked in alarm for block are '+str(alarm[b]))
             for a in alarm[b]:
                 debug('verify payment for tx '+str(a['tx_hash']))
                 tx_hash=a['tx_hash']
@@ -208,9 +212,8 @@ def check_alarm(t, last_block, current_block):
                                     update_tx_dict(sell_tx['tx_hash'], color='bgc-new-accepted', icon_text='Sell offer partially accepted')
                     else:
                         info('BUG: remove alarm for accept without sell_offer_txid '+a['tx_hash'])
-                    # no need to check this accept any more
-                    debug('remove alarm for expired '+tx_hash)
-                    remove_alarm(tx_hash)
+                    # no need to check this accept any more, but leave on alarms dict
+                    debug('checked alarm for expired '+tx_hash)
                 else:
                     debug('accept offer '+tx_hash+' was already paid with '+a['btc_offer_txid'])
                     # update left over accept on buyer side
