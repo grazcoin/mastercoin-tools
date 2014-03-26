@@ -1,13 +1,12 @@
 #!/bin/sh
 
-MASTERCOIN_TOOLS_DIR=/home/dev/mastercoin-tools/
 LOCK_FILE=/tmp/msc_cron.lock
 PARSE_LOG=parsed.log
 VALIDATE_LOG=validated.log
 ARCHIVE_LOG=archived.log
 
 export PATH=$PATH:/usr/local/bin/
-cd $MASTERCOIN_TOOLS_DIR
+cd /home/dev/mastercoin-tools/
 
 # check lock (not to run multiple times)
 [ -f $LOCK_FILE ] && exit 0
