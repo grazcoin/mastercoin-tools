@@ -74,6 +74,7 @@ def main():
             parsed['index']=index
             parsed['method']='exodus'
             parsed['invalid']=False
+            parsed['exodus_scan']=exodus_address
             parsed['tx_time']=str(block_timestamp)+'000'
             try:
             	filename='tx/'+parsed['tx_hash']+'.json'

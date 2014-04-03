@@ -32,6 +32,7 @@ filtered_tx_list={'Mastercoin':[],'Test Mastercoin':[]} # list 0 for mastercoins
 # all available properties of a transaction
 tx_properties=\
     ['tx_hash', 'invalid', 'tx_time', \
+     'exodus_scan', \
      'amount', 'formatted_amount', \
      'from_address', 'to_address', 'transactionType', \
      'icon', 'icon_text', 'color', \

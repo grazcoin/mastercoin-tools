@@ -96,9 +96,12 @@ def parse():
 
     info('starting parsing at block '+str(starting_block_height))
 
+    for scan_addr in exodus_scan_list:
+        msc_globals.exodus_scan=scan_addr
+
     if single_tx == None:
         # get all tx of exodus address
-        history=get_history(exodus_address)
+        history=get_history(msc_globals.exodus_scan)
         history.sort(key=output_height)
     else:
         # build fake history of length 1 (debug purposes)
@@ -107,7 +110,7 @@ def parse():
         marker_value=-1
         i=0
         for o in json_tx['outputs']:
-            if o['address']==exodus_address:
+            if o['address']==msc_globals.exodus_scan:
                 marker_number=i
                 marker_value=o['value']
                 # FIXME: handle multiple outputs to 1EXoDus
@@ -183,6 +186,7 @@ def parse():
                 parsed['method']='basic'
                 parsed['block']=str(block)
                 parsed['index']=str(index)
+                parsed['exodus_scan']=msc_globals.exodus_scan
                 if not parsed.has_key('invalid'):
                     parsed['invalid']=False
                 parsed['tx_time']=str(block_timestamp)+'000'
@@ -229,6 +233,7 @@ def parse():
                     parsed['block']=str(block)
                     parsed['index']=str(index)
                     parsed['tx_time']=str(block_timestamp)+'000'
+                    parsed['exodus_scan']=msc_globals.exodus_scan
                     debug(str(parsed))
                     filename='tx/'+parsed['tx_hash']+'.json'
                     atomic_json_dump(parsed, filename)
@@ -242,6 +247,7 @@ def parse():
                 parsed['method']='multisig'
                 parsed['block']=str(block)
                 parsed['index']=str(index)
+                parsed['exodus_scan']=msc_globals.exodus_scan
                 if not parsed.has_key('invalid'):
                     parsed['invalid']=False
                 parsed['tx_time']=str(block_timestamp)+'000'
@@ -260,6 +266,7 @@ def parse():
                     if not parsed.has_key('invalid'):
                         parsed['invalid']=False
                     parsed['tx_time']=str(block_timestamp)+'000'
+                    parsed['exodus_scan']=msc_globals.exodus_scan
                     debug(str(parsed))
                     filename='tx/'+parsed['tx_hash']+'.json'
                     atomic_json_dump(parsed, filename)

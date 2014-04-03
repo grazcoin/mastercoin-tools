@@ -17,6 +17,7 @@ reverse_currency_type_dict={'Mastercoin':'00000001','Test Mastercoin':'00000002'
 transaction_type_dict={'0000':'Simple send', '0014':'Sell offer', '0016':'Sell accept'}
 sell_offer_action_dict={'00':'Undefined', '01':'New', '02':'Update', '03':'Cancel'}
 exodus_address='1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P'
+exodus_scan_list=['1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P']
 first_exodus_bootstrap_block=249498
 last_exodus_bootstrap_block=255365
 exodus_bootstrap_deadline=1377993874
@@ -167,7 +168,7 @@ def class_A_Level_1(outputs_list):
     # on failure with 3 outputs case, take non data/exodus to be the recipient
     if len(outputs_list) == 3:
         for o in outputs_list:
-            if o['address'] != exodus_address and o != data_output:
+            if o['address'] != msc_globals.exodus_scan and o != data_output:
                 recipient = o['address']
     return ((False,''), data_output, recipient)
 
@@ -241,7 +242,7 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
                     # Collect all outputs and remove the data address and the Exodus output.
                     # The remaining output is the recipient address.
                     all_addresses=[d['address'] for d in different_outputs_values[0]]
-                    all_addresses.remove(exodus_address)
+                    all_addresses.remove(msc_globals.exodus_scan)
                     all_addresses.remove(data_output['address'])
                     recipient=all_addresses[0]
                 else:
@@ -303,7 +304,7 @@ def parse_multisig(tx, tx_hash='unknown'):
     dust_outputs=different_outputs_values[tx_dust]
     to_address='unknown'
     for o in dust_outputs: # assume the only other dust is to recipient
-        if o['address']!=exodus_address:
+        if o['address']!=msc_globals.exodus_scan:
             to_address=o['address']
             continue
 
@@ -478,7 +479,7 @@ def examine_outputs(outputs_list, tx_hash, raw_tx):
         outputs_to_exodus=[]
         different_outputs_values={}
         for o in outputs_list:
-            if o['address']!=exodus_address:
+            if o['address']!=msc_globals.exodus_scan:
                 outputs_list_no_exodus.append(o)
             else:
                 outputs_to_exodus.append(o)
@@ -495,7 +496,7 @@ def examine_outputs(outputs_list, tx_hash, raw_tx):
             inputs_list=json_tx['inputs']
             from_exodus=False
             for i in inputs_list:
-                if i['address']==exodus_address:
+                if i['address']==msc_globals.exodus_scan:
                     from_exodus=True
                     break
             if not from_exodus:
