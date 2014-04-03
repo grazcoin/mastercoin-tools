@@ -1,12 +1,13 @@
 #!/bin/sh
 
-LOCK_FILE=/tmp/msc_cron.lock
+LOCK_FILE=/tmp/mint2b_cron.lock
 PARSE_LOG=parsed.log
 VALIDATE_LOG=validated.log
 ARCHIVE_LOG=archived.log
+TOOLS_DIR=/home/dev/masterchain-mint2b/mastercoin-tools/
 
 export PATH=$PATH:/usr/local/bin/
-cd /home/dev/mastercoin-tools/
+cd $TOOLS_DIR
 
 # check lock (not to run multiple times)
 [ -f $LOCK_FILE ] && exit 0
@@ -19,7 +20,7 @@ x=1 # assume failure
 echo -n > $PARSE_LOG
 while [ "$x" != "0" ];
 do
-  python msc_parse.py 2>&1 >> $PARSE_LOG
+  python msc_parse.py -r $TOOLS_DIR 2>&1 >> $PARSE_LOG
   x=$?
 done
 
@@ -34,8 +35,8 @@ mkdir -p www/mastercoin_verify/addresses/
 mkdir -p www/mastercoin_verify/transactions/
 
 # update archive
-mkdir -p www/downloads/
-python msc_archive.py 2>&1 > $ARCHIVE_LOG
+#mkdir -p www/downloads/
+#python msc_archive.py 2>&1 > $ARCHIVE_LOG
 
 # unlock
 rm -f $LOCK_FILE
