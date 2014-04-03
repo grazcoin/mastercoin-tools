@@ -16,7 +16,7 @@ import simplejson
 import sys
 import operator
 import time
-from msc_utils_bitcoin import *
+from msc_utils_parsing import *
 
 def main():
 
@@ -47,7 +47,7 @@ def main():
             if block_timestamp == None:
                 error('failed to get timestamp: '+err)
             try:
-            	tx_sec_before_deadline=exodus_bootstrap_deadline-block_timestamp
+            	tx_sec_before_deadline=exodus_bootstrap_orig_deadline-block_timestamp
             except TypeError:
             	error('bad block timestamp')
             # bonus is 10% for a week
