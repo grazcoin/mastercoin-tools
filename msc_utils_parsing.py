@@ -110,6 +110,64 @@ def parse_2nd_data_script(data_script):
         parse_dict['action_str']='unknown '+str(parse_dict['action'])
     return parse_dict
 
+def parse_mint(tx, tx_hash='unknown'):
+    json_tx=get_json_tx(tx)
+    outputs_list=json_tx['outputs']
+    
+    from_address=''
+    to_address=''
+    total_inputs=0
+    total_outputs=0
+    try:
+        inputs=json_tx['inputs']
+        for i in inputs:
+            if i['address'] != None:
+                if from_address != '':
+                    from_address+=';'
+                from_address+=i['address']
+            else:
+                from_address='not signed'
+            input_value=get_value_from_output(i['previous_output'])
+            if input_value==None:
+                error('failed get_value_from_output')
+            total_inputs+=input_value
+    except KeyError, IndexError:
+        error('inputs error')
+    try:
+        for o in outputs_list:
+            if o['address'] != None:
+                if to_address != '':
+                    to_address+=';'
+                to_address+=o['address']+':'+from_satoshi((o['value']))
+            total_outputs+=(o['value'])
+    except KeyError, IndexError:
+        error('outputs error')
+
+    # FIXME allow donations addresses list
+    to_address=to_address.split(':')[0]
+    currency_tuple=extract_name(from_address)
+    if currency_tuple[0]==True:
+        currency_symbol=currency_tuple[1]
+    else:
+        currency_symbol='unknown'
+
+    # divide satoshis by 1000 to get total currency units
+    formatted_amount=formatted_decimal((total_outputs+0.0)/1000)
+
+    parse_dict={}
+    # mint tx is from to to from :)
+    parse_dict['from_address']=to_address
+    parse_dict['exodus_scan']=from_address
+    parse_dict['to_address']=from_address
+    parse_dict['fee']=from_satoshi(total_inputs-total_outputs)
+    parse_dict['tx_hash']=tx_hash
+    parse_dict['currency_str']=currency_symbol
+    parse_dict['formatted_amount']=formatted_amount
+    parse_dict['icon']='exodus'
+    parse_dict['icon_text']='Mint currency'
+    parse_dict['color']='bgc-done'
+    return parse_dict
+
 def parse_bitcoin_payment(tx, tx_hash='unknown'):
     json_tx=get_json_tx(tx)
     outputs_list=json_tx['outputs']
