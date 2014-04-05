@@ -12,12 +12,15 @@
 
 from msc_utils_obelisk import *
 
-currency_type_dict={'00000001':'Mastercoin','00000002':'Test Mastercoin'}
+currency_type_dict={'1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P':{'00000001':'Mastercoin','00000002':'Test Mastercoin'},'1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8':{'00000001':'Grazcoin','00000002':'Test Grazcoin'}}
 reverse_currency_type_dict={'Mastercoin':'00000001','Test Mastercoin':'00000002'}
 transaction_type_dict={'0000':'Simple send', '0014':'Sell offer', '0016':'Sell accept'}
 sell_offer_action_dict={'00':'Undefined', '01':'New', '02':'Update', '03':'Cancel'}
 exodus_address='1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P'
-exodus_scan_list=['1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P']
+#exodus_scan_list=['1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P']
+exodus_scan_list=['1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8']
+currencies_dict={'MSC':('1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P',1),'TMSC':('1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P',2),'BTC':('',0),'GRZ':('1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8',1),'TGRZ':('1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8',2)}
+currency_names_dict={'Bitcoin':'BTC', 'Bitcoin Alternative':'XBT', '1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P':'MSC'}
 first_exodus_bootstrap_block=249498
 last_exodus_bootstrap_block=255365
 exodus_bootstrap_orig_deadline=1377993600
@@ -40,11 +43,13 @@ def get_dataSequenceNum(item):
     except KeyError, IndexError:
         return None
 
-def get_currency_type_from_dict(currencyId):
-    if currency_type_dict.has_key(currencyId):
-        return currency_type_dict[currencyId]
+def get_currency_type_from_dict(currencyId, chain='1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P'):
+    if not currency_type_dict.has_key(chain):
+        return 'Unknown currency chain '+str(chain)
+    if currency_type_dict[chain].has_key(currencyId):
+        return currency_type_dict[chain][currencyId]
     else:
-        return 'Unknown currency id '+str(currencyId)
+        return 'Unknown currency id '+str(currencyId)+' on chain '+chain
 
 def get_transaction_type_from_dict(transactionType):
     if transaction_type_dict.has_key(transactionType):
@@ -52,8 +57,28 @@ def get_transaction_type_from_dict(transactionType):
     else:
         return 'Unknown transaction type '+str(transactionType)
 
+def extract_name(addr):
+    addr=addr.strip()
+    # verify a valid bitcoin address
+    if not is_valid_bitcoin_address(addr):
+        return (False, 'invalid adderss')
+    # run on address, skip numbers and vowels, and uppercase
+    # don't allow first T (heading T is for test coins)
+    full_name=re.sub('[0-9,a,e,i,o,u,A,E,I,O,U]', '', addr)
+    if full_name[0].lower()=='t' or len(full_name)<3:
+        return (False, 'cannot start with T')
+    for l in range(3,len(full_name)):
+        name=full_name[:l].upper()
+        name_exists=False
+        for n in currency_names_dict.values():
+            if name == n: # name exists
+                name_exists = True
+        if not name_exists:
+            return (True, name)
+    return(False, 'no free name for address')
+
 def bootstrap_dict_per_tx(block, tx_hash, address, value, dacoins):
-    tx_dict={"block": str(block), "tx_hash": tx_hash, "currency_str": "Mastercoin and Test Mastercoin", "to_address": address, "from_address": "exodus", "exodus": True, "tx_method_str": "exodus", "orig_value":value ,"formatted_amount": from_satoshi(dacoins), "tx_type_str": "exodus"}
+    tx_dict={"block": str(block), "tx_hash": tx_hash, "currency_str": "Mastercoin and Test Mastecoin", "to_address": address, "from_address": "exodus", "exodus": True, "tx_method_str": "exodus", "orig_value":value ,"formatted_amount": from_satoshi(dacoins), "tx_type_str": "exodus"}
     return tx_dict
 
 def parse_data_script(data_script):
@@ -261,7 +286,7 @@ def parse_simple_basic(tx, tx_hash='unknown', after_bootstrap=True):
             parse_dict['from_address']=from_address
             parse_dict['to_address']=to_address
             parse_dict['formatted_amount']=from_hex_satoshi(data_dict['amount'])
-            parse_dict['currency_str']=get_currency_type_from_dict(data_dict['currencyId'])
+            parse_dict['currency_str']=get_currency_type_from_dict(data_dict['currencyId'], msc_globals.exodus_scan)
             parse_dict['tx_type_str']=get_transaction_type_from_dict(data_dict['transactionType'])
             parse_dict['tx_method_str']='basic'
             return parse_dict
@@ -368,7 +393,7 @@ def parse_multisig(tx, tx_hash='unknown'):
                 parse_dict=data_dict
                 parse_dict['tx_hash']=tx_hash
                 parse_dict['formatted_amount'] = formatted_decimal(amount)
-                parse_dict['currency_str'] = get_currency_type_from_dict(data_dict['currencyId'])
+                parse_dict['currency_str'] = get_currency_type_from_dict(data_dict['currencyId'], msc_globals.exodus_scan)
                 parse_dict['tx_type_str'] = get_transaction_type_from_dict(data_dict['transactionType'])
                 parse_dict['tx_method_str'] = 'multisig'
 
@@ -504,9 +529,10 @@ def examine_outputs(outputs_list, tx_hash, raw_tx):
                 info("invalid tx with multiple 1EXoDus outputs not from 1EXoDus: "+tx_hash)
                 return (None, None, None, (True,'multiple 1EXoDus outputs not from 1EXoDus'))
             else: # 1EXoDus has sent this tx
-                # Maximal 2 values are valid (dust and change)
-                if len(different_outputs_values.keys()) > 2:
-                    error("tx sent by exodus with more than 2 different values: "+tx_hash)
+                # Maximal 3 values are valid (dust, double dust, and change)
+                if len(different_outputs_values.keys()) > 3:
+                    info("tx sent by exodus with more than 3 different values: "+tx_hash)
+                    return (None, None, None, (True,'tx sent by exodus with more than 3 different values'))
                 # move the dust exodus from outputs_to_exodus list to the outputs_list_no_exodus one
                 if len(different_outputs_values.keys()) == 1: # change is identical to marker
                     debug("tx sent by exodus with single value")
@@ -514,24 +540,40 @@ def examine_outputs(outputs_list, tx_hash, raw_tx):
                     o=outputs_to_exodus.pop()
                     outputs_list_no_exodus.append(o)
                 else:
-                    debug("tx sent by exodus with 2 values to exodus")
-                    # as there is a signle change, dust_value belongs to list with non single item
-                    output_values=different_outputs_values.keys()
-                    if len(different_outputs_values[output_values[0]])==1:
-                        dust_value=output_values[1]
+                    if len(different_outputs_values.keys()) == 2: # change is identical to marker
+                        debug("tx sent by exodus with two values")
+                        # move one item from exodus to no exodus list
+                        o=outputs_to_exodus.pop()
+                        outputs_list_no_exodus.append(o)
                     else:
+                        debug("tx sent by exodus with 3 values to exodus")
+                        # as there is a signle change, dust_value belongs to list with non single item
+                        output_values=different_outputs_values.keys()
+                        output_values.sort()
                         dust_value=output_values[0]
-                    # move the dust item from exodus to no exodus list
-                    dust_outputs_to_exodus=[]
-                    non_dust_outputs_to_exodus=[]
-                    for o in outputs_to_exodus:
-                        if o['value']==dust_value:
-                            dust_outputs_to_exodus.append(o)
+                        # veify double dust exists
+                        if output_values[1] == 2*dust_value:
+                            # double dust is [1] so the so the is the change
+                            change_value=output_values[2]
                         else:
-                            non_dust_outputs_to_exodus.append(o)
-                    # move the item
-                    outputs_list_no_exodus+=[dust_outputs_to_exodus[0]]
-                    outputs_to_exodus=non_dust_outputs_to_exodus+dust_outputs_to_exodus[1:]
+                            if output_values[2] != 2*dust_value:
+                                # double dust is [2] so the so the is the change
+                                change_value=output_values[1]
+                            else:
+                                info('tx by exodus with non valid 3 values to exodus')
+                                return (None, None, None, (True,'tx by exodus with non valid 3 values to exodus'))
+                  
+                        # move the dust item from exodus to no exodus list
+                        dust_outputs_to_exodus=[]
+                        non_dust_outputs_to_exodus=[]
+                        for o in outputs_to_exodus:
+                            if o['value']==change_value:
+                                dust_outputs_to_exodus.append(o)
+                            else:
+                                non_dust_outputs_to_exodus.append(o)
+                        # move the item
+                        outputs_list_no_exodus+=[dust_outputs_to_exodus[0]]
+                        outputs_to_exodus=non_dust_outputs_to_exodus+dust_outputs_to_exodus[1:]
         return (outputs_list_no_exodus, outputs_to_exodus, different_outputs_values, None)
 
 def get_tx_method(tx, tx_hash='unknown'): # multisig_simple, multisig, multisig_invalid, basic
