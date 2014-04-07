@@ -175,7 +175,7 @@ def parse():
 		is_basic=True
 		for o in outputs_list:
 		    if is_script_multisig(o['script']):
-			debug('multisig tx found: '+tx_hash)
+			debug('multisig tx found on output '+tx_output_index+': '+tx_hash)
 			is_basic=False
 			break
 
@@ -190,7 +190,7 @@ def parse():
 			if not parsed.has_key('invalid'):
 			    parsed['invalid']=False
 			parsed['tx_time']=str(block_timestamp)+'000'
-			debug(str(parsed))
+			#debug(str(parsed))
 			filename='tx/'+parsed['tx_hash']+'.json'
 			orig_json=None
 			try:
@@ -234,7 +234,7 @@ def parse():
 			    parsed['index']=str(index)
 			    parsed['tx_time']=str(block_timestamp)+'000'
 			    parsed['exodus_scan']=msc_globals.exodus_scan
-			    debug(str(parsed))
+			    #debug(str(parsed))
 			    filename='tx/'+parsed['tx_hash']+'.json'
 			    atomic_json_dump(parsed, filename)
 			else:
@@ -251,7 +251,7 @@ def parse():
 			if not parsed.has_key('invalid'):
 			    parsed['invalid']=False
 			parsed['tx_time']=str(block_timestamp)+'000'
-			debug(str(parsed))
+			#debug(str(parsed))
 			filename='tx/'+parsed['tx_hash']+'.json'
 			atomic_json_dump(parsed, filename)
 		    else:
@@ -267,7 +267,7 @@ def parse():
 				parsed['invalid']=False
 			    parsed['tx_time']=str(block_timestamp)+'000'
 			    parsed['exodus_scan']=msc_globals.exodus_scan
-			    debug(str(parsed))
+			    #debug(str(parsed))
 			    filename='tx/'+parsed['tx_hash']+'.json'
 			    atomic_json_dump(parsed, filename)
 			else: # invalid

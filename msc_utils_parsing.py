@@ -13,12 +13,11 @@
 from msc_utils_obelisk import *
 
 currency_type_dict={'1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P':{'00000001':'Mastercoin','00000002':'Test Mastercoin'},'1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8':{'00000001':'Grazcoin','00000002':'Test Grazcoin'}}
-reverse_currency_type_dict={'Mastercoin':'00000001','Test Mastercoin':'00000002'}
 transaction_type_dict={'0000':'Simple send', '0014':'Sell offer', '0016':'Sell accept'}
 sell_offer_action_dict={'00':'Undefined', '01':'New', '02':'Update', '03':'Cancel'}
 exodus_address='1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P'
 #exodus_scan_list=['1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P']
-exodus_scan_list=['1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8']
+exodus_scan_list=['1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8', '1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P']
 
 currency_names_dict={'Bitcoin':'BTC', 'Bitcoin Alternative':'XBT', '1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P':'MSC'}
 first_exodus_bootstrap_block=249498
@@ -34,23 +33,47 @@ features_enable_dict={'distributed exchange':290630}
 LAST_VALIDATED_BLOCK_NUMBER_FILE='last_validated_block.txt'
 max_payment_timeframe=255
 
-# get list of minted currencies
+# get dict of minted currencies
 # example: {"GRZ": {"currency_id": 1, "exodus": "1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8", "name": "GRZ coin"},..}
 currencies_per_symbol_dict=load_dict_from_file('general/extracted_currencies.json', skip_error=True)
-# same list with exodus and currency id keys
+
+# get coins list (without Bitcoin) and dict of name to $exodus-$currency_id
+coins_symbols_list=currencies_per_symbol_dict.keys()
+try:
+    coins_symbols_list.remove('BTC')
+except ValueError:
+    pass
+coins_list=[]
+coins_dict={}
+for s in coins_symbols_list:
+    coins_list.append(currencies_per_symbol_dict[s]['name'])
+    coins_dict[currencies_per_symbol_dict[s]['name']]=currencies_per_symbol_dict[s]['exodus']+'-'+str(currencies_per_symbol_dict[s]['currency_id'])
+
+# same dict with other keys: exodus and currency_id
 # example: {u'1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8': {1: {u'currency_id': 1, 'symbol': u'GRZ', u'name': u'GRZ coin'}, 2: {u'currency_id': 2, 'symbol': u'TGRZ', u'name': u'Test GRZ coin'}},..}
+# example: {u'GRZ coin': {u'currency_id': 1, 'symbol': u'GRZ', u'exodus': u'1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8', u'name': u'GRZ coin'},...}
 currencies_per_exodus_dict={}
-for s in currencies_per_symbol_dict.keys():
+currencies_per_name_dict={}
+
+for s in coins_symbols_list:
     # run over all currecy symbols to get exoduses
     currency_dict=currencies_per_symbol_dict[s]
+    currency_dict['symbol']=s
     exo=currency_dict['exodus']
     # init dicts if necessary
     if not currencies_per_exodus_dict.has_key(exo):
         currencies_per_exodus_dict[exo]={}
     # update dict
-    currency_dict['symbol']=s
-    currency_dict.pop('exodus')
-    currencies_per_exodus_dict[exo][currency_dict['currency_id']]=currency_dict
+    exodus_currency_dict=currency_dict
+    currencies_per_exodus_dict[exo][exodus_currency_dict['currency_id']]=exodus_currency_dict
+
+    name=currency_dict['name']
+    # init dicts if necessary
+    if not currencies_per_name_dict.has_key(name):
+        currencies_per_name_dict[name]={}
+    # update dict
+    name_currency_dict=currency_dict
+    currencies_per_name_dict[name]=exodus_currency_dict
 
 # used as a key function for sorting outputs of msc tx
 def get_dataSequenceNum(item):
@@ -64,10 +87,16 @@ def get_dataSequenceNum(item):
 def get_currency_name_from_dict(currencyId, chain='1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P'):
     if not currencies_per_exodus_dict.has_key(chain):
         return 'Unknown currency chain '+str(chain)
-    if currencies_per_exodus_dict[chain].has_key(int(currencyId)):
-        return currencies_per_exodus_dict[chain][int(currencyId)]['name']
+    if currencies_per_exodus_dict[chain].has_key(int(currencyId,16)):
+        return currencies_per_exodus_dict[chain][int(currencyId,16)]['name']
     else:
         return 'Unknown currency id '+str(currencyId)+' on chain '+chain
+
+def get_currency_symbol_from_name(name):
+    try:
+        return currencies_per_name_dict[name]['symbol']
+    except KeyError:
+        return ''
 
 def get_transaction_type_from_dict(transactionType):
     if transaction_type_dict.has_key(transactionType):
@@ -179,10 +208,11 @@ def parse_mint(tx, tx_hash='unknown'):
     parse_dict['to_address']=from_address
     parse_dict['fee']=from_satoshi(total_inputs-total_outputs)
     parse_dict['tx_hash']=tx_hash
-    parse_dict['currency_str']=currency_symbol
+    parse_dict['currency_str']=currency_symbol+' coin'
     parse_dict['formatted_amount']=formatted_amount
     parse_dict['icon']='exodus'
     parse_dict['icon_text']='Mint currency'
+    parse_dict['tx_type_str']='mint'
     parse_dict['color']='bgc-done'
     return parse_dict
 
@@ -480,7 +510,7 @@ def parse_multisig(tx, tx_hash='unknown'):
                 else:
                     if data_dict['transactionType'] == '0014': # Sell offer
                         # check feature is enabled
-                        if currency_type_dict[data_dict['currencyId']]=='Mastercoin':
+                        if currency_type_dict[msc_globals.exodus_scan][data_dict['currencyId']]=='Mastercoin':
                             (height,index)=get_tx_index(tx_hash)
                             if height == -1:
                                 error('failed getting height of '+tx_hash)
@@ -533,7 +563,7 @@ def parse_multisig(tx, tx_hash='unknown'):
                     else:
                         if data_dict['transactionType'] == '0016': # Sell accept
                             # check feature is enabled
-                            if currency_type_dict[data_dict['currencyId']]=='Mastercoin' and tx_hash != 'unknown':
+                            if currency_type_dict[msc_globals.exodus_scan][data_dict['currencyId']]=='Mastercoin' and tx_hash != 'unknown':
                                 (height,index)=get_tx_index(tx_hash)
                                 if height == -1 or height == 'failed:':
                                     error('failed getting height of '+tx_hash)

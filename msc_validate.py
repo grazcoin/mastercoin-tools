@@ -23,11 +23,15 @@ addr_dict={}
 tx_dict={}
 
 # prepare lists for mastercoin and test
-sorted_currency_tx_list={'Mastercoin':[],'Test Mastercoin':[]} # list 0 for mastercoins, list 1 for test mastercoins
-sorted_currency_sell_tx_list={'Mastercoin':[],'Test Mastercoin':[]} # list 0 for mastercoins, list 1 for test mastercoins
-sorted_currency_accept_tx_list={'Mastercoin':[],'Test Mastercoin':[]} # list 0 for mastercoins, list 1 for test mastercoins
-sorted_currency_sell_tx_list={'Mastercoin':[],'Test Mastercoin':[]} # list 0 for mastercoins, list 1 for test mastercoins
-filtered_tx_list={'Mastercoin':[],'Test Mastercoin':[]} # list 0 for mastercoins, list 1 for test mastercoins
+sorted_currency_tx_list={}
+sorted_currency_sell_tx_list={}
+sorted_currency_accept_tx_list={}
+filtered_tx_list={}
+for c in coins_list:
+    sorted_currency_tx_list[c]=[]
+    sorted_currency_sell_tx_list[c]=[]
+    sorted_currency_accept_tx_list[c]=[]
+    filtered_tx_list[c]=[]
 
 # all available properties of a transaction
 tx_properties=\
@@ -53,12 +57,6 @@ tx_properties=\
 # all available properties of a currency in address
 addr_properties=['balance', 'reserved', 'received', 'sent', 'bought', 'sold', 'offer', 'accept', 'reward',\
             'in_tx', 'out_tx', 'bought_tx', 'sold_tx', 'offer_tx', 'accept_tx', 'exodus_tx']
-
-# coins and their numbers
-coins_list=['Mastercoin', 'Test Mastercoin']
-coins_dict={'Mastercoin':'0','Test Mastercoin':'1'}
-coins_short_name_dict={'Mastercoin':'MSC','Test Mastercoin':'TMSC'}
-coins_reverse_short_name_dict=dict((v,k) for k, v in coins_short_name_dict.iteritems())
 
 # create modified tx dict which would be used to modify tx files
 offers_dict={}
@@ -579,6 +577,13 @@ def update_tx_dict(tx_hash, *arguments, **keywords):
     return True
 
 
+def is_valid_currency(name):
+    try:
+        if coins_list.index(name)>=0:
+            return True
+    except ValueError:
+        return False
+
 # debug dump of address values
 def debug_address(addr,c, message="-"):
     if msc_globals.heavy_debug == True:
@@ -613,7 +618,7 @@ def update_addr_dict(addr, accomulate, *arguments, **keywords):
     # 'Mastercoin', 'Test Mastercoin', 'Bitcoin' or 'exodus' for exodus purchases
     # then come the keywords and values to be updated
     c=arguments[0]
-    if c!='Mastercoin' and c!='Test Mastercoin' and c!='exodus' and c!= 'Bitcoin':
+    if not is_valid_currency(name):
         info('BUG: update_addr_dict called with unsupported currency: '+c)
         return False
 
@@ -670,15 +675,21 @@ def update_initial_icon_details(t):
                 else:
                     update_tx_dict(t['tx_hash'], icon='unknown', details='unknown')
     except KeyError as e:
-        # The only *valid* mastercoin tx without transactionType is exodus
-        if t['tx_type_str']=='exodus':
+        # The only *valid* mastercoin tx without transactionType is exodus and mint
+        try:
+            tx_type_str=t['tx_type_str']
+        except KeyError:
+            info('BUG: no tx_type_str field on '+t['tx_hash'])
+            tx_type_str='unknown'
+
+        if t['tx_type_str']=='exodus' or t['tx_type_str']=='mint':
             try:
                 update_tx_dict(t['tx_hash'], icon='exodus', details=t['to_address'])
             except KeyError:
                 info('BUG: exodus tx with no to_address: '+str(t))
                 return False
         else:
-            info('BUG: non exodus valid msc tx without '+e+' ('+t['tx_type_str']+') on '+tx_hash)
+            info('BUG: non exodus/mint valid msc tx without '+str(e)+' ('+t['tx_type_str']+') on '+tx_hash)
             return False
     return True
 
@@ -723,7 +734,7 @@ def update_bitcoin_balances():
     addresses=addr_dict.keys()
 
     # cut into chunks
-    for i in range(len(addresses)/chunk):
+    for i in range(int(round(len(addresses)/chunk+0.5))):
         addr_batch=addresses[i*chunk:(i+1)*chunk]
 
         # create the string of all addresses
@@ -783,7 +794,7 @@ def generate_api_jsons():
             sub_dict['exodus_transactions']=addr_dict[addr][c]['exodus_tx']
             sub_dict['exodus_transactions'].reverse()
             sub_dict['total_exodus']=from_satoshi(addr_dict[addr]['exodus']['bought'])
-            balances_list.append({"symbol":coins_short_name_dict[c],"value":sub_dict['balance']})
+            balances_list.append({"symbol":currencies_per_name_dict[c]['symbol'],"value":sub_dict['balance']})
             addr_dict_api[coins_dict[c]]=sub_dict
         balances_list.append({"symbol":"BTC","value":from_satoshi(addr_dict[addr]['Bitcoin']['balance'])})
         addr_dict_api['balance']=balances_list
@@ -797,13 +808,11 @@ def generate_api_jsons():
                 continue
             if t['tx_type_str']=='exodus':
                 sorted_currency_tx_list['Mastercoin'].append(t)
-                sorted_currency_tx_list['Test Mastercoin'].append(t)
             else:
-                if t['currencyId']==reverse_currency_type_dict['Mastercoin']:
-                    sorted_currency_tx_list['Mastercoin'].append(t)
-                else:
-                    if t['currencyId']==reverse_currency_type_dict['Test Mastercoin']:
-                        sorted_currency_tx_list['Test Mastercoin'].append(t)
+                try:
+                    sorted_currency_tx_list[t['currency_str']].append(t)
+                except KeyError: # unknown currency
+                    pass
     # and reverse sort
     for c in coins_list:
         sorted_currency_tx_list[c]=sorted(sorted_currency_tx_list[c], \
@@ -811,11 +820,18 @@ def generate_api_jsons():
 
     chunk=10
     # create the latest transactions pages
-    pages={'Mastercoin':0, 'Test Mastercoin':0}
+    pages={}
+    sell_pages={}
+    accept_pages={}
     for c in coins_list:
-        for i in range(len(sorted_currency_tx_list[c])/chunk):
+        pages[c]=0
+        sell_pages[c]=0
+        accept_pages[c]=0
+
+    for c in coins_list:
+        for i in range(int(round(len(sorted_currency_tx_list[c])/chunk+0.5))):
             atomic_json_dump(sorted_currency_tx_list[c][i*chunk:(i+1)*chunk], \
-                'general/'+coins_short_name_dict[c]+'_'+'{0:04}'.format(i+1)+'.json', add_brackets=False)
+                'general/'+currencies_per_name_dict[c]['symbol']+'_'+'{0:04}'.format(i+1)+'.json', add_brackets=False)
             pages[c]+=1
 
     # create the latest sell and accept transactions page
@@ -839,29 +855,29 @@ def generate_api_jsons():
             error('tx without icon_text '+t['tx_hash'])
         sorted_currency_sell_tx_list[c] = filtered_tx_list[c]
 
-    sell_pages={'Mastercoin':0, 'Test Mastercoin':0}
-    accept_pages={'Mastercoin':0, 'Test Mastercoin':0}
     for c in coins_list:
-        for i in range(len(sorted_currency_sell_tx_list[c])/chunk+1):
+        for i in range(int(round(len(sorted_currency_sell_tx_list[c])/chunk+0.5))):
             atomic_json_dump(sorted_currency_sell_tx_list[c][i*chunk:(i+1)*chunk], \
-                'general/'+coins_short_name_dict[c]+'_sell_'+'{0:04}'.format(i+1)+'.json', add_brackets=False)
+                'general/'+currencies_per_name_dict[c]['symbol']+'_sell_'+'{0:04}'.format(i+1)+'.json', add_brackets=False)
             sell_pages[c]+=1
-        for i in range(len(sorted_currency_accept_tx_list[c])/chunk+1):
+        for i in range(int(round(len(sorted_currency_accept_tx_list[c])/chunk+0.5))):
             atomic_json_dump(sorted_currency_accept_tx_list[c][i*chunk:(i+1)*chunk], \
-                'general/'+coins_short_name_dict[c]+'_accept_'+'{0:04}'.format(i+1)+'.json', add_brackets=False)
+                'general/'+currencies_per_name_dict[c]['symbol']+'_accept_'+'{0:04}'.format(i+1)+'.json', add_brackets=False)
             accept_pages[c]+=1
 
     # update values.json
     values_list=load_dict_from_file('www/values.json', all_list=True, skip_error=True)
     # on missing values.json, take an empty default
     if values_list=={}:
-        values_list=[{"currency": "MSC", "name": "Mastercoin", "name2": "", "pages": 1, "trend": "down", "trend2": "rgb(13,157,51)"}, \
-                     {"currency": "TMSC", "name": "Test MSC", "name2": "", "pages": 1, "trend": "up", "trend2": "rgb(212,48,48)"}]
+        values_list=[]
+        for c in coins_list:
+            values_list.append({"currency": currencies_per_name_dict[c]['symbol'], "name": c, "name2": "", "pages": 1, "trend": "up", "trend2": "rgb(212,48,48)"})
     updated_values_list=[]
+
     for v in values_list:
-        v['pages']=pages[coins_reverse_short_name_dict[v['currency']]]
-        v['accept_pages']=accept_pages[coins_reverse_short_name_dict[v['currency']]]
-        v['sell_pages']=sell_pages[coins_reverse_short_name_dict[v['currency']]]
+        v['pages']=pages[v['name']]
+        v['accept_pages']=accept_pages[v['name']]
+        v['sell_pages']=sell_pages[v['name']]
         updated_values_list.append(v)
     atomic_json_dump(updated_values_list, 'www/values.json', add_brackets=False)
 
@@ -924,12 +940,34 @@ def check_mastercoin_transaction(t, index=-1):
     from_addr=t['from_address']
     amount_transfer=to_satoshi(t['formatted_amount'])
     currency=t['currency_str']
+    chain=t['exodus_scan']
     tx_hash=t['tx_hash']
     tx_age=int(last_height) - int(t['block'])+1
     try:
         is_exodus=t['exodus']
     except KeyError:
         is_exodus=False
+    try:
+        tx_type_str=t['tx_type_str']
+        if tx_type_str == 'mint':
+            is_mint=True
+        else:
+            is_mint=False
+    except KeyError:
+        is_mint=False
+
+    if is_mint:
+        (extract_ok,new_currency_str)=extract_name(chain)
+        if extract_ok:
+            debug(new_currency_str+' got minted on '+tx_hash)
+        else:
+            info('error extracting new currency name on '+tx_hash)
+
+        # FIXME: ignore if already minted
+
+        update_addr_dict(to_addr, True, new_currency_str+' coin', balance=amount_transfer, exodus_tx=t)
+        update_tx_dict(t['tx_hash'], color='bgc-done', icon_text='Exodus')
+        return True
 
     if is_exodus: # assume exodus does not do sell offer/accept
         # exodus purchase
@@ -939,14 +977,15 @@ def check_mastercoin_transaction(t, index=-1):
         # exodus bonus - 10% for exodus (available slowly during the years)
         ten_percent=int((amount_transfer+0.0)/10+0.5)
         update_addr_dict(exodus_address, True, 'Mastercoin', reward=ten_percent, exodus_tx=t)
+        # FIXME: drop Test
         update_addr_dict(exodus_address, True, 'Test Mastercoin', reward=ten_percent, exodus_tx=t)
 
         # all exodus are done
         update_tx_dict(t['tx_hash'], color='bgc-done', icon_text='Exodus')
     else:
         c=currency
-        if c!='Mastercoin' and c!='Test Mastercoin':
-            debug('unknown currency '+currency+ ' in tx '+tx_hash)
+        if not is_valid_currency(c):
+            debug('unknown currency '+c+ ' in tx '+tx_hash)
             return False
         # left are normal transfer and sell offer/accept
         if t['tx_type_str']==transaction_type_dict['0000']:
