@@ -18,6 +18,7 @@ from msc_utils_parsing import *
 last_height=get_last_height()
 
 mint2b_addr='3Mint2B5ECNdXDZJneJ1XtKmrkmnMbwBbN'
+default_currencies_dict={'MSC':{'exodus': '1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P', 'currency_id':1, 'name':'Mastercoin'},'TMSC':{'exodus': '1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P', 'currency_id':2, 'name':'Test Mastercoin'},'BTC':{'exodus':'','currency_id':0,'name':'Bitcoin'}}
 
 def mint2b_parse():
 
@@ -42,6 +43,12 @@ def mint2b_parse():
     # show debug on
     if msc_globals.d:
         debug('debug is on')
+
+
+    # get last updated currencies dict
+    extracted_currencies_dict=load_dict_from_file('general/extracted_currencies.json', skip_error=True)
+    if extracted_currencies_dict == {}:
+        extracted_currencies_dict = default_currencies_dict
 
     if requested_block_height != None:
         starting_block_height=requested_block_height
@@ -115,11 +122,31 @@ def mint2b_parse():
 	filename='tx/'+parsed['tx_hash']+'.json'
 	orig_json=None
 	try:
-	    debug(str(parsed))
+	    #debug(str(parsed))
 	    filename='tx/'+parsed['tx_hash']+'.json'
 	    atomic_json_dump(parsed, filename)
 	except IOError:
 	    info('failed writing mint tx '+tx_hash)
+
+        # add to extracted currencies dict
+        issuer_exodus='unknown'
+        try:
+            issuer_exodus=parsed['to_address']
+        except KeyError:
+            info('cannot find issuer exodus on '+tx_hash)
+
+        (extracted,symbol)=extract_name(issuer_exodus)
+        if not extracted:
+            info('failed extracting name for '+issuer_exodus)
+        test_symbol='T'+symbol
+        if not extracted_currencies_dict.has_key(symbol):
+            currency_details_dict={'exodus':issuer_exodus,'currency_id':1,'name':symbol+' coin'}
+            extracted_currencies_dict[symbol]=currency_details_dict
+            currency_details_dict={'exodus':issuer_exodus,'currency_id':2,'name':'Test '+symbol+' coin'}
+            extracted_currencies_dict[test_symbol]=currency_details_dict
+
+        debug(extracted_currencies_dict)
+        atomic_json_dump(extracted_currencies_dict, 'general/extracted_currencies.json', add_brackets=True)
 
 if __name__ == "__main__":
     mint2b_parse()
