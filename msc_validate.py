@@ -966,6 +966,9 @@ def check_mastercoin_transaction(t, index=-1):
         # FIXME: ignore if already minted
 
         update_addr_dict(to_addr, True, new_currency_str+' coin', balance=amount_transfer, exodus_tx=t)
+        update_addr_dict(to_addr, True, 'Test '+new_currency_str+' coin', balance=amount_transfer, exodus_tx=t)
+        update_addr_dict(from_addr, True, new_currency_str+' coin', exodus_tx=t)
+        update_addr_dict(from_addr, True, 'Test '+new_currency_str+' coin', exodus_tx=t)
         update_tx_dict(t['tx_hash'], color='bgc-done', icon_text='Exodus')
         return True
 
