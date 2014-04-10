@@ -12,12 +12,15 @@
 
 from msc_utils_obelisk import *
 
+mint2b_addr='3Mint2B5ECNdXDZJneJ1XtKmrkmnMbwBbN'
 currency_type_dict={'1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P':{'00000001':'Mastercoin','00000002':'Test Mastercoin'},'1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8':{'00000001':'Grazcoin','00000002':'Test Grazcoin'}}
 transaction_type_dict={'0000':'Simple send', '0014':'Sell offer', '0016':'Sell accept'}
 sell_offer_action_dict={'00':'Undefined', '01':'New', '02':'Update', '03':'Cancel'}
 exodus_address='1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P'
 #exodus_scan_list=['1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P']
-exodus_scan_list=['1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8', '1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P']
+exodus_scan_list=['1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8', '1DonateVsLU9zwhgcdWcaWNaaz4MnkWMmv', '1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P']
+donation_addresses=['1DonateVsLU9zwhgcdWcaWNaaz4MnkWMmv', '1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8']
+#donation_addresses=[]
 
 currency_names_dict={'Bitcoin':'BTC', 'Bitcoin Alternative':'XBT', '1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P':'MSC'}
 first_exodus_bootstrap_block=249498
@@ -35,7 +38,7 @@ max_payment_timeframe=255
 
 # get dict of minted currencies
 # example: {"GRZ": {"currency_id": 1, "exodus": "1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8", "name": "GRZ coin"},..}
-currencies_per_symbol_dict=load_dict_from_file('general/extracted_currencies.json', skip_error=True)
+currencies_per_symbol_dict=load_dict_from_file('/home/dev/masterchain-mint2b/mastercoin-tools/general/extracted_currencies.json', skip_error=True)
 
 # get coins list (without Bitcoin) and dict of name to $exodus-$currency_id
 coins_symbols_list=currencies_per_symbol_dict.keys()
@@ -191,7 +194,23 @@ def parse_mint(tx, tx_hash='unknown'):
         error('outputs error')
 
     # FIXME allow donations addresses list
+    mint2b_outputs=0.0;
+    donation_outputs=0.0;
+    for recipient_and_amount in to_address.split(';'):
+        (recipient,amount)=recipient_and_amount.split(':')
+        if recipient==mint2b_addr:
+            mint2b_outputs+=float(amount)
+        for a in donation_addresses:
+            if recipient==a:
+                donation_outputs+=float(amount)
+
+    if mint2b_outputs < 1.0:
+        # ignore minting with less than minimal payment
+        info('invalid mint transaction (mint with less than minimal payment) at tx '+tx_hash)
+        return {'invalid':(True,'mint with less than minimal payment'), 'tx_hash':tx_hash}
+
     to_address=to_address.split(':')[0]
+
     currency_tuple=extract_name(from_address)
     if currency_tuple[0]==True:
         currency_symbol=currency_tuple[1]
@@ -199,17 +218,18 @@ def parse_mint(tx, tx_hash='unknown'):
         currency_symbol='unknown'
 
     # divide satoshis by 1000 to get total currency units
-    formatted_amount=formatted_decimal((total_outputs+0.0)/1000)
+    # any donation is considered as 50% theoretical payment
+    formatted_minted_amount=formatted_decimal((to_satoshi(mint2b_outputs)+0.5*to_satoshi(donation_outputs)+0.0)/1000)
 
     parse_dict={}
     # mint tx is from to to from :)
-    parse_dict['from_address']=to_address
+    parse_dict['from_address']=mint2b_addr # included in to_address
     parse_dict['exodus_scan']=from_address
     parse_dict['to_address']=from_address
     parse_dict['fee']=from_satoshi(total_inputs-total_outputs)
     parse_dict['tx_hash']=tx_hash
     parse_dict['currency_str']=currency_symbol+' coin'
-    parse_dict['formatted_amount']=formatted_amount
+    parse_dict['formatted_amount']=formatted_minted_amount
     parse_dict['icon']='exodus'
     parse_dict['icon_text']='Mint currency'
     parse_dict['tx_type_str']='mint'

@@ -239,7 +239,7 @@ def check_bitcoin_payment(t):
                 sell_offer_tx=None
                 sell_accept_tx=None
                 required_btc=0
-                for c in coins_list: # check for offers of Mastercoin or Test Mastercoin
+                for c in coins_list: # check for offers of all coins (FIXME: order per birth)
                     try:
                         sell_offer_tx_list=addr_dict[address][c]['offer_tx']
                     except (IndexError,KeyError):
@@ -785,7 +785,7 @@ def generate_api_jsons():
             sub_dict['total_bought']=from_satoshi(addr_dict[addr][c]['bought'])
             sub_dict['total_sell_accept']=from_satoshi(addr_dict[addr][c]['accept'])
             sub_dict['total_sell_offer']=from_satoshi(addr_dict[addr][c]['offer'])
-            if addr==exodus_address:
+            if addr==exodus_address: # This is only for Mastercoin
                 available_reward=get_available_reward(last_height, c)
                 sub_dict['balance']=from_satoshi(available_reward+addr_dict[addr][c]['balance'])
             else:
@@ -796,6 +796,7 @@ def generate_api_jsons():
             sub_dict['total_exodus']=from_satoshi(addr_dict[addr]['exodus']['bought'])
             balances_list.append({"symbol":currencies_per_name_dict[c]['symbol'],"value":sub_dict['balance']})
             addr_dict_api[coins_dict[c]]=sub_dict
+
         balances_list.append({"symbol":"BTC","value":from_satoshi(addr_dict[addr]['Bitcoin']['balance'])})
         addr_dict_api['balance']=balances_list
         atomic_json_dump(addr_dict_api, 'addr/'+addr+'.json', add_brackets=False)

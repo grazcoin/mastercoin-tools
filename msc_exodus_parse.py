@@ -17,7 +17,6 @@ from msc_utils_parsing import *
 # global last block on the net
 last_height=get_last_height()
 
-mint2b_addr='3Mint2B5ECNdXDZJneJ1XtKmrkmnMbwBbN'
 default_currencies_dict={'MSC':{'exodus': '1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P', 'currency_id':1, 'name':'Mastercoin'},'TMSC':{'exodus': '1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P', 'currency_id':2, 'name':'Test Mastercoin'},'BTC':{'exodus':'','currency_id':0,'name':'Bitcoin'}}
 
 def mint2b_parse():
