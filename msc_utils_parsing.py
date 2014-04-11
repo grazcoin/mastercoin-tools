@@ -128,7 +128,7 @@ def extract_name(addr):
     # start from length 3 and on
     for l in range(3,len(full_name)):
         name=full_name[:l].upper()
-        name_exists=currency_per_symbol_dict.has_key(name)
+        name_exists=currencies_per_symbol_dict.has_key(name)
         if not name_exists:
             return (True, name)
     return(False, 'no free name for address')
