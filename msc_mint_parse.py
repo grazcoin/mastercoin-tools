@@ -145,7 +145,7 @@ def mint2b_parse():
             extracted_currencies_dict[symbol]=currency_details_dict
             currency_details_dict={'exodus':issuer_exodus,'currency_id':2,'name':'Test '+symbol+' coin',\
                 'time':parsed['tx_time'],'amount_minted':parsed['formatted_amount'],\
-                'payment':parsed['formatted_payment'],'donation':parsed['formatted_donation'] }
+                'payment':0.0,'donation':0.0 }
 
             extracted_currencies_dict[test_symbol]=currency_details_dict
 
