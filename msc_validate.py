@@ -733,6 +733,12 @@ def update_bitcoin_balances():
     chunk=100
     addresses=addr_dict.keys()
 
+    # load general/address_btc_balance.json
+    # get the list of missing addresses
+    # get balances for the missing
+    # update back general/address_btc_balance.json
+    # on the next block, update all addresses (optimize to update according to tx on that block)
+
     # cut into chunks
     for i in range(int(round(len(addresses)/chunk+0.5))):
         addr_batch=addresses[i*chunk:(i+1)*chunk]
@@ -797,7 +803,6 @@ def generate_api_jsons():
             balances_list.append({"symbol":currencies_per_name_dict[c]['symbol'],"value":sub_dict['balance']})
             addr_dict_api[coins_dict[c]]=sub_dict
 
-        balances_list.append({"symbol":"BTC","value":from_satoshi(addr_dict[addr]['Bitcoin']['balance'])})
         addr_dict_api['balance']=balances_list
         atomic_json_dump(addr_dict_api, 'addr/'+addr+'.json', add_brackets=False)
 
@@ -966,11 +971,14 @@ def check_mastercoin_transaction(t, index=-1):
 
         # FIXME: ignore if already minted
 
+        payment=to_satoshi(t['formatted_payment'])
+
         update_addr_dict(to_addr, True, new_currency_str+' coin', balance=amount_transfer, exodus_tx=t)
         update_addr_dict(to_addr, True, 'Test '+new_currency_str+' coin', balance=amount_transfer, exodus_tx=t)
         update_addr_dict(from_addr, True, new_currency_str+' coin', exodus_tx=t)
         update_addr_dict(from_addr, True, 'Test '+new_currency_str+' coin', exodus_tx=t)
         update_tx_dict(t['tx_hash'], color='bgc-done', icon_text='Exodus')
+        update_addr_dict(mchain_addr, True, new_currency_str+' coin', balance=payment, exodus_tx=t)
         return True
 
     if is_exodus: # assume exodus does not do sell offer/accept

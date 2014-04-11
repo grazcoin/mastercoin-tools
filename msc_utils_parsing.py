@@ -13,14 +13,15 @@
 from msc_utils_obelisk import *
 
 mint2b_addr='3Mint2B5ECNdXDZJneJ1XtKmrkmnMbwBbN'
+mchain_addr='1MchainXySvRuhdAcJHFfyGLY47P3AEyP9'
 currency_type_dict={'1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P':{'00000001':'Mastercoin','00000002':'Test Mastercoin'},'1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8':{'00000001':'Grazcoin','00000002':'Test Grazcoin'}}
 transaction_type_dict={'0000':'Simple send', '0014':'Sell offer', '0016':'Sell accept'}
 sell_offer_action_dict={'00':'Undefined', '01':'New', '02':'Update', '03':'Cancel'}
 exodus_address='1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P'
 #exodus_scan_list=['1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P']
 exodus_scan_list=['1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8', '1DonateVsLU9zwhgcdWcaWNaaz4MnkWMmv', '1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P']
-donation_addresses=['1DonateVsLU9zwhgcdWcaWNaaz4MnkWMmv', '1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8']
-#donation_addresses=[]
+#donation_addresses=['1DonateVsLU9zwhgcdWcaWNaaz4MnkWMmv', '1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8']
+donation_addresses=[]
 
 currency_names_dict={'Bitcoin':'BTC', 'Bitcoin Alternative':'XBT', '1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P':'MSC'}
 first_exodus_bootstrap_block=249498
@@ -42,10 +43,10 @@ currencies_per_symbol_dict=load_dict_from_file('/home/dev/masterchain-mint2b/mas
 
 # get coins list (without Bitcoin) and dict of name to $exodus-$currency_id
 coins_symbols_list=currencies_per_symbol_dict.keys()
-try:
-    coins_symbols_list.remove('BTC')
-except ValueError:
-    pass
+#try:
+#    coins_symbols_list.remove('BTC')
+#except ValueError:
+#    pass
 coins_list=[]
 coins_dict={}
 for s in coins_symbols_list:
@@ -209,8 +210,6 @@ def parse_mint(tx, tx_hash='unknown'):
         info('invalid mint transaction (mint with less than minimal payment) at tx '+tx_hash)
         return {'invalid':(True,'mint with less than minimal payment'), 'tx_hash':tx_hash}
 
-    to_address=to_address.split(':')[0]
-
     currency_tuple=extract_name(from_address)
     if currency_tuple[0]==True:
         currency_symbol=currency_tuple[1]
@@ -219,7 +218,23 @@ def parse_mint(tx, tx_hash='unknown'):
 
     # divide satoshis by 1000 to get total currency units
     # any donation is considered as 50% theoretical payment
-    formatted_minted_amount=formatted_decimal((to_satoshi(mint2b_outputs)+0.5*to_satoshi(donation_outputs)+0.0)/1000)
+    theoretical_and_actual_payment=mint2b_outputs+0.5*donation_outputs
+    new_minted_coins=(to_satoshi(theoretical_and_actual_payment)+0.0)/1000
+
+    # A fair price for running the service and maintainig it for you at least 5 years
+    # would be 5% of market cap.
+    # Let's assume market cap of new coin is 100 BTC - so payment should be 5 BTC
+    # if your payment (practical + theoretical by donations) is less than 5 BTC, the protocol says
+    # that you pay the rest with the new minted currency
+    # For the case that you paid 1BTC and made no donations - 4 BTC are missing which is 4%
+
+    if theoretical_and_actual_payment < 5.0:
+        percent_for_masterchain=5.0-theoretical_and_actual_payment
+    else:
+        percent_for_masterchain=0.0
+
+    formatted_owner_amount=formatted_decimal(new_minted_coins*(100.0-percent_for_masterchain)/100.0)
+    formatted_payment_amount=formatted_decimal(new_minted_coins*percent_for_masterchain/100.0)
 
     parse_dict={}
     # mint tx is from to to from :)
@@ -229,7 +244,10 @@ def parse_mint(tx, tx_hash='unknown'):
     parse_dict['fee']=from_satoshi(total_inputs-total_outputs)
     parse_dict['tx_hash']=tx_hash
     parse_dict['currency_str']=currency_symbol+' coin'
-    parse_dict['formatted_amount']=formatted_minted_amount
+    parse_dict['formatted_amount']=formatted_owner_amount
+    parse_dict['formatted_payment']=formatted_payment_amount
+    parse_dict['formatted_donation']=formatted_decimal(donation_outputs)
+    parse_dict['outputs']=to_address
     parse_dict['icon']='exodus'
     parse_dict['icon_text']='Mint currency'
     parse_dict['tx_type_str']='mint'
