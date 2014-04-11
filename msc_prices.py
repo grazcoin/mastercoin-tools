@@ -72,12 +72,6 @@ def update_prices():
         d={"ID":id,"name":coin_details["name"],"symbol":coin_details["symbol"],"dollar":price}
         updated_currencies_list.append(d)
 
-     
-    #msc_dict={"ID":"1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P-0","name":"Mastercoin","symbol":"MSC", "dollar":mastercoin_avg*bitcoin_avg}
-    #tmsc_dict={"ID":"1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P-1","name":"Test Mastercoin","symbol":"TMSC","dollar":"0.0"}
-    #bitcoin_dict={"ID":"Bitcoin","name":"Bitcoin","symbol":"BTC","dollar":bitcoin_avg}
-
-    #currencies_list=[msc_dict,tmsc_dict,bitcoin_dict]
     atomic_json_dump(updated_currencies_list,'www/currencies.json', add_brackets=False)
 
     info('update prices done')
