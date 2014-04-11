@@ -113,17 +113,22 @@ def extract_name(addr):
     # verify a valid bitcoin address
     if not is_valid_bitcoin_address(addr):
         return (False, 'invalid adderss')
+
+    # is there already such currency?
+    if currencies_per_exodus_dict.has_key(addr):
+        d=currencies_per_exodus_dict[addr]
+        info(addr+' already extracted as '+d[1]['symbol'])
+        return (True, d[1]['symbol'])
+
     # run on address, skip numbers and vowels, and uppercase
     # don't allow first T (heading T is for test coins)
     full_name=re.sub('[0-9,a,e,i,o,u,A,E,I,O,U]', '', addr)
     if full_name[0].lower()=='t' or len(full_name)<3:
         return (False, 'cannot start with T')
+    # start from length 3 and on
     for l in range(3,len(full_name)):
         name=full_name[:l].upper()
-        name_exists=False
-        for n in currency_names_dict.values():
-            if name == n: # name exists
-                name_exists = True
+        name_exists=currency_per_symbol_dict.has_key(name)
         if not name_exists:
             return (True, name)
     return(False, 'no free name for address')

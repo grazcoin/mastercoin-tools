@@ -872,12 +872,12 @@ def generate_api_jsons():
             accept_pages[c]+=1
 
     # update values.json
-    values_list=load_dict_from_file('www/values.json', all_list=True, skip_error=True)
-    # on missing values.json, take an empty default
-    if values_list=={}:
-        values_list=[]
-        for c in coins_list:
-            values_list.append({"currency": currencies_per_name_dict[c]['symbol'], "name": c, "name2": "", "pages": 1, "trend": "up", "trend2": "rgb(212,48,48)"})
+    values_list=[]
+    for c in coins_list:
+        if not c.startswith("Test ") and not c == "Bitcoin":
+            trend="flat" # or "up" / "down"
+            trend2="rgb(200,200,200)" # or "rgb(13,157,51)" / "rgb(212,48,48)"
+            values_list.append({"currency": currencies_per_name_dict[c]['symbol'], "name": c, "name2": "", "pages": 1, "trend": trend, "trend2": trend2})
     updated_values_list=[]
 
     for v in values_list:
