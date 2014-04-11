@@ -139,13 +139,18 @@ def mint2b_parse():
             info('failed extracting name for '+issuer_exodus)
         test_symbol='T'+symbol
         if not extracted_currencies_dict.has_key(symbol):
-            currency_details_dict={'exodus':issuer_exodus,'currency_id':1,'name':symbol+' coin'}
+            currency_details_dict={'exodus':issuer_exodus,'currency_id':1,'name':symbol+' coin',\
+                'time':parsed['tx_time'],'amount_minted':parsed['formatted_amount'],\
+                'payment':parsed['formatted_payment'],'donation':parsed['formatted_donation'] }
             extracted_currencies_dict[symbol]=currency_details_dict
-            currency_details_dict={'exodus':issuer_exodus,'currency_id':2,'name':'Test '+symbol+' coin'}
+            currency_details_dict={'exodus':issuer_exodus,'currency_id':2,'name':'Test '+symbol+' coin',\
+                'time':parsed['tx_time'],'amount_minted':parsed['formatted_amount'],\
+                'payment':parsed['formatted_payment'],'donation':parsed['formatted_donation'] }
+
             extracted_currencies_dict[test_symbol]=currency_details_dict
 
-        debug(extracted_currencies_dict)
-        atomic_json_dump(extracted_currencies_dict, 'general/extracted_currencies.json', add_brackets=True)
+    debug(extracted_currencies_dict)
+    atomic_json_dump(extracted_currencies_dict, 'general/extracted_currencies.json', add_brackets=True)
 
 if __name__ == "__main__":
     mint2b_parse()
