@@ -871,15 +871,23 @@ def generate_api_jsons():
                 'general/'+currencies_per_name_dict[c]['symbol']+'_accept_'+'{0:04}'.format(i+1)+'.json', add_brackets=False)
             accept_pages[c]+=1
 
+    sorted_coins_list=coins_list[:] # real copy
+    # FIXME: sort by theoretically paid
+    # enforce Mastercoin to be the first
+    sorted_coins_list.remove("Mastercoin")
+    sorted_coins_list.insert(0, "Mastercoin")
+    info(coins_list)
+    info(sorted_coins_list)
+
     # update values.json
     values_list=[]
-    for c in coins_list:
+    for c in sorted_coins_list:
         if not c.startswith("Test ") and not c == "Bitcoin":
             trend="flat" # or "up" / "down"
             trend2="rgb(200,200,200)" # or "rgb(13,157,51)" / "rgb(212,48,48)"
             values_list.append({"currency": currencies_per_name_dict[c]['symbol'], "name": c, "name2": "", "pages": 1, "trend": trend, "trend2": trend2})
-    updated_values_list=[]
 
+    updated_values_list=[]
     for v in values_list:
         v['pages']=pages[v['name']]
         v['accept_pages']=accept_pages[v['name']]
