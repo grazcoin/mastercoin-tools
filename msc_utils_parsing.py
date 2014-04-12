@@ -21,7 +21,7 @@ exodus_address='1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P'
 #exodus_scan_list=['1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P']
 exodus_scan_list=['1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8', '1DonateVsLU9zwhgcdWcaWNaaz4MnkWMmv', '1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P']
 #donation_addresses=['1DonateVsLU9zwhgcdWcaWNaaz4MnkWMmv', '1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8']
-donation_addresses=[]
+#donation_addresses=[]
 
 currency_names_dict={'Bitcoin':'BTC', 'Bitcoin Alternative':'XBT', '1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P':'MSC'}
 first_exodus_bootstrap_block=249498
@@ -78,6 +78,10 @@ for s in coins_symbols_list:
     # update dict
     name_currency_dict=currency_dict
     currencies_per_name_dict[name]=exodus_currency_dict
+
+def get_donation_addresses():
+    # FIXME: check 1Donate chain
+    return ['1PC9aZC4hNX2rmmrt7uHTfYAS3hRbph4UN']
 
 # used as a key function for sorting outputs of msc tx
 def get_dataSequenceNum(item):
@@ -206,8 +210,10 @@ def parse_mint(tx, tx_hash='unknown'):
         (recipient,amount)=recipient_and_amount.split(':')
         if recipient==mint2b_addr:
             mint2b_outputs+=float(amount)
-        for a in donation_addresses:
+        for a in get_donation_addresses():
+            debug('checking '+a)
             if recipient==a:
+                info('donation to '+a+' of '+str(amount))
                 donation_outputs+=float(amount)
 
     if mint2b_outputs < 1.0:
@@ -227,10 +233,10 @@ def parse_mint(tx, tx_hash='unknown'):
     new_minted_coins=(to_satoshi(theoretical_and_actual_payment)+0.0)/1000
 
     # A fair price for running the service and maintainig it for you at least 5 years
-    # would be 5% of market cap.
-    # Let's assume market cap of new coin is 100 BTC - so payment should be 5 BTC
+    # would be 5 BTC.
+    # Let's assume market cap of new coin is 100 BTC:
     # if your payment (practical + theoretical by donations) is less than 5 BTC, the protocol says
-    # that you pay the rest with the new minted currency
+    # that the rest is paid using the new minted currency
     # For the case that you paid 1BTC and made no donations - 4 BTC are missing which is 4%
 
     if theoretical_and_actual_payment < 5.0:
