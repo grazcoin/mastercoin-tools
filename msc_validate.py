@@ -756,6 +756,16 @@ def update_bitcoin_balances():
         for b in balances:
             update_addr_dict(b['address'], False, 'Bitcoin', balance=b['paid'])
        
+
+def add_mchain_donators_addresses():
+    # load 1Mchain donators list
+    special_addr_list=['1QJnZ74Ap6YS6Hep7gaFK1eXu6hKCxgx4a']
+    # for each address, if not in addr_dict, add empty entry
+    for addr in special_addr_list:
+        if not addr_dict.has_key(addr):
+            debug('add mchain donor: '+addr)
+            update_addr_dict(addr, False, 'Bitcoin', 0.0)
+
  
 # generate api json
 # address
@@ -1495,6 +1505,9 @@ def validate():
 
     # update changed tx
     write_back_modified_tx()
+
+    # add special addresses
+    add_mchain_donators_addresses()
 
     # generate address pages and last tx pages
     generate_api_jsons()
