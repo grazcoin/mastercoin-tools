@@ -41,23 +41,6 @@ def update_prices():
     bitcoin_avg=l['24h_avg']
     updated_prices['Bitcoin']=bitcoin_avg
 
-    filename='general/masterxchange_trades.json'
-    response = urllib2.urlopen('https://masterxchange.com/api/trades.php')
-    f = open(filename, "w")
-    f.write(response.read())
-    f.close()
-    l=load_dict_from_file(filename, all_list=True)
-    total_paid=0
-    total_amount=0
-    for trade in l:
-        price=float(trade['price'])
-        amount=float(trade['amount'])
-        total_paid+=price*amount
-        total_amount+=amount
-
-    mastercoin_avg=total_paid/total_amount
-    updated_prices['Mastercoin']=mastercoin_avg*bitcoin_avg
-
     # prepare updated currency list
     updated_currencies_list=[]
     for coin in coins_list:
