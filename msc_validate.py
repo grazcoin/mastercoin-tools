@@ -22,6 +22,9 @@ alarm={}
 addr_dict={}
 tx_dict={}
 
+# create dict that holds statistics per coin
+coin_stats_dict={}
+
 # prepare lists for mastercoin and test
 sorted_currency_tx_list={}
 sorted_currency_sell_tx_list={}
@@ -57,6 +60,9 @@ tx_properties=\
 # all available properties of a currency in address
 addr_properties=['balance', 'reserved', 'received', 'sent', 'bought', 'sold', 'offer', 'accept', 'reward',\
             'in_tx', 'out_tx', 'bought_tx', 'sold_tx', 'offer_tx', 'accept_tx', 'exodus_tx']
+
+# all available properties of coin statistics
+coin_stats_properties=['total_sold', 'total_paid', 'last_price', 'previous_last_price']
 
 # create modified tx dict which would be used to modify tx files
 offers_dict={}
@@ -449,7 +455,7 @@ def check_bitcoin_payment(t):
 
                                             # update purchased amount on bitcoin payment
                                             update_tx_dict(t['tx_hash'], formatted_amount=formatted_decimal(amount_closed))
-                                            
+
                                         else:
                                             # later payment
                                             debug('additional payment')
@@ -486,6 +492,14 @@ def check_bitcoin_payment(t):
                                             # update purchased amount on bitcoin payment
                                             update_tx_dict(t['tx_hash'], formatted_amount=formatted_decimal(diff_closed))
 
+                                        # update coin stats
+                                        try:
+                                            update_coin_stats_dict(c, False, previous_last_price=coin_stats_dict[c]['last_price'])
+                                        except KeyError:
+                                            debug('not yet last_price')
+                                        update_coin_stats_dict(c, False, last_price=sell_offer_tx['formatted_price_per_coin'])
+                                        update_coin_stats_dict(c, True, total_sold=formatted_decimal(amount_closed), total_paid=accomulated_payment)
+                                            
                                         # if accept fully paid - close accept
                                         if part_bought >= 1.0:
                                             debug('... 100% paid accept '+sell_accept_tx['tx_hash']+'. closing accept for payments. remove alarm.')
@@ -531,6 +545,37 @@ def new_addr_entry():
     entry['exodus']={'bought':0}
     return entry
 
+# update the coins statistics database
+# example call:
+# update_coin_stats_dict(coin, True, last_price=1.0)
+# accomulate True means add on top of previous values
+# accomulate False means replace previous values
+def update_coin_stats_dict(coin, accomulate, *arguments, **keywords):
+    # coin is first arg
+    # accomulate is seccond arg
+    # then come the keywords and values to be modified
+
+    # is there already entry for this tx_hash?
+    if not coin_stats_dict.has_key(coin):
+        # no - so create a new one
+        # remark: loading all tx for that tx_hash
+        coin_stats_dict[coin]={'total_paid':0.0, 'total_sold':0.0, 'last_price':0.0}
+
+    # update all given fields with new values
+    keys = sorted(keywords.keys())
+    # allow only keys from coin_stats_properties
+    for kw in keys:
+        try:
+            prop_index=coin_stats_properties.index(kw)
+        except ValueError:
+            info('BUG: unsupported property of coin stats: '+kw)
+            return False
+        if accomulate:
+            coin_stats_dict[coin][kw]+=float(keywords[kw])
+        else:
+            coin_stats_dict[coin][kw]=float(keywords[kw])
+
+    return True
 
 # update the main tx database
 # example call:
@@ -893,8 +938,18 @@ def generate_api_jsons():
     values_list=[]
     for c in sorted_coins_list:
         if not c.startswith("Test ") and not c == "Bitcoin":
-            trend="flat" # or "up" / "down"
-            trend2="rgb(200,200,200)" # or "rgb(13,157,51)" / "rgb(212,48,48)"
+            trend="flat"
+            trend2="rgb(200,200,200)"
+            try:
+                if coin_stats_dict[c]['last_price'] > coin_stats_dict[c]['previous_last_price']:
+                    trend="up"
+                    trend2="rgb(13,157,51)"
+                else:
+                    if coin_stats_dict[c]['last_price'] < coin_stats_dict[c]['previous_last_price']:
+                        trend="down"
+                        trend2="rgb(212,48,48)"
+            except KeyError:
+                debug('no last_price or previous_last_price')
             values_list.append({"currency": currencies_per_name_dict[c]['symbol'], "name": c, "name2": "", "pages": 1, "trend": trend, "trend2": trend2})
 
     updated_values_list=[]
@@ -902,6 +957,36 @@ def generate_api_jsons():
         v['pages']=pages[v['name']]
         v['accept_pages']=accept_pages[v['name']]
         v['sell_pages']=sell_pages[v['name']]
+        try:
+            v['previous_last_price']=v['last_price']
+        except KeyError:
+            pass
+        try:
+            v['last_price']=coin_stats_dict[v['name']]['last_price']
+        except KeyError:
+            pass
+        try:
+            v['total_paid']=coin_stats_dict[v['name']]['total_paid']
+        except KeyError:
+            pass
+        try:
+            v['total_sold']=coin_stats_dict[v['name']]['total_sold']
+        except KeyError:
+            pass
+        try:
+            v['average_price']=v['total_paid']/v['total_sold']
+        except KeyError:
+            pass
+        try:
+            if v['last_price'] > v['previous_last_price']:
+                v['trend']="up"
+            else:
+              if v['last_price'] < v['previous_last_price']:
+                  v['trend']="down"
+              else:
+                  v['trend']="flat"
+        except KeyError:
+            pass
         updated_values_list.append(v)
     atomic_json_dump(updated_values_list, 'www/values.json', add_brackets=False)
 
@@ -1516,6 +1601,8 @@ def validate():
     f=open(LAST_VALIDATED_BLOCK_NUMBER_FILE,'w')
     f.write(str(last_block)+'\n')
     f.close()
+
+    info(coin_stats_dict)
 
     info('validation done')
 
