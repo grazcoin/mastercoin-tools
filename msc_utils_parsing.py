@@ -14,14 +14,13 @@ from msc_utils_obelisk import *
 
 mint2b_addr='3Mint2B5ECNdXDZJneJ1XtKmrkmnMbwBbN'
 mchain_addr='1MchainXySvRuhdAcJHFfyGLY47P3AEyP9'
+donate_addr='1DonateVsLU9zwhgcdWcaWNaaz4MnkWMmv'
+
 currency_type_dict={'1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P':{'00000001':'Mastercoin','00000002':'Test Mastercoin'},'1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8':{'00000001':'Grazcoin','00000002':'Test Grazcoin'}}
 transaction_type_dict={'0000':'Simple send', '0014':'Sell offer', '0016':'Sell accept'}
 sell_offer_action_dict={'00':'Undefined', '01':'New', '02':'Update', '03':'Cancel'}
 exodus_address='1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P'
-#exodus_scan_list=['1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P']
 exodus_scan_list=['1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8', '1DonateVsLU9zwhgcdWcaWNaaz4MnkWMmv', '1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P']
-#donation_addresses=['1DonateVsLU9zwhgcdWcaWNaaz4MnkWMmv', '1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8']
-#donation_addresses=[]
 
 currency_names_dict={'Bitcoin':'BTC', 'Bitcoin Alternative':'XBT', '1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P':'MSC'}
 first_exodus_bootstrap_block=249498
@@ -81,7 +80,13 @@ for s in coins_symbols_list:
 
 def get_donation_addresses():
     # FIXME: check 1Donate chain
-    return ['1PC9aZC4hNX2rmmrt7uHTfYAS3hRbph4UN']
+    # get all recipients with 0.00000001 DNT
+    donate_addr_dict=load_dict_from_file('addr/'+donate_addr+'.json', all_list=True, skip_error=True)
+    tx_list=donate_addr_dict[donate_addr+'-1']['sent_transactions']
+    donation_addresses_list=[]
+    for tx in tx_list:
+        donation_addresses_list.append(tx['to_address'])
+    return donation_addresses_list
 
 # used as a key function for sorting outputs of msc tx
 def get_dataSequenceNum(item):
