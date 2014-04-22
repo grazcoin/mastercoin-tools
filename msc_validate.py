@@ -1222,8 +1222,46 @@ def check_mastercoin_transaction(t, index=-1):
                                 icon_text='Cancel request', color='bgc-expired')
 
                             # update address - reserved move back to balance:
-                            update_addr_dict(from_addr, True, c, balance=satoshi_seller_reserved, \
-                                reserved=-satoshi_seller_reserved, offer_tx=t)
+                            # if there are running accepts - balance increases with offer (the rest will be added if accept expired)
+                            # otherwise, balance increases with the whole reserved
+
+                            accept_offers_running = False
+                            # now find the relevant accept check if still running
+                            try:
+                                offers_hash_list=offers_dict[previous_sell_offer['tx_hash']]
+                                debug(offers_hash_list)
+                                for offer_hash in offers_hash_list: # go over all accepts
+                                    # is accept exhausted?
+                                    sell_accept_tx=tx_dict[offer_hash][-1]
+                                    if sell_accept_tx['formatted_amount_accepted'] == sell_accept_tx['formatted_amount_bought']:
+                                        debug('accept_offer_running exhausted...')
+                                        debug('irrelevant fully paid accept '+sell_accept_tx['tx_hash'])
+                                        continue
+                                    else:
+                                        debug('accept_offer_running NOT exhausted')
+ 
+                                    # now check if block time limit expired
+                                    block_time_limit=int(previous_sell_offer['formatted_block_time_limit'])
+                                    sell_accept_block=int(sell_accept_tx['block'])
+                                    current_block=int(t['block'])
+                                    if sell_accept_block+block_time_limit >= current_block:
+                                        debug('still running accept after cancel sell offer on '+sell_accept_tx['tx_hash'])
+                                        accept_offers_running = True
+                                        break
+                                    else:
+                                        debug('accept already expired')
+
+                            except KeyError:
+                                debug('no running accept for sell offer '+previous_sell_offer['tx_hash'])
+
+                            if accept_offers_running:
+                                debug('accept offer was running - add only offer to balance')
+                                update_addr_dict(from_addr, True, c, balance=addr_dict[from_addr][c]['offer'], \
+                                    reserved=-satoshi_seller_reserved, offer_tx=t)
+                            else:
+                                debug('NO accept offer was running - add all reserved to balance')
+                                update_addr_dict(from_addr, True, c, balance=satoshi_seller_reserved, \
+                                    reserved=-satoshi_seller_reserved, offer_tx=t)
                             # reset offer
                             update_addr_dict(from_addr, False, c, offer=0)
 
