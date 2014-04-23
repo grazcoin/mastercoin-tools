@@ -86,11 +86,11 @@ def parse():
         starting_block_height=max(revision_block_height,notes_block_height)
         msc_globals.last_block=starting_block_height
 
+        # to catch chain reorgs, check 5 blocks back
+        starting_block_height=int(starting_block_height) - 5
+
     else:
         starting_block_height=requested_block_height
-
-    # to catch chain reorgs, check 5 blocks back
-    starting_block_height = int(starting_block_height) - 5
 
     archive=options.archive
 
