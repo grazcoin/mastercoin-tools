@@ -41,10 +41,20 @@ def update_prices():
     bitcoin_avg=l['24h_avg']
     updated_prices['Bitcoin']=bitcoin_avg
 
+    values=load_dict_from_file('www/values.json', all_list=True)
+    for entry in values:
+        try:
+            last_price=float(entry['last_price'])
+            symbol=entry['currency']
+            coin_name=currencies_per_symbol_dict[symbol]['name']
+
+            updated_prices[coin_name]=last_price*float(bitcoin_avg)
+        except KeyError:
+            pass
+
     # prepare updated currency list
     updated_currencies_list=[]
     for coin in coins_list:
-        info('updating '+coin)
         coin_details=currencies_per_name_dict[coin]
         id=coins_dict[coin] # take from pre generated dict
         price=0.0
@@ -52,6 +62,7 @@ def update_prices():
             price=updated_prices[coin]
         except KeyError:
             pass
+        info('updating '+coin+' with price '+str(price))
         d={"ID":id,"name":coin_details["name"],"symbol":coin_details["symbol"],"dollar":price}
         updated_currencies_list.append(d)
 
