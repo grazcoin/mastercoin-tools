@@ -16,13 +16,10 @@ mint2b_addr='3Mint2B5ECNdXDZJneJ1XtKmrkmnMbwBbN'
 mchain_addr='1MchainXySvRuhdAcJHFfyGLY47P3AEyP9'
 donate_addr='1DonateVsLU9zwhgcdWcaWNaaz4MnkWMmv'
 
-currency_type_dict={'1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P':{'00000001':'Mastercoin','00000002':'Test Mastercoin'},'1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8':{'00000001':'Grazcoin','00000002':'Test Grazcoin'}}
 transaction_type_dict={'0000':'Simple send', '0014':'Sell offer', '0016':'Sell accept'}
 sell_offer_action_dict={'00':'Undefined', '01':'New', '02':'Update', '03':'Cancel'}
 exodus_address='1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P'
-exodus_scan_list=['1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8', '1DonateVsLU9zwhgcdWcaWNaaz4MnkWMmv', '1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P']
 
-currency_names_dict={'Bitcoin':'BTC', 'Bitcoin Alternative':'XBT', '1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P':'MSC'}
 first_exodus_bootstrap_block=249498
 last_exodus_bootstrap_block=255365
 exodus_bootstrap_orig_deadline=1377993600
@@ -38,10 +35,25 @@ max_payment_timeframe=255
 
 # get dict of minted currencies
 # example: {"GRZ": {"currency_id": 1, "exodus": "1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8", "name": "GRZ coin"},..}
-currencies_per_symbol_dict=load_dict_from_file('/home/dev/masterchain-mint2b/mastercoin-tools/general/extracted_currencies.json', skip_error=True)
+#currencies_per_symbol_dict=load_dict_from_file('/home/dev/masterchain-mint2b/mastercoin-tools/general/extracted_currencies.json', skip_error=True)
+currencies_per_symbol_dict=load_dict_from_file('general/extracted_currencies.json', skip_error=True)
+
 
 # get coins list (without Bitcoin) and dict of name to $exodus-$currency_id
 coins_symbols_list=currencies_per_symbol_dict.keys()
+
+
+exodus_scan_list=[]
+for cs in coins_symbols_list:
+    exo=currencies_per_symbol_dict[cs]['exodus']
+    if exo != "":
+        seen=False
+        for e in exodus_scan_list:
+            if exo == e:
+                seen=True
+        if not seen:
+            exodus_scan_list.append(exo)
+
 #try:
 #    coins_symbols_list.remove('BTC')
 #except ValueError:
@@ -564,7 +576,7 @@ def parse_multisig(tx, tx_hash='unknown'):
                 else:
                     if data_dict['transactionType'] == '0014': # Sell offer
                         # check feature is enabled
-                        if currency_type_dict[msc_globals.exodus_scan][data_dict['currencyId']]=='Mastercoin':
+                        if get_currency_name_from_dict(data_dict['currencyId'], msc_globals.exodus_scan) == 'Mastercoin':
                             (height,index)=get_tx_index(tx_hash)
                             if height == -1:
                                 error('failed getting height of '+tx_hash)
@@ -617,7 +629,7 @@ def parse_multisig(tx, tx_hash='unknown'):
                     else:
                         if data_dict['transactionType'] == '0016': # Sell accept
                             # check feature is enabled
-                            if currency_type_dict[msc_globals.exodus_scan][data_dict['currencyId']]=='Mastercoin' and tx_hash != 'unknown':
+                            if get_currency_name_from_dict(data_dict['currencyId'], msc_globals.exodus_scan) == 'Mastercoin' and tx_hash != 'unknown':
                                 (height,index)=get_tx_index(tx_hash)
                                 if height == -1 or height == 'failed:':
                                     error('failed getting height of '+tx_hash)
