@@ -51,11 +51,11 @@ def mint2b_parse():
 
     if requested_block_height != None:
         starting_block_height=requested_block_height
+
+        # to catch chain reorgs, check 5 blocks back
+        starting_block_height = int(starting_block_height) - 5
     else:
         starting_block_height=290000
-
-    # to catch chain reorgs, check 5 blocks back
-    starting_block_height = int(starting_block_height) - 5
 
     info('starting parsing '+mint2b_addr+' at block '+str(starting_block_height))
 

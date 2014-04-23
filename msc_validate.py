@@ -804,7 +804,12 @@ def update_bitcoin_balances():
 
 def add_mchain_donators_addresses():
     # load 1Mchain donators list
-    special_addr_list=['1QJnZ74Ap6YS6Hep7gaFK1eXu6hKCxgx4a']
+    mchain_donors_list=load_dict_from_file('general/mchain_donors.json', skip_error=True)
+    special_addr_list=[]
+    for donor in mchain_donors_list:
+        if donor['value'] >= 0.001:
+            special_addr_list.append(donor['address'])
+    debug('adding mchain donor addresses '+str(special_addr_list))
     # for each address, if not in addr_dict, add empty entry
     for addr in special_addr_list:
         if not addr_dict.has_key(addr):

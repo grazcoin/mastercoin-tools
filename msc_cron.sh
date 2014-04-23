@@ -2,6 +2,7 @@
 
 LOCK_FILE=/tmp/mint2b_cron.lock
 MINT_PARSE_LOG=mint-parsed.log
+DONORS_PARSE_LOG=donors-parsed.log
 PRICES_LOG=prices.log
 PARSE_LOG=parsed.log
 VALIDATE_LOG=validated.log
@@ -22,11 +23,21 @@ x=1 # assume failure
 echo -n > $MINT_PARSE_LOG
 while [ "$x" != "0" ];
 do
-  python msc_mint_parse.py -r $TOOLS_DIR 2>&1 >> $PARSE_LOG
+  python msc_mint_parse.py -r $TOOLS_DIR 2>&1 >> $MINT_PARSE_LOG
   x=$?
 done
 
-python msc_prices.py 2>&1 >> $PRICES_LOG
+# parse donors until full success
+x=1 # assume failure
+echo -n > $DONORS_PARSE_LOG
+while [ "$x" != "0" ];
+do
+  python msc_mchain_parse.py -r $TOOLS_DIR 2>&1 >> $DONORS_PARSE_LOG
+  x=$?
+done
+
+# get bitcoin average
+python msc_prices.py 2>&1 > $PRICES_LOG
 
 # parse until full success
 x=1 # assume failure
