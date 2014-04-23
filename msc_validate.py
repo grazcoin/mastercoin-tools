@@ -190,7 +190,8 @@ def check_alarm(t, last_block, current_block):
                                 update_addr_dict(a['to_address'], True, a['currency_str'], reserved=-to_satoshi(amount_accepted), \
                                     balance=to_satoshi(amount_accepted))
                             else:
-                                debug('skip updating transaction '+sell_tx_hash+' after payment expired as it got already updated')
+                                update_addr_dict(a['to_address'], True, a['currency_str'], balance=to_satoshi(amount_accepted))
+                                debug('skip updating reserved on '+a['to_address']+' as payment expired and it got already updated')
                         else:
                             # update seller address - offer increases (reserved stays)
                             update_addr_dict(a['to_address'], True, a['currency_str'], offer=to_satoshi(amount_accepted))
