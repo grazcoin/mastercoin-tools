@@ -34,7 +34,7 @@ max_payment_timeframe=255
 
 # get dict of minted currencies
 # example: {"GRZ": {"currency_id": 1, "exodus": "1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8", "name": "GRZ coin"},..}
-currencies_per_symbol_dict=load_dict_from_file('general/extracted_currencies.json', skip_error=True)
+currencies_per_symbol_dict=load_dict_from_file('/home/dev/masterchain-mint2b/mastercoin-tools/general/extracted_currencies.json', skip_error=True)
 
 
 # get coins list (without Bitcoin) and dict of name to $exodus-$currency_id
