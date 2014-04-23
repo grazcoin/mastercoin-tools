@@ -18,7 +18,6 @@ donate_addr='1DonateVsLU9zwhgcdWcaWNaaz4MnkWMmv'
 
 transaction_type_dict={'0000':'Simple send', '0014':'Sell offer', '0016':'Sell accept'}
 sell_offer_action_dict={'00':'Undefined', '01':'New', '02':'Update', '03':'Cancel'}
-exodus_address='1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P'
 
 first_exodus_bootstrap_block=249498
 last_exodus_bootstrap_block=255365
@@ -35,7 +34,6 @@ max_payment_timeframe=255
 
 # get dict of minted currencies
 # example: {"GRZ": {"currency_id": 1, "exodus": "1GRazCon4gDqTh1pMNyh1xHVWnbQEVPfW8", "name": "GRZ coin"},..}
-#currencies_per_symbol_dict=load_dict_from_file('/home/dev/masterchain-mint2b/mastercoin-tools/general/extracted_currencies.json', skip_error=True)
 currencies_per_symbol_dict=load_dict_from_file('general/extracted_currencies.json', skip_error=True)
 
 

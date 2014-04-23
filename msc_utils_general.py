@@ -20,6 +20,9 @@ import msc_globals
 
 LAST_BLOCK_NUMBER_FILE='last_block.txt'
 
+# needed for deciding on error format:
+exodus_address='1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P'
+
 def run_command(command, input_str=None, ignore_stderr=False):
     if ignore_stderr:
         if input_str!=None:
@@ -55,10 +58,13 @@ def error(msg):
     if func_name.startswith('parse'):
         # store last parsed block
         try:
-            f=open(LAST_BLOCK_NUMBER_FILE,'w')
-            f.write(str(msc_globals.last_block)+'\n')
-            f.close()
-            last_block_msg=' ('+str(msc_globals.last_block)+')'
+            if msc_globals.exodus_scan == exodus_address:
+                f=open(LAST_BLOCK_NUMBER_FILE,'w')
+                f.write(str(msc_globals.last_block)+'\n')
+                f.close()
+                last_block_msg=' ('+str(msc_globals.last_block)+')'
+            else:
+                last_block_msg='['+msc_globals.exodus_scan+'] ('+str(msc_globals.last_block)+')'
         except IOError:
             pass
     print '[E] '+func_name+': '+str(msg)+last_block_msg

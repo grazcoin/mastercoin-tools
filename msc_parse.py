@@ -87,7 +87,7 @@ def parse():
         msc_globals.last_block=starting_block_height
 
         # to catch chain reorgs, check 5 blocks back
-        starting_block_height=int(starting_block_height) - 5
+        starting_block_height=int(starting_block_height) - 1
 
     else:
         starting_block_height=requested_block_height
@@ -96,8 +96,14 @@ def parse():
 
     info('starting parsing at block '+str(starting_block_height))
 
+    # hack to leave MSC to the end
+    exodus_scan_list.remove('1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P')
+    exodus_scan_list.append('1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P')
+
     for scan_addr in exodus_scan_list:
             msc_globals.exodus_scan=scan_addr
+
+            info('scanning '+scan_addr+' from block '+str(starting_block_height))
 
 	    if single_tx == None:
 		# get all tx of exodus address
@@ -130,7 +136,7 @@ def parse():
 	    ### parsing starts here ###
 	    ###########################
 
-	    # go over transaction from all history of 1EXoDus address
+	    # go over transaction from all history of exodus_scan address
 	    last_block=0
 	    for tx_dict in history:
 		value=tx_dict['value']
@@ -157,6 +163,7 @@ def parse():
 		    error('failed getting block None or index None for '+tx_hash)
 		if last_block < int(block):
 		    last_block = int(block)
+                    msc_globals.last_block = last_block
 
 		outputs_list=json_tx['outputs']
 		(outputs_list_no_exodus, outputs_to_exodus, different_outputs_values, invalid)=examine_outputs(outputs_list, tx_hash, raw_tx)
@@ -274,8 +281,8 @@ def parse():
 			    info('multisig with a single output tx found: '+tx_hash)
 
     # update global block height
-    if single_tx == None and block != None:
-        msc_globals.last_block=block
+#    if single_tx == None and block != None:
+#        msc_globals.last_block=block
 
     rev=get_revision_dict( last_block, options.repository_path )
     atomic_json_dump(rev, 'www/revision.json', add_brackets=False)
