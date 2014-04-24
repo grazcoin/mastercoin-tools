@@ -32,6 +32,8 @@ def parse():
                         help="hash of a specific tx to parse")
     parser.add_option("-s", "--start-block",dest='starting_block_height',default=None,
                         help="start the parsing at a specific block height (default is last)")
+    parser.add_option("-c", "--chain",dest='chain',default=None,
+                        help="parse a specific chain only (default is all)")
     parser.add_option("-a", "--archive-parsed-data", action="store_true",dest='archive', default=False,
                         help="archive the parsed data of tx addr and general for others to download")
     parser.add_option( "-r", "--repository-path", dest='repository_path', default="~/mastercoin-tools", 
@@ -41,6 +43,7 @@ def parse():
     msc_globals.d=options.debug_mode
     single_tx=options.single_tx
     requested_block_height=options.starting_block_height
+    chain=options.chain
 
     # show debug on
     if msc_globals.d:
@@ -96,11 +99,15 @@ def parse():
 
     info('starting parsing at block '+str(starting_block_height))
 
+    exodus_list=exodus_scan_list
     # hack to leave MSC to the end
-    exodus_scan_list.remove('1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P')
-    exodus_scan_list.append('1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P')
+    exodus_list.remove('1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P')
+    exodus_list.append('1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P')
 
-    for scan_addr in exodus_scan_list:
+    if chain != None: 
+        exodus_list=[chain]
+
+    for scan_addr in exodus_list:
             msc_globals.exodus_scan=scan_addr
 
             info('scanning '+scan_addr+' from block '+str(starting_block_height))
