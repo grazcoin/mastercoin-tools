@@ -26,9 +26,7 @@ tx_dict={}
 coin_stats_dict={}
 
 # invalidate tx due to "avoid changing history" issues
-invalidate_tx_list=['13fb62038d98ca4680c6295ba10d17b63c050ccde9c4cee7579fd2e148f25581', \
-                    '67d6302a45380289de0097afdae8d21a84b0a41221ca14319b3e4cdd8952a53b', \
-                    '8593540888247a9772fbe0fbcdd765df179779ae0c728e1fe83051f1bf0efe2f']
+invalidate_tx_list=[]
 
 # prepare lists for mastercoin and test
 sorted_currency_tx_list={}
@@ -1182,7 +1180,7 @@ def check_mastercoin_transaction(t, index=-1):
                     return True
         else:
 
-            # check history bugs (currently relevant for sell offer and accepts)
+            # check history bugs (disabled now)
             for tx_check in invalidate_tx_list:
                 if t['tx_hash'] == tx_check:
                     mark_tx_invalid(t['tx_hash'], 'avoid changing history')
