@@ -231,7 +231,7 @@ def parse_mint(tx, tx_hash='unknown'):
                 info('donation to '+a+' of '+str(amount))
                 donation_outputs+=float(amount)
 
-    if mint2b_outputs < 1.0:
+    if mint2b_outputs < 0.01:
         # ignore minting with less than minimal payment
         info('invalid mint transaction (mint with less than minimal payment) at tx '+tx_hash)
         return {'invalid':(True,'mint with less than minimal payment'), 'tx_hash':tx_hash}
