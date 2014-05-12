@@ -16,6 +16,7 @@ import re
 from ecdsa import curves, ecdsa
 # taken from https://github.com/warner/python-ecdsa
 from pycoin import encoding
+import binascii
 # taken from https://github.com/richardkiss/pycoin
 from msc_utils_general import *
 
@@ -113,18 +114,18 @@ def is_script_multisig(output):
 
 def is_pubkey_valid(pubkey):
     try:
-        sec=encoding.binascii.unhexlify(pubkey)
+        sec=binascii.unhexlify(pubkey)
         public_pair=encoding.sec_to_public_pair(sec)
         return curves.ecdsa.point_is_valid(ecdsa.generator_secp256k1, public_pair[0], public_pair[1])
     except TypeError:
         return False
 
 def get_compressed_pubkey_format(pubkey):
-    public_pair=encoding.sec_to_public_pair(encoding.binascii.unhexlify(pubkey))
-    return encoding.binascii.hexlify(encoding.public_pair_to_sec(public_pair))
+    public_pair=encoding.sec_to_public_pair(binascii.unhexlify(pubkey))
+    return binascii.hexlify(encoding.public_pair_to_sec(public_pair))
 
 def get_address_of_pubkey(pubkey):
-    public_pair=encoding.sec_to_public_pair(encoding.binascii.unhexlify(pubkey))
+    public_pair=encoding.sec_to_public_pair(binascii.unhexlify(pubkey))
     return encoding.public_pair_to_bitcoin_address(public_pair)
 
 def get_nearby_valid_pubkey(pubkey):
