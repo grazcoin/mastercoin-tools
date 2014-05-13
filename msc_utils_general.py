@@ -127,7 +127,7 @@ def archive_repo(directory="~/mastercoin-tools"):
 def archive_parsed_data(directory="~/mastercoin-tools"):
     (commit_hexsha, timestamp)=get_git_details( directory )
     archive_name='www/downloads/mastercoin-tools-parse-snapshot-'+timestamp+'-'+commit_hexsha[:8]+'.tar.gz'
-    path_to_archive='www/revision.json www/tx www/addr www/general/'
+    path_to_archive='www/revision.json tx addr general offers'
     out, err = run_command("tar cz "+path_to_archive+" -f "+archive_name)
     if err != None:
         return err
