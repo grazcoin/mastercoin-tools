@@ -1535,7 +1535,7 @@ def check_mastercoin_transaction(t, index=-1):
                     update_tx_dict(t['tx_hash'], bitcoin_required=formatted_decimal(bitcoin_required), \
                         sell_offer_txid=sell_offer_tx['tx_hash'], \
                         formatted_price_per_coin=sell_offer_tx['formatted_price_per_coin'], \
-                        formatted_amount_accepted=str(amount_accepted), \
+                        formatted_amount_accepted=formatted_decimal(amount_accepted), \
                         formatted_amount_bought='0.0', btc_offer_txid='unknown')
 
                     # heavy debug
@@ -1544,7 +1544,7 @@ def check_mastercoin_transaction(t, index=-1):
 
                     if amount_accepted > 0: # ignore 0 or negative accepts
                         # update sell accept
-                        update_tx_dict(t['tx_hash'], formatted_amount_accepted=amount_accepted, payment_done=False, payment_expired=False)
+                        update_tx_dict(t['tx_hash'], formatted_amount_accepted=formatted_decimal(amount_accepted), payment_done=False, payment_expired=False)
                         debug('add alarm for accept '+str(t))
                         add_alarm(t['tx_hash'])
 
