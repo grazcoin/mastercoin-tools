@@ -825,7 +825,7 @@ def update_bitcoin_balances():
 
         # update addr_dict with bitcoin balance
         for b in balances:
-            update_addr_dict(b['address'], False, 'Bitcoin', balance=b['paid'])
+            update_addr_dict(b['address'], False, 'Bitcoin', balance=b['pending'])
        
 
 def add_mchain_donators_addresses():
