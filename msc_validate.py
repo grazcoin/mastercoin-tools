@@ -842,7 +842,18 @@ def add_mchain_donators_addresses():
             debug('add mchain donor: '+addr)
             update_addr_dict(addr, False, 'Bitcoin', 0.0)
 
- 
+def add_manual_addresses():
+    manual_addresses_list=load_dict_from_file('general/manual_addresses.json', skip_error=True)
+    special_addr_list=[]
+    for man in manual_addresses_list:
+        special_addr_list.append(man['address'])
+    debug('adding manual addresses '+str(special_addr_list))
+    # for each address, if not in addr_dict, add empty entry
+    for addr in special_addr_list:
+        if not addr_dict.has_key(addr):
+            debug('add manual address: '+addr)
+            update_addr_dict(addr, False, 'Bitcoin', 0.0)
+
 # generate api json
 # address
 # general files (10 in a page)
@@ -1668,6 +1679,9 @@ def validate():
 
     # add special addresses
     add_mchain_donators_addresses()
+
+    # add special addresses
+    add_manual_addresses()
 
     # generate address pages and last tx pages
     generate_api_jsons()
